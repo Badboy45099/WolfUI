@@ -412,10 +412,6 @@ function Wolf:CreateWindow(Config)
 	ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	ContentLayout.Parent = ContentArea
 
-	HeaderTitle.Position = UDim2.fromOffset(0, 0)
-	HeaderTitle.Size = UDim2.new(1, 0, 0, 42)
-	HeaderTitle.Parent = ContentArea
-
 	-- Footer
 	local Footnote = Instance.new("Frame")
 	Footnote.Size = UDim2.new(1, -190, 0, 24)
@@ -567,7 +563,6 @@ function Wolf:CreateWindow(Config)
 	self.Gui = WolfUI
 	self.MainFrame = MainFrame
 	self.ContentArea = ContentArea
-	self.Page = ContentArea
 	self.TabContainer = TabContainer
 
 	return self
@@ -576,6 +571,75 @@ end
 ---------------------------------------------------------------------
 -- TAB CREATION
 ---------------------------------------------------------------------
+
+function Wolf:AddTab(Config)
+	Config = typeof(Config) == "table" and Config or { Title = Config }
+
+	local TabTitle = Config.Title or "Tab"
+	local TabPage = Instance.new("Frame")
+	TabPage.Name = TabTitle .. "Page"
+	TabPage.Size = UDim2.new(1, 0, 0, 0)
+	TabPage.AutomaticSize = Enum.AutomaticSize.Y
+	TabPage.BackgroundTransparency = 1
+	TabPage.LayoutOrder = #self.Tabs + 2
+	TabPage.Visible = false
+	TabPage.Parent = self.ContentArea
+
+	local PageTitle = Instance.new("TextLabel")
+	PageTitle.Name = "TabTitle"
+	PageTitle.LayoutOrder = 1
+	PageTitle.Size = UDim2.new(1, 0, 0, 42)
+	PageTitle.BackgroundTransparency = 1
+	PageTitle.FontFace = self.Fonts.Title
+	PageTitle.Text = TabTitle
+	PageTitle.TextColor3 = self.Theme.Text
+	PageTitle.TextSize = 20
+	PageTitle.TextXAlignment = Enum.TextXAlignment.Left
+	PageTitle.Parent = TabPage
+
+	local PageLayout = Instance.new("UIListLayout")
+	PageLayout.Padding = UDim.new(0, 8)
+	PageLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	PageLayout.Parent = TabPage
+
+	local TabButton = Instance.new("TextButton")
+	TabButton.Name = TabTitle .. "Tab"
+	TabButton.Size = UDim2.new(1, 0, 0, 34)
+	TabButton.BackgroundColor3 = self.Theme.Card
+	TabButton.TextColor3 = self.Theme.Text
+	TabButton.FontFace = self.Fonts.Body
+	TabButton.Text = TabTitle
+	TabButton.TextSize = 12
+	TabButton.Parent = self.TabContainer
+	Corner(TabButton, 6)
+	Stroke(TabButton, self.Theme.Border)
+
+	local Tab = setmetatable({
+		Library = self,
+		Page = TabPage,
+		Title = TabTitle,
+		Button = TabButton,
+	}, { __index = Wolf })
+
+	table.insert(self.Tabs, Tab)
+
+	local function SelectTab()
+		for _, ExistingTab in ipairs(self.Tabs) do
+			ExistingTab.Page.Visible = ExistingTab == Tab
+			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.Accent or self.Theme.Card
+		end
+		self.ActiveTab = Tab
+		self.ContentArea.CanvasPosition = Vector2.new(0, 0)
+	end
+
+	TabButton.MouseButton1Click:Connect(SelectTab)
+
+	if not self.ActiveTab then
+		SelectTab()
+	end
+
+	return Tab
+end
 
 function Wolf:AddToggle(Idx, Config)
 	Config = Config or {}
