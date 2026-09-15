@@ -233,7 +233,7 @@ function Wolf:CreateWindow(Config)
 	PlayerName.Position = UDim2.fromOffset(68, 20)
 	PlayerName.Size = UDim2.fromOffset(110, 18)
 	PlayerName.FontFace = self.Fonts.Body
-	PlayerName.TextSize = 13
+	PlayerName.TextSize = 14
 	PlayerName.TextColor3 = self.Theme.Text
 	PlayerName.TextXAlignment = Enum.TextXAlignment.Left
 	PlayerName.TextTruncate = Enum.TextTruncate.AtEnd
@@ -254,7 +254,7 @@ function Wolf:CreateWindow(Config)
 
 	local DeviceIcon = Instance.new("ImageLabel")
 	DeviceIcon.Position = UDim2.new(1, -40, 0, 80)
-	DeviceIcon.Size = UDim2.fromOffset(18, 18)
+	DeviceIcon.Size = UDim2.fromOffset(24, 24)
 	DeviceIcon.BackgroundTransparency = 1
 	ApplyIcon(DeviceIcon, UserInputService.TouchEnabled and "smartphone" or "monitor")
 	DeviceIcon.ImageColor3 = self.Theme.Accent
@@ -311,7 +311,7 @@ function Wolf:CreateWindow(Config)
 	HeaderTitle.Size = UDim2.fromOffset(200, 52)
 	HeaderTitle.FontFace = self.Fonts.Logo
 	HeaderTitle.Text = Config.Title or "WOLF UI"
-	HeaderTitle.TextSize = 24
+	HeaderTitle.TextSize = 25
 	HeaderTitle.TextColor3 = self.Theme.Accent
 	HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 	HeaderTitle.Parent = HeaderFrame
@@ -342,10 +342,18 @@ function Wolf:CreateWindow(Config)
 	DragIcon.Parent = HeaderFrame
 
 	-- Search Box
+	local SearchContainer = Instance.new("Frame")
+	SearchContainer.Name = "SearchContainer"
+	SearchContainer.Size = UDim2.fromOffset(130, 30)
+	SearchContainer.BackgroundColor3 = self.Theme.Surface
+	SearchContainer.Parent = ControlsHolder
+	Corner(SearchContainer, 6)
+	Stroke(SearchContainer, self.Theme.Border)
+
 	local SearchBox = Instance.new("TextBox")
 	SearchBox.Name = "SearchBox"
-	SearchBox.Size = UDim2.fromOffset(130, 30)
-	SearchBox.BackgroundColor3 = self.Theme.Surface
+	SearchBox.Size = UDim2.new(1, 0, 1, 0)
+	SearchBox.BackgroundTransparency = 1
 	SearchBox.TextColor3 = self.Theme.Text
 	SearchBox.PlaceholderColor3 = self.Theme.SubText
 	SearchBox.Text = ""
@@ -353,9 +361,8 @@ function Wolf:CreateWindow(Config)
 	SearchBox.FontFace = self.Fonts.Body
 	SearchBox.TextSize = 12
 	SearchBox.ClearTextOnFocus = false
-	SearchBox.Parent = ControlsHolder
-	Corner(SearchBox, 6)
-	Stroke(SearchBox, self.Theme.Border)
+	SearchBox.ClipsDescendants = true
+	SearchBox.Parent = SearchContainer
 
 	local SearchPadding = Instance.new("UIPadding")
 	SearchPadding.PaddingLeft = UDim.new(0, 28)
@@ -369,7 +376,7 @@ function Wolf:CreateWindow(Config)
 	SearchIcon.Position = UDim2.new(0, 8, 0.5, 0)
 	SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
 	SearchIcon.ImageColor3 = self.Theme.SubText
-	SearchIcon.Parent = SearchBox
+	SearchIcon.Parent = SearchContainer
 	ApplyIcon(SearchIcon, "search")
 
 	-- Lock Button
@@ -385,13 +392,29 @@ function Wolf:CreateWindow(Config)
 	Corner(LockButton, 6)
 
 	-- Main Display Container
-	local ContentArea = Instance.new("Frame")
+	local ContentArea = Instance.new("ScrollingFrame")
 	ContentArea.Name = "ContentArea"
 	ContentArea.Position = UDim2.new(0, 190, 0, 52)
 	ContentArea.Size = UDim2.new(1, -190, 1, -76)
 	ContentArea.BackgroundTransparency = 1
+	ContentArea.BorderSizePixel = 0
 	ContentArea.ClipsDescendants = true
+	ContentArea.ScrollBarThickness = 2
+	ContentArea.ScrollBarImageColor3 = self.Theme.Accent
+	ContentArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	ContentArea.CanvasSize = UDim2.new()
 	ContentArea.Parent = MainFrame
+
+	Padding(ContentArea, 16, 16, 8, 16)
+
+	local ContentLayout = Instance.new("UIListLayout")
+	ContentLayout.Padding = UDim.new(0, 8)
+	ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	ContentLayout.Parent = ContentArea
+
+	HeaderTitle.Position = UDim2.fromOffset(0, 0)
+	HeaderTitle.Size = UDim2.new(1, 0, 0, 42)
+	HeaderTitle.Parent = ContentArea
 
 	-- Footer
 	local Footnote = Instance.new("Frame")
@@ -420,6 +443,7 @@ function Wolf:CreateWindow(Config)
 	ResizeIcon.BackgroundTransparency = 1
 	ApplyIcon(ResizeIcon, "minimize-2")
 	ResizeIcon.ImageColor3 = self.Theme.SubText
+	ResizeIcon.Rotation = 90
 	ResizeIcon.Parent = Footnote
 
 	---------------------------------------------------------
@@ -543,6 +567,7 @@ function Wolf:CreateWindow(Config)
 	self.Gui = WolfUI
 	self.MainFrame = MainFrame
 	self.ContentArea = ContentArea
+	self.Page = ContentArea
 	self.TabContainer = TabContainer
 
 	return self
@@ -552,96 +577,121 @@ end
 -- TAB CREATION
 ---------------------------------------------------------------------
 
-function Wolf:AddTab(Config)
-	Config = typeof(Config) == "table" and Config or { Title = Config }
-	local TabName = Config.Title or "Tab"
-	local IconName = Config.Icon or "folder"
+function Wolf:AddToggle(Idx, Config)
+	Config = Config or {}
+	local Title = Config.Title or Idx
+	local Default = Config.Default or false
+	local Callback = Config.Callback or function() end
 
-	-- Tab Selection Button
-	local TabButton = Instance.new("TextButton")
-	TabButton.Name = TabName .. "Tab"
-	TabButton.Size = UDim2.new(1, 0, 0, 34)
-	TabButton.BackgroundColor3 = self.Theme.Surface
-	TabButton.BackgroundTransparency = 1
-	TabButton.Text = ""
-	TabButton.AutoButtonColor = false
-	TabButton.Parent = self.TabContainer
-	Corner(TabButton, 6)
+	local State = Default
 
-	local TabIcon = Instance.new("ImageLabel")
-	TabIcon.Size = UDim2.fromOffset(18, 18)
-	TabIcon.Position = UDim2.new(0, 10, 0.5, 0)
-	TabIcon.AnchorPoint = Vector2.new(0, 0.5)
-	TabIcon.BackgroundTransparency = 1
-	TabIcon.ImageColor3 = self.Theme.SubText
-	TabIcon.Parent = TabButton
-	ApplyIcon(TabIcon, IconName)
+	local ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
+	ToggleFrame.BackgroundColor3 = self.Theme.Card
+	ToggleFrame.Parent = self.Page
+	Corner(ToggleFrame, 6)
+	Stroke(ToggleFrame, self.Theme.Border)
 
-	local TabLabel = Instance.new("TextLabel")
-	TabLabel.Position = UDim2.new(0, 36, 0, 0)
-	TabLabel.Size = UDim2.new(1, -40, 1, 0)
-	TabLabel.BackgroundTransparency = 1
-	TabLabel.FontFace = self.Fonts.Body
-	TabLabel.Text = TabName
-	TabLabel.TextColor3 = self.Theme.SubText
-	TabLabel.TextSize = 12
-	TabLabel.TextXAlignment = Enum.TextXAlignment.Left
-	TabLabel.Parent = TabButton
+	local Label = Instance.new("TextLabel")
+	Label.Position = UDim2.new(0, 12, 0, 0)
+	Label.Size = UDim2.new(1, -60, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.FontFace = self.Fonts.Body
+	Label.Text = Title
+	Label.TextColor3 = self.Theme.Text
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = ToggleFrame
 
-	-- Container Frame for Elements inside Tab
-	local TabPage = Instance.new("ScrollingFrame")
-	TabPage.Name = TabName .. "Page"
-	TabPage.Size = UDim2.new(1, 0, 1, 0)
-	TabPage.BackgroundTransparency = 1
-	TabPage.BorderSizePixel = 0
-	TabPage.Visible = false
-	TabPage.ScrollBarThickness = 3
-	TabPage.ScrollBarImageColor3 = self.Theme.Accent
-	TabPage.AutomaticCanvasSize = Enum.AutomaticSize.Y
-	TabPage.CanvasSize = UDim2.new()
-	TabPage.Parent = self.ContentArea
+	local Indicator = Instance.new("Frame")
+	Indicator.AnchorPoint = Vector2.new(1, 0.5)
+	Indicator.Position = UDim2.new(1, -10, 0.5, 0)
+	Indicator.Size = UDim2.fromOffset(36, 18)
+	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
+	Indicator.Parent = ToggleFrame
+	Corner(Indicator, 100)
 
-	Padding(TabPage, 14, 14, 14, 14)
+	local Knob = Instance.new("Frame")
+	Knob.AnchorPoint = Vector2.new(0, 0.5)
+	Knob.Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
+	Knob.Size = UDim2.fromOffset(14, 14)
+	Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	Knob.Parent = Indicator
+	Corner(Knob, 100)
 
-	local PageLayout = Instance.new("UIListLayout")
-	PageLayout.Padding = UDim.new(0, 8)
-	PageLayout.Parent = TabPage
+	local ClickBtn = Instance.new("TextButton")
+	ClickBtn.Size = UDim2.new(1, 0, 1, 0)
+	ClickBtn.BackgroundTransparency = 1
+	ClickBtn.Text = ""
+	ClickBtn.Parent = ToggleFrame
 
-	local TabObj = {
-		Button = TabButton,
-		Page = TabPage,
-		Icon = TabIcon,
-		Label = TabLabel,
-		Library = self,
+	local ToggleObj = {
+		Value = State,
+		OnChanged = Instance.new("BindableEvent"), -- Fluent-like event listener
 	}
 
-	local function SwitchTab()
-		for _, tab in ipairs(self.Tabs) do
-			Tween(tab.Button, { BackgroundTransparency = 1 })
-			Tween(tab.Label, { TextColor3 = self.Theme.SubText })
-			Tween(tab.Icon, { ImageColor3 = self.Theme.SubText })
-			tab.Page.Visible = false
-		end
-
-		Tween(TabButton, { BackgroundTransparency = 0 })
-		Tween(TabLabel, { TextColor3 = self.Theme.Text })
-		Tween(TabIcon, { ImageColor3 = self.Theme.Accent })
-		TabPage.Visible = true
-		self.ActiveTab = TabObj
+	local function Update()
+		ToggleObj.Value = State
+		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
+		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
+		Callback(State)
+		ToggleObj.OnChanged:Fire(State)
 	end
 
-	TabButton.MouseButton1Click:Connect(SwitchTab)
+	ClickBtn.MouseButton1Click:Connect(function()
+		State = not State
+		Update()
+	end)
 
-	-- Activate first added tab by default
-	if #self.Tabs == 0 then
-		SwitchTab()
+	function ToggleObj:SetValue(Val)
+		State = Val
+		Update()
 	end
 
-	table.insert(self.Tabs, TabObj)
+	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
+	return ToggleObj
+end
 
-	-- Attach Fluent Element Factory Methods to Tab Instance
-	setmetatable(TabObj, { __index = Wolf })
-	return TabObj
+-- AddButton(Idx, Config) or AddButton(Config)
+function Wolf:AddButton(Config)
+	if typeof(Config) == "string" then
+		Config = { Title = Config }
+	end
+	local Title = Config.Title or "Button"
+	local Callback = Config.Callback or function() end
+
+	local ButtonFrame = Instance.new("Frame")
+	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
+	ButtonFrame.BackgroundColor3 = self.Theme.Card
+	ButtonFrame.Parent = self.Page
+	Corner(ButtonFrame, 6)
+	Stroke(ButtonFrame, self.Theme.Border)
+
+	local TextBtn = Instance.new("TextButton")
+	TextBtn.Size = UDim2.new(1, 0, 1, 0)
+	TextBtn.BackgroundTransparency = 1
+	TextBtn.FontFace = self.Fonts.Body
+	TextBtn.Text = Title
+	TextBtn.TextColor3 = self.Theme.Text
+	TextBtn.TextSize = 12
+	TextBtn.Parent = ButtonFrame
+
+	TextBtn.MouseEnter:Connect(function()
+		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
+	end)
+	TextBtn.MouseLeave:Connect(function()
+		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Card })
+	end)
+	TextBtn.MouseButton1Click:Connect(function()
+		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Accent }, 0.08)
+		task.delay(0.08, function()
+			Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
+		end)
+		Callback()
+	end)
+
+	table.insert(self.Library.Elements, { Text = Title, Frame = ButtonFrame })
+	return ButtonFrame
 end
 
 ---------------------------------------------------------------------
