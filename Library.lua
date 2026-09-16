@@ -173,6 +173,10 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	self.Tabs = {}
+	self.Elements = {}
+	self.ActiveTab = nil
+	self.ShortcutHolder = nil
 	self.OpenDropdowns = {}
 
 	local ParentContainer = CoreGui
@@ -186,6 +190,9 @@ function Wolf:CreateWindow(Config)
 
 	if ParentContainer:FindFirstChild("WolfUI") then
 		ParentContainer.WolfUI:Destroy()
+	end
+	if ParentContainer:FindFirstChild("WolfUIToggle") then
+		ParentContainer.WolfUIToggle:Destroy()
 	end
 
 	local WolfUI = Instance.new("ScreenGui")
@@ -654,6 +661,36 @@ function Wolf:CreateWindow(Config)
 	end
 	self._CloseDropdowns = CloseDropdowns
 
+	local function IsPointInside(Object, Point)
+		if not Object or not Object.Visible then
+			return false
+		end
+		local Position = Object.AbsolutePosition
+		local Size = Object.AbsoluteSize
+		return Point.X >= Position.X
+			and Point.X <= Position.X + Size.X
+			and Point.Y >= Position.Y
+			and Point.Y <= Position.Y + Size.Y
+	end
+
+	UserInputService.InputBegan:Connect(function(Input)
+		if
+			Input.UserInputType ~= Enum.UserInputType.MouseButton1
+			and Input.UserInputType ~= Enum.UserInputType.Touch
+		then
+			return
+		end
+		local Point = Vector2.new(Input.Position.X, Input.Position.Y)
+		for _, Dropdown in ipairs(self.OpenDropdowns) do
+			if IsPointInside(Dropdown.Frame, Point) or IsPointInside(Dropdown.Anchor, Point) then
+				return
+			end
+		end
+		if #self.OpenDropdowns > 0 then
+			CloseDropdowns()
+		end
+	end)
+
 	local function UpdateDropdownPositions()
 		local WindowPosition = MainFrame.AbsolutePosition
 		local WindowSize = MainFrame.AbsoluteSize
@@ -893,6 +930,7 @@ function Wolf:AddTab(Config)
 	TabButton.Name = TabTitle .. "Tab"
 	TabButton.Size = UDim2.new(1, 0, 0, 34)
 	TabButton.BackgroundColor3 = self.Theme.Card
+	TabButton.BackgroundTransparency = 1
 	TabButton.TextColor3 = self.Theme.Text
 	TabButton.FontFace = self.Fonts.Body
 	TabButton.Text = ""
@@ -905,7 +943,7 @@ function Wolf:AddTab(Config)
 	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(6, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
 	local TabText = Instance.new("TextLabel")
 	TabText.BackgroundTransparency = 1
-	TabText.Position = UDim2.fromOffset(TabIcon and 31 or 12, 0)
+	TabText.Position = UDim2.fromOffset(TabIcon and 27 or 8, 0)
 	TabText.Size = UDim2.new(1, TabIcon and -39 or -20, 1, 0)
 	TabText.FontFace = self.Fonts.Body
 	TabText.Text = TabTitle
@@ -915,6 +953,17 @@ function Wolf:AddTab(Config)
 	TabText.TextTruncate = Enum.TextTruncate.AtEnd
 	TabText.ZIndex = 4
 	TabText.Parent = TabButton
+
+	TabButton.MouseEnter:Connect(function()
+		if not self.ActiveTab or self.ActiveTab.Button ~= TabButton then
+			Tween(TabButton, { BackgroundTransparency = 0.25 })
+		end
+	end)
+	TabButton.MouseLeave:Connect(function()
+		if not self.ActiveTab or self.ActiveTab.Button ~= TabButton then
+			Tween(TabButton, { BackgroundTransparency = 1 })
+		end
+	end)
 
 	local Tab = setmetatable({
 		Library = self,
@@ -932,6 +981,7 @@ function Wolf:AddTab(Config)
 		for _, ExistingTab in ipairs(self.Tabs) do
 			ExistingTab.Page.Visible = ExistingTab == Tab
 			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.Accent or self.Theme.Card
+			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
 		end
 		self.ActiveTab = Tab
 		self.ContentArea.CanvasPosition = Vector2.new(0, 0)
@@ -1011,6 +1061,14 @@ function Wolf:AddToggle(Idx, Config)
 		State = not State
 		Update()
 	end)
+
+	function ToggleObj:Toggle()
+		State = not State
+		Update()
+	end
+	function ToggleObj:Activate()
+		self:Toggle()
+	end
 
 	function ToggleObj:SetValue(Val)
 		State = Val
@@ -1773,6 +1831,18 @@ function Wolf:AddColorPicker(Config)
 	HexInput.ClearTextOnFocus = false
 	HexInput.ZIndex = 53
 	HexInput.Parent = HexBox
+	local FooterDivider = Instance.new("TextLabel")
+	FooterDivider.Position = UDim2.new(0.58, 0, 0, 0)
+	FooterDivider.Size = UDim2.new(0, 12, 1, 0)
+	FooterDivider.BackgroundTransparency = 1
+	FooterDivider.Text = "|"
+	FooterDivider.TextColor3 = self.Theme.SubText
+	FooterDivider.TextTransparency = 0.25
+	FooterDivider.FontFace = self.Fonts.Small
+	FooterDivider.TextSize = 11
+	FooterDivider.TextXAlignment = Enum.TextXAlignment.Center
+	FooterDivider.ZIndex = 54
+	FooterDivider.Parent = HexBox
 	local AlphaInput = Instance.new("TextBox")
 	AlphaInput.Size = UDim2.new(0.4, -1, 1, 0)
 	AlphaInput.Position = UDim2.new(0.6, 1, 0, 0)
@@ -1963,14 +2033,16 @@ function Wolf:AddShortcut(Config)
 
 	local Button = Instance.new("TextButton")
 	Button.Name = Side .. "Shortcut"
-	Button.Size = UDim2.fromOffset(Config.Width or 86, Config.Height or 34)
+	local ShortcutText = Config.Text or Config.Title or ""
+	local ShortcutWidth = Config.Width or (ShortcutText == "" and (Config.Icon and 34 or 86) or 86)
+	Button.Size = UDim2.fromOffset(ShortcutWidth, Config.Height or 34)
 	Button.AnchorPoint = Vector2.new(1, 0)
 	Button.Position = UDim2.new(1, 0, 0, #self.ShortcutHolder:GetChildren() * 42)
 	Button.BackgroundColor3 = self.Theme.Card
 	Button.BackgroundTransparency = 0.15
 	Button.BorderSizePixel = 0
 	Button.AutoButtonColor = false
-	Button.Text = Config.Text or Config.Title or ""
+	Button.Text = ShortcutText
 	Button.TextColor3 = self.Theme.Text
 	Button.FontFace = self.Fonts.Button
 	Button.TextSize = 11
@@ -1982,7 +2054,9 @@ function Wolf:AddShortcut(Config)
 
 	if Config.Icon then
 		CreateIcon(Button, Config.Icon, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
-		Button.Text = "   " .. (Config.Text or Config.Title or "")
+		if Button.Text ~= "" then
+			Button.Text = "   " .. Button.Text
+		end
 	end
 	local Chevron
 	if IsToggleShortcut then
@@ -2233,12 +2307,37 @@ function Wolf:AddDropdown(Config)
 	end)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
-	return {
+	local DropdownObject = {
+		Frame = DropdownFrame,
+		Popup = OptionsFrame,
 		SetValue = function(_, Value)
 			UpdateValue(Value)
 		end,
 		Value = Selected,
 	}
+	function DropdownObject:Open()
+		self.Library._CloseDropdowns()
+		OptionsFrame.Visible = true
+		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+		self.Library._UpdateDropdownPositions()
+		ApplyIcon(Chevron, "chevron-up")
+	end
+	function DropdownObject:Close()
+		OptionsFrame.Visible = false
+		self.Library._CloseDropdowns()
+	end
+	function DropdownObject:Toggle()
+		if OptionsFrame.Visible then
+			self:Close()
+		else
+			self:Open()
+		end
+	end
+	function DropdownObject:Activate()
+		self:Toggle()
+	end
+	DropdownObject.Library = self.Library
+	return DropdownObject
 end
 
 -- Multi-selection dropdown
@@ -2415,7 +2514,9 @@ function Wolf:AddMultiDropdown(Config)
 	end)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
-	return {
+	local DropdownObject = {
+		Frame = DropdownFrame,
+		Popup = OptionsFrame,
 		SetValue = function(_, Values)
 			Selected = {}
 			for _, Value in ipairs(Values or {}) do
@@ -2426,6 +2527,29 @@ function Wolf:AddMultiDropdown(Config)
 		end,
 		Value = Selected,
 	}
+	function DropdownObject:Open()
+		self.Library._CloseDropdowns()
+		OptionsFrame.Visible = true
+		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+		self.Library._UpdateDropdownPositions()
+		ApplyIcon(Chevron, "chevron-up")
+	end
+	function DropdownObject:Close()
+		OptionsFrame.Visible = false
+		self.Library._CloseDropdowns()
+	end
+	function DropdownObject:Toggle()
+		if OptionsFrame.Visible then
+			self:Close()
+		else
+			self:Open()
+		end
+	end
+	function DropdownObject:Activate()
+		self:Toggle()
+	end
+	DropdownObject.Library = self.Library
+	return DropdownObject
 end
 
 function Wolf:Notify(Config)
