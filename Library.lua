@@ -505,31 +505,53 @@ function Wolf:CreateWindow(Config)
 	ToggleButton.AnchorPoint = Vector2.new(0, 1)
 	ToggleButton.Position = UDim2.new(0, 18, 1, -18)
 	ToggleButton.Size = UDim2.fromOffset(46, 46)
-	ToggleButton.BackgroundColor3 = self.Theme.Card
-	ToggleButton.BackgroundTransparency = 0.08
+	ToggleButton.BackgroundTransparency = 1
 	ToggleButton.AutoButtonColor = false
 	ToggleButton.Image = "rbxthumb://type=Asset&id=112381138279003&w=150&h=150"
 	ToggleButton.ImageColor3 = self.Theme.Text
 	ToggleButton.ZIndex = 100
 	ToggleButton.Parent = ToggleGui
 	Corner(ToggleButton, 8)
-	Stroke(ToggleButton, self.Theme.Border)
 
 	local uiVisible = true
 	local TargetWindowSize = UDim2.fromOffset(720, 460)
+	local TargetWindowPosition = MainFrame.Position
+	local ToggleDragging = false
+	local ToggleMoved = false
+	local ToggleStartInputPosition
+	local ToggleStartButtonPosition
+
+	local function ToggleCenterPosition()
+		return ToggleButton.AbsolutePosition + ToggleButton.AbsoluteSize / 2
+	end
+
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
+		local ToggleCenter = ToggleCenterPosition()
 		if Visible then
+			TargetWindowPosition = TargetWindowPosition or MainFrame.Position
 			MainFrame.Visible = true
+			MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+			MainFrame.Position = UDim2.fromOffset(ToggleCenter.X, ToggleCenter.Y)
 			MainFrame.Size = UDim2.fromOffset(0, 0)
 			MainFrame.BackgroundTransparency = 1
-			Tween(MainFrame, { Size = TargetWindowSize, BackgroundTransparency = 0.05 }, 0.28)
+			Tween(MainFrame, {
+				Position = TargetWindowPosition,
+				Size = TargetWindowSize,
+				BackgroundTransparency = 0.05,
+			}, 0.3)
 		else
+			TargetWindowPosition = MainFrame.Position
+			TargetWindowSize = MainFrame.Size
 			if self._CloseDropdowns then
 				self._CloseDropdowns()
 			end
-			Tween(MainFrame, { Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1 }, 0.22)
-			task.delay(0.24, function()
+			Tween(MainFrame, {
+				Position = UDim2.fromOffset(ToggleCenter.X, ToggleCenter.Y),
+				Size = UDim2.fromOffset(0, 0),
+				BackgroundTransparency = 1,
+			}, 0.24)
+			task.delay(0.26, function()
 				if not uiVisible then
 					MainFrame.Visible = false
 				end
@@ -537,8 +559,52 @@ function Wolf:CreateWindow(Config)
 		end
 	end
 
-	ToggleButton.MouseButton1Click:Connect(function()
-		SetUIVisible(not uiVisible)
+	ToggleButton.InputBegan:Connect(function(input)
+		if
+			input.UserInputType == Enum.UserInputType.MouseButton1
+			or input.UserInputType == Enum.UserInputType.Touch
+		then
+			ToggleDragging = true
+			ToggleMoved = false
+			ToggleStartInputPosition = input.Position
+			ToggleStartButtonPosition = ToggleButton.Position
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if
+			ToggleDragging
+			and (
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			local Delta = input.Position - ToggleStartInputPosition
+			ToggleMoved = ToggleMoved or Delta.Magnitude > 6
+			if ToggleMoved then
+				ToggleButton.Position = UDim2.new(
+					ToggleStartButtonPosition.X.Scale,
+					ToggleStartButtonPosition.X.Offset + Delta.X,
+					ToggleStartButtonPosition.Y.Scale,
+					ToggleStartButtonPosition.Y.Offset + Delta.Y
+				)
+			end
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(input)
+		if
+			ToggleDragging
+			and (
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			ToggleDragging = false
+			if not ToggleMoved then
+				SetUIVisible(not uiVisible)
+			end
+		end
 	end)
 	self.SetVisible = SetUIVisible
 	self.ToggleButton = ToggleButton
@@ -585,6 +651,35 @@ function Wolf:CreateWindow(Config)
 		table.clear(self.OpenDropdowns)
 	end
 	self._CloseDropdowns = CloseDropdowns
+
+	local function UpdateDropdownPositions()
+		local WindowPosition = MainFrame.AbsolutePosition
+		local WindowSize = MainFrame.AbsoluteSize
+		for _, Dropdown in ipairs(self.OpenDropdowns) do
+			local Anchor = Dropdown.Anchor
+			if Dropdown.Frame.Visible and Anchor and Anchor.Parent then
+				local AnchorPosition = Anchor.AbsolutePosition
+				local AnchorSize = Anchor.AbsoluteSize
+				local FrameSize = Dropdown.Frame.AbsoluteSize
+				local X = AnchorPosition.X + AnchorSize.X - FrameSize.X
+				local Y = AnchorPosition.Y + AnchorSize.Y + 4
+				local MinX = WindowPosition.X + 4
+				local MaxX = WindowPosition.X + WindowSize.X - FrameSize.X - 4
+				local MinY = WindowPosition.Y + 4
+				local MaxY = WindowPosition.Y + WindowSize.Y - FrameSize.Y - 4
+
+				X = math.clamp(X, MinX, math.max(MinX, MaxX))
+				if Y > MaxY and AnchorPosition.Y - FrameSize.Y - 4 >= MinY then
+					Y = AnchorPosition.Y - FrameSize.Y - 4
+				else
+					Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
+				end
+				Dropdown.Frame.Position = UDim2.fromOffset(X, Y)
+			end
+		end
+	end
+	self._UpdateDropdownPositions = UpdateDropdownPositions
+	RunService.RenderStepped:Connect(UpdateDropdownPositions)
 
 	local sidebarResizing = false
 	local sidebarResizeStartX
@@ -660,6 +755,7 @@ function Wolf:CreateWindow(Config)
 			SidebarWidth = math.clamp(NewWidth * SidebarRatio, SidebarMinWidth, SidebarMaxWidth)
 
 			MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
+			TargetWindowSize = MainFrame.Size
 			UpdateSidebarLayout()
 		end
 	end)
@@ -1499,7 +1595,8 @@ function Wolf:AddDropdown(Config)
 			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
 		)
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron })
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+			self._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
@@ -1680,7 +1777,8 @@ function Wolf:AddMultiDropdown(Config)
 			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
 		)
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron })
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+			self._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
