@@ -637,12 +637,12 @@ function Wolf:CreateWindow(Config)
 	local startSize
 
 	-- Minimum allowed window dimensions to prevent UI collapse
-	local MinSize = Vector2.new(420, 260)
+	local MinSize = Vector2.new(360, 220)
 	-- Maximum allowed window dimensions
 	local MaxSize = Vector2.new(1000, 700)
 
 	local SidebarWidth = 190
-	local SidebarMinWidth = 140
+	local SidebarMinWidth = 110
 	local SidebarMaxWidth = 300
 	local SidebarRatio = SidebarWidth / 720
 
@@ -1345,6 +1345,13 @@ function Wolf:AddToggle(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
 	return {
+		Toggle = function()
+			State = not State
+			Update()
+		end,
+		Activate = function(Self)
+			Self:Toggle()
+		end,
 		SetValue = function(_, Val)
 			State = Val
 			Update()
@@ -2036,7 +2043,10 @@ function Wolf:AddColorPicker(Config)
 		end
 	end
 	function PickerObject:Activate()
-		self:Toggle()
+		Swatch.BackgroundColor3 = CurrentColor
+		Callback(CurrentColor, A)
+		Popup.Visible = false
+		table.clear(Library.OpenDropdowns)
 	end
 	return PickerObject
 end
@@ -2086,9 +2096,16 @@ function Wolf:AddShortcut(Config)
 	Stroke(Button, self.Theme.Border, 0.35)
 
 	if Config.Icon then
-		CreateIcon(Button, Config.Icon, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
-		if Button.Text ~= "" then
-			Button.Text = "   " .. Button.Text
+		local ShortcutIcon =
+			CreateIcon(Button, Config.Icon, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
+		if ShortcutText == "" then
+			ShortcutIcon.Position = UDim2.fromScale(0.5, 0.5)
+			ShortcutIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+			Button.TextXAlignment = Enum.TextXAlignment.Center
+		else
+			Button.Text = ShortcutText
+			Button.TextXAlignment = Enum.TextXAlignment.Left
+			Padding(Button, 30, 8, 0, 0)
 		end
 	end
 	local ChevronButton
@@ -2100,12 +2117,12 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.Position = UDim2.new(1, 4, 0, Button.Position.Y.Offset)
 		ChevronButton.Size = UDim2.fromOffset(ChevronWidth, Config.Height or 34)
 		ChevronButton.BackgroundColor3 = self.Theme.Card
-		ChevronButton.BackgroundTransparency = 0.15
+		ChevronButton.BackgroundTransparency = 1
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 101
 		ChevronButton.Parent = self.ShortcutHolder
 		Corner(ChevronButton, 6)
-		Stroke(ChevronButton, self.Theme.Border, 0.35)
+		Stroke(ChevronButton, self.Theme.Border, 1)
 		Chevron = CreateIcon(
 			ChevronButton,
 			"chevron-right",
@@ -2165,31 +2182,37 @@ function Wolf:AddShortcut(Config)
 	end)
 
 	local function ActivateShortcut()
-		if IsToggleShortcut and Element then
-			local Open = false
-			if Element.Toggle then
-				Element:Toggle()
-				Open = Element.Popup and Element.Popup.Visible or false
-			elseif Element.Visible ~= nil then
-				Element.Visible = not Element.Visible
-				Open = Element.Visible
-			elseif Element.Popup then
-				Element.Popup.Visible = not Element.Popup.Visible
-				Open = Element.Popup.Visible
-			end
-			if Chevron then
-				ApplyIcon(Chevron, Open and "chevron-left" or "chevron-right")
-			end
-		elseif Element and Element.Activate then
+		if Element and Element.Activate then
 			Element:Activate()
+		elseif Element and Element.Toggle then
+			Element:Toggle()
 		elseif Callback then
 			Callback(Element)
 		end
 	end
 
+	local function ToggleShortcutVisibility()
+		if not Element then
+			return
+		end
+		local Open = false
+		if Element.Popup and Element.Toggle then
+			Element:Toggle()
+			Open = Element.Popup.Visible
+		elseif Element.Popup then
+			Element.Popup.Visible = not Element.Popup.Visible
+			Open = Element.Popup.Visible
+		elseif Element.Toggle then
+			Element:Toggle()
+		end
+		if Chevron then
+			ApplyIcon(Chevron, Open and "chevron-left" or "chevron-right")
+		end
+	end
+
 	Button.MouseButton1Click:Connect(ActivateShortcut)
 	if ChevronButton then
-		ChevronButton.MouseButton1Click:Connect(ActivateShortcut)
+		ChevronButton.MouseButton1Click:Connect(ToggleShortcutVisibility)
 	end
 
 	return Button
