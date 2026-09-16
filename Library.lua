@@ -630,7 +630,7 @@ function Wolf:CreateWindow(Config)
 	local startSize
 
 	-- Minimum allowed window dimensions to prevent UI collapse
-	local MinSize = Vector2.new(500, 320)
+	local MinSize = Vector2.new(420, 260)
 	-- Maximum allowed window dimensions
 	local MaxSize = Vector2.new(1000, 700)
 
@@ -939,11 +939,11 @@ function Wolf:AddTab(Config)
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
-	Padding(TabButton, TabIcon and 32 or 12, 8, 0, 0)
-	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(6, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
+	Padding(TabButton, TabIcon and 25 or 6, 8, 0, 0)
+	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(2, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
 	local TabText = Instance.new("TextLabel")
 	TabText.BackgroundTransparency = 1
-	TabText.Position = UDim2.fromOffset(TabIcon and 27 or 8, 0)
+	TabText.Position = UDim2.fromOffset(TabIcon and 22 or 6, 0)
 	TabText.Size = UDim2.new(1, TabIcon and -39 or -20, 1, 0)
 	TabText.FontFace = self.Fonts.Body
 	TabText.Text = TabTitle
@@ -1320,6 +1320,14 @@ function Wolf:AddToggle(Config)
 		State = not State
 		Update()
 	end)
+
+	function ToggleObj:Toggle()
+		State = not State
+		Update()
+	end
+	function ToggleObj:Activate()
+		self:Toggle()
+	end
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
 	return {
@@ -2035,6 +2043,7 @@ function Wolf:AddShortcut(Config)
 	Button.Name = Side .. "Shortcut"
 	local ShortcutText = Config.Text or Config.Title or ""
 	local ShortcutWidth = Config.Width or (ShortcutText == "" and (Config.Icon and 34 or 86) or 86)
+	local ChevronWidth = IsToggleShortcut and 20 or 0
 	Button.Size = UDim2.fromOffset(ShortcutWidth, Config.Height or 34)
 	Button.AnchorPoint = Vector2.new(1, 0)
 	Button.Position = UDim2.new(1, 0, 0, #self.ShortcutHolder:GetChildren() * 42)
@@ -2058,17 +2067,30 @@ function Wolf:AddShortcut(Config)
 			Button.Text = "   " .. Button.Text
 		end
 	end
+	local ChevronButton
 	local Chevron
 	if IsToggleShortcut then
+		ChevronButton = Instance.new("ImageButton")
+		ChevronButton.Name = Side .. "Chevron"
+		ChevronButton.AnchorPoint = Vector2.new(0, 0)
+		ChevronButton.Position = UDim2.new(1, 4, 0, Button.Position.Y.Offset)
+		ChevronButton.Size = UDim2.fromOffset(ChevronWidth, Config.Height or 34)
+		ChevronButton.BackgroundColor3 = self.Theme.Card
+		ChevronButton.BackgroundTransparency = 0.15
+		ChevronButton.AutoButtonColor = false
+		ChevronButton.ZIndex = 101
+		ChevronButton.Parent = self.ShortcutHolder
+		Corner(ChevronButton, 6)
+		Stroke(ChevronButton, self.Theme.Border, 0.35)
 		Chevron = CreateIcon(
-			Button,
+			ChevronButton,
 			"chevron-right",
-			UDim2.new(1, -24, 0.5, 0),
+			UDim2.new(0.5, 0, 0.5, 0),
 			UDim2.fromOffset(16, 16),
 			self.Theme.SubText,
 			102
 		)
-		Chevron.AnchorPoint = Vector2.new(0, 0.5)
+		Chevron.AnchorPoint = Vector2.new(0.5, 0.5)
 	end
 
 	local Dragging = false
@@ -2099,6 +2121,14 @@ function Wolf:AddShortcut(Config)
 				StartPosition.Y.Scale,
 				StartPosition.Y.Offset + Delta.Y
 			)
+			if ChevronButton then
+				ChevronButton.Position = UDim2.new(
+					Button.Position.X.Scale,
+					Button.Position.X.Offset + 4,
+					Button.Position.Y.Scale,
+					Button.Position.Y.Offset
+				)
+			end
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(Input)
@@ -2110,7 +2140,7 @@ function Wolf:AddShortcut(Config)
 		end
 	end)
 
-	Button.MouseButton1Click:Connect(function()
+	local function ActivateShortcut()
 		if IsToggleShortcut and Element then
 			local Open = false
 			if Element.Toggle then
@@ -2131,7 +2161,12 @@ function Wolf:AddShortcut(Config)
 		elseif Callback then
 			Callback(Element)
 		end
-	end)
+	end
+
+	Button.MouseButton1Click:Connect(ActivateShortcut)
+	if ChevronButton then
+		ChevronButton.MouseButton1Click:Connect(ActivateShortcut)
+	end
 
 	return Button
 end
