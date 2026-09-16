@@ -383,7 +383,8 @@ function Wolf:CreateWindow(Config)
 
 	local SearchBox = Instance.new("TextBox")
 	SearchBox.Name = "SearchBox"
-	SearchBox.Size = UDim2.new(1, 0, 1, 0)
+	SearchBox.Position = UDim2.fromOffset(24, 0)
+	SearchBox.Size = UDim2.new(1, -24, 1, 0)
 	SearchBox.BackgroundTransparency = 1
 	SearchBox.TextColor3 = self.Theme.Text
 	SearchBox.PlaceholderColor3 = self.Theme.SubText
@@ -394,11 +395,6 @@ function Wolf:CreateWindow(Config)
 	SearchBox.ClearTextOnFocus = false
 	SearchBox.ClipsDescendants = true
 	SearchBox.Parent = SearchContainer
-
-	local SearchPadding = Instance.new("UIPadding")
-	SearchPadding.PaddingLeft = UDim.new(0, 28)
-	SearchPadding.PaddingRight = UDim.new(0, 6)
-	SearchPadding.Parent = SearchBox
 
 	local SearchIcon = Instance.new("ImageLabel")
 	SearchIcon.Name = "SearchIcon"
@@ -418,13 +414,21 @@ function Wolf:CreateWindow(Config)
 	LockButton.TextColor3 = Color3.new(1, 1, 1)
 	LockButton.FontFace = self.Fonts.Button
 	LockButton.TextSize = 11
-	LockButton.Text = "LOCK"
-	LockButton.TextXAlignment = Enum.TextXAlignment.Left
+	LockButton.Text = ""
 	LockButton.Parent = ControlsHolder
 	Corner(LockButton, 6)
-	Padding(LockButton, 25, 7, 0, 0)
 	local LockIcon =
 		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(13, 13), Color3.new(1, 1, 1), 2)
+	local LockText = Instance.new("TextLabel")
+	LockText.BackgroundTransparency = 1
+	LockText.Position = UDim2.fromOffset(25, 0)
+	LockText.Size = UDim2.new(1, -29, 1, 0)
+	LockText.FontFace = self.Fonts.Button
+	LockText.Text = "LOCK"
+	LockText.TextSize = 11
+	LockText.TextColor3 = Color3.new(1, 1, 1)
+	LockText.TextXAlignment = Enum.TextXAlignment.Left
+	LockText.Parent = LockButton
 
 	-- Main Display Container
 	local ContentArea = Instance.new("ScrollingFrame")
@@ -504,6 +508,7 @@ function Wolf:CreateWindow(Config)
 	local SidebarWidth = 190
 	local SidebarMinWidth = 140
 	local SidebarMaxWidth = 300
+	local SidebarRatio = SidebarWidth / 720
 
 	local function UpdateSidebarLayout()
 		Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
@@ -571,6 +576,7 @@ function Wolf:CreateWindow(Config)
 				SidebarMinWidth,
 				SidebarMaxWidth
 			)
+			SidebarRatio = SidebarWidth / MainFrame.AbsoluteSize.X
 			UpdateSidebarLayout()
 		end
 
@@ -586,8 +592,10 @@ function Wolf:CreateWindow(Config)
 			-- Calculate new pixel sizes within constraints
 			local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
 			local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
+			SidebarWidth = math.clamp(NewWidth * SidebarRatio, SidebarMinWidth, SidebarMaxWidth)
 
 			MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
+			UpdateSidebarLayout()
 		end
 	end)
 
@@ -637,7 +645,7 @@ function Wolf:CreateWindow(Config)
 	-- Lock Handler
 	LockButton.MouseButton1Click:Connect(function()
 		self.Locked = not self.Locked
-		LockButton.Text = self.Locked and "UNLOCK" or "LOCK"
+		LockText.Text = self.Locked and "UNLOCK" or "LOCK"
 		ApplyIcon(LockIcon, self.Locked and "unlock" or "lock")
 		Tween(LockButton, {
 			BackgroundColor3 = self.Locked and self.Theme.Surface or self.Theme.AccentDark,
@@ -647,11 +655,37 @@ function Wolf:CreateWindow(Config)
 	-- Search Filter Logic
 	SearchBox:GetPropertyChangedSignal("Text"):Connect(function()
 		local Query = SearchBox.Text:lower()
+		local FirstMatchTab
+		if Query ~= "" then
+			for _, ExistingTab in ipairs(self.Tabs) do
+				ExistingTab.Page.Visible = false
+			end
+		end
 		for _, ElementData in ipairs(self.Elements) do
-			if ElementData.Text:lower():find(Query) then
-				ElementData.Frame.Visible = true
-			else
-				ElementData.Frame.Visible = false
+			local Match = Query == "" or tostring(ElementData.Text):lower():find(Query, 1, true) ~= nil
+			ElementData.Frame.Visible = Match
+			if Match then
+				for _, ExistingTab in ipairs(self.Tabs) do
+					if ElementData.Frame:IsDescendantOf(ExistingTab.Page) then
+						FirstMatchTab = FirstMatchTab or ExistingTab
+						ExistingTab.Page.Visible = true
+						local Parent = ElementData.Frame.Parent
+						while Parent and Parent ~= ExistingTab.Page do
+							if Parent:IsA("GuiObject") then
+								Parent.Visible = true
+							end
+							Parent = Parent.Parent
+						end
+					end
+				end
+			end
+		end
+		if Query ~= "" and FirstMatchTab then
+			self.ActiveTab = FirstMatchTab
+		end
+		if Query == "" then
+			for _, ExistingTab in ipairs(self.Tabs) do
+				ExistingTab.Page.Visible = ExistingTab == self.ActiveTab
 			end
 		end
 	end)
@@ -705,16 +739,26 @@ function Wolf:AddTab(Config)
 	TabButton.BackgroundColor3 = self.Theme.Card
 	TabButton.TextColor3 = self.Theme.Text
 	TabButton.FontFace = self.Fonts.Body
-	TabButton.Text = TabTitle
+	TabButton.Text = ""
 	TabButton.TextSize = 12
-	TabButton.TextXAlignment = Enum.TextXAlignment.Left
-	TabButton.TextTruncate = Enum.TextTruncate.AtEnd
 	TabButton.ZIndex = 2
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
 	Padding(TabButton, TabIcon and 32 or 12, 8, 0, 0)
 	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(9, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
+	local TabText = Instance.new("TextLabel")
+	TabText.BackgroundTransparency = 1
+	TabText.Position = UDim2.fromOffset(TabIcon and 31 or 12, 0)
+	TabText.Size = UDim2.new(1, TabIcon and -39 or -20, 1, 0)
+	TabText.FontFace = self.Fonts.Body
+	TabText.Text = TabTitle
+	TabText.TextSize = 12
+	TabText.TextColor3 = self.Theme.Text
+	TabText.TextXAlignment = Enum.TextXAlignment.Left
+	TabText.TextTruncate = Enum.TextTruncate.AtEnd
+	TabText.ZIndex = 4
+	TabText.Parent = TabButton
 
 	local Tab = setmetatable({
 		Library = self,
@@ -1291,13 +1335,20 @@ function Wolf:AddDropdown(Config)
 	)
 	Chevron.AnchorPoint = Vector2.new(0, 0.5)
 
-	local OptionsFrame = Instance.new("Frame")
+	local OptionsFrame = Instance.new("ScrollingFrame")
 	OptionsFrame.Name = "Options"
-	OptionsFrame.Size = UDim2.new(1, 0, 0, 0)
-	OptionsFrame.AutomaticSize = Enum.AutomaticSize.Y
-	OptionsFrame.BackgroundTransparency = 1
+	OptionsFrame.Size = UDim2.fromOffset(220, 140)
+	OptionsFrame.CanvasSize = UDim2.new()
+	OptionsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	OptionsFrame.BackgroundColor3 = self.Theme.Surface
+	OptionsFrame.BorderSizePixel = 0
+	OptionsFrame.ScrollBarThickness = 3
+	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
-	OptionsFrame.Parent = DropdownFrame
+	OptionsFrame.ZIndex = 50
+	OptionsFrame.Parent = self.Library.Gui
+	Corner(OptionsFrame, 6)
+	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
 
 	local OptionsLayout = Instance.new("UIListLayout")
@@ -1327,6 +1378,7 @@ function Wolf:AddDropdown(Config)
 		OptionButton.FontFace = self.Fonts.Small
 		OptionButton.TextSize = 11
 		OptionButton.TextXAlignment = Enum.TextXAlignment.Left
+		OptionButton.ZIndex = 51
 		OptionButton.Parent = OptionsFrame
 		Padding(OptionButton, 10, 8, 0, 0)
 		Corner(OptionButton, 4)
@@ -1340,6 +1392,10 @@ function Wolf:AddDropdown(Config)
 	ValueLabel.Text = Selected == nil and "Select..." or tostring(Selected)
 	DropdownButton.MouseButton1Click:Connect(function()
 		OptionsFrame.Visible = not OptionsFrame.Visible
+		OptionsFrame.Position = UDim2.fromOffset(
+			DropdownButton.AbsolutePosition.X,
+			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
+		)
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
@@ -1422,13 +1478,20 @@ function Wolf:AddMultiDropdown(Config)
 	)
 	Chevron.AnchorPoint = Vector2.new(0, 0.5)
 
-	local OptionsFrame = Instance.new("Frame")
+	local OptionsFrame = Instance.new("ScrollingFrame")
 	OptionsFrame.Name = "Options"
-	OptionsFrame.Size = UDim2.new(1, 0, 0, 0)
-	OptionsFrame.AutomaticSize = Enum.AutomaticSize.Y
-	OptionsFrame.BackgroundTransparency = 1
+	OptionsFrame.Size = UDim2.fromOffset(220, 140)
+	OptionsFrame.CanvasSize = UDim2.new()
+	OptionsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	OptionsFrame.BackgroundColor3 = self.Theme.Surface
+	OptionsFrame.BorderSizePixel = 0
+	OptionsFrame.ScrollBarThickness = 3
+	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
-	OptionsFrame.Parent = DropdownFrame
+	OptionsFrame.ZIndex = 50
+	OptionsFrame.Parent = self.Library.Gui
+	Corner(OptionsFrame, 6)
+	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
 
 	local OptionsLayout = Instance.new("UIListLayout")
@@ -1463,6 +1526,7 @@ function Wolf:AddMultiDropdown(Config)
 		OptionButton.FontFace = self.Fonts.Small
 		OptionButton.TextSize = 11
 		OptionButton.TextXAlignment = Enum.TextXAlignment.Left
+		OptionButton.ZIndex = 51
 		OptionButton.Parent = OptionsFrame
 		Padding(OptionButton, 10, 8, 0, 0)
 		Corner(OptionButton, 4)
@@ -1477,6 +1541,10 @@ function Wolf:AddMultiDropdown(Config)
 	UpdateValueLabel()
 	DropdownButton.MouseButton1Click:Connect(function()
 		OptionsFrame.Visible = not OptionsFrame.Visible
+		OptionsFrame.Position = UDim2.fromOffset(
+			DropdownButton.AbsolutePosition.X,
+			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
+		)
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
