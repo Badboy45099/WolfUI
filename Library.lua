@@ -162,6 +162,10 @@ local function Padding(Object, L, R, T, B)
 	return P
 end
 
+local function ElementParent(Tab)
+	return Tab.CurrentSectionContent or Tab.Page
+end
+
 ---------------------------------------------------------------------
 -- WINDOW CREATION
 ---------------------------------------------------------------------
@@ -219,6 +223,17 @@ function Wolf:CreateWindow(Config)
 	Divider.BackgroundColor3 = self.Theme.Border
 	Divider.Parent = Sidebar
 
+	local SidebarResizeHandle = Instance.new("TextButton")
+	SidebarResizeHandle.Name = "SidebarResizeHandle"
+	SidebarResizeHandle.Position = UDim2.new(0, 186, 0, 0)
+	SidebarResizeHandle.Size = UDim2.new(0, 8, 1, 0)
+	SidebarResizeHandle.BackgroundTransparency = 1
+	SidebarResizeHandle.Text = ""
+	SidebarResizeHandle.AutoButtonColor = false
+	SidebarResizeHandle.Active = true
+	SidebarResizeHandle.ZIndex = 20
+	SidebarResizeHandle.Parent = MainFrame
+
 	-- Profile Card
 	local ProfileCard = Instance.new("Frame")
 	ProfileCard.Size = UDim2.new(1, 0, 0, 110)
@@ -246,7 +261,7 @@ function Wolf:CreateWindow(Config)
 	local PlayerName = Instance.new("TextLabel")
 	PlayerName.BackgroundTransparency = 1
 	PlayerName.Position = UDim2.fromOffset(68, 20)
-	PlayerName.Size = UDim2.fromOffset(110, 18)
+	PlayerName.Size = UDim2.new(1, -76, 0, 18)
 	PlayerName.FontFace = self.Fonts.Body
 	PlayerName.TextSize = 14
 	PlayerName.TextColor3 = self.Theme.Text
@@ -258,7 +273,7 @@ function Wolf:CreateWindow(Config)
 	local Username = Instance.new("TextLabel")
 	Username.BackgroundTransparency = 1
 	Username.Position = UDim2.fromOffset(68, 38)
-	Username.Size = UDim2.fromOffset(110, 15)
+	Username.Size = UDim2.new(1, -76, 0, 15)
 	Username.FontFace = self.Fonts.Small
 	Username.TextSize = 10
 	Username.TextColor3 = self.Theme.SubText
@@ -277,8 +292,8 @@ function Wolf:CreateWindow(Config)
 
 	local DeviceLabel = Instance.new("TextLabel")
 	DeviceLabel.BackgroundTransparency = 1
-	DeviceLabel.Position = UDim2.new(1, -120, 0, 78)
-	DeviceLabel.Size = UDim2.fromOffset(130, 18)
+	DeviceLabel.Position = UDim2.fromOffset(12, 78)
+	DeviceLabel.Size = UDim2.new(1, -60, 0, 18)
 	DeviceLabel.FontFace = self.Fonts.Small
 	DeviceLabel.TextSize = 11
 	DeviceLabel.TextColor3 = self.Theme.SubText
@@ -408,7 +423,7 @@ function Wolf:CreateWindow(Config)
 	LockButton.Parent = ControlsHolder
 	Corner(LockButton, 6)
 	local LockIcon =
-		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 0), UDim2.fromOffset(16, 30), Color3.new(1, 1, 1), 2)
+		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(14, 14), Color3.new(1, 1, 1), 2)
 
 	-- Main Display Container
 	local ContentArea = Instance.new("ScrollingFrame")
@@ -462,7 +477,7 @@ function Wolf:CreateWindow(Config)
 	ResizeIcon.Name = "ResizeIcon"
 	ResizeIcon.AnchorPoint = Vector2.new(1, 0.5)
 	ResizeIcon.Position = UDim2.new(1, -6, 1, -6)
-	ResizeIcon.Size = UDim2.fromOffset(28, 28)
+	ResizeIcon.Size = UDim2.fromOffset(16, 16)
 	ResizeIcon.BackgroundTransparency = 1
 	ResizeIcon.AutoButtonColor = false
 	ResizeIcon.Active = true
@@ -485,6 +500,39 @@ function Wolf:CreateWindow(Config)
 	-- Maximum allowed window dimensions
 	local MaxSize = Vector2.new(1000, 700)
 
+	local SidebarWidth = 190
+	local SidebarMinWidth = 140
+	local SidebarMaxWidth = 300
+
+	local function UpdateSidebarLayout()
+		Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
+		SidebarResizeHandle.Position = UDim2.new(0, SidebarWidth - 4, 0, 0)
+		HeaderFrame.Position = UDim2.new(0, SidebarWidth, 0, 0)
+		HeaderFrame.Size = UDim2.new(1, -SidebarWidth, 0, 52)
+		ContentArea.Position = UDim2.new(0, SidebarWidth, 0, 52)
+		ContentArea.Size = UDim2.new(1, -SidebarWidth, 1, -76)
+		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
+		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
+	end
+
+	local sidebarResizing = false
+	local sidebarResizeStartX
+	local sidebarResizeStartWidth
+
+	SidebarResizeHandle.InputBegan:Connect(function(input)
+		if
+			not self.Locked
+			and (
+				input.UserInputType == Enum.UserInputType.MouseButton1
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			sidebarResizing = true
+			sidebarResizeStartX = input.Position.X
+			sidebarResizeStartWidth = SidebarWidth
+		end
+	end)
+
 	ResizeIcon.InputBegan:Connect(function(input)
 		if
 			not self.Locked
@@ -505,10 +553,26 @@ function Wolf:CreateWindow(Config)
 			or input.UserInputType == Enum.UserInputType.Touch
 		then
 			resizing = false
+			sidebarResizing = false
 		end
 	end)
 
 	UserInputService.InputChanged:Connect(function(input)
+		if
+			sidebarResizing
+			and (
+				input.UserInputType == Enum.UserInputType.MouseMovement
+				or input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			SidebarWidth = math.clamp(
+				sidebarResizeStartWidth + (input.Position.X - sidebarResizeStartX),
+				SidebarMinWidth,
+				SidebarMaxWidth
+			)
+			UpdateSidebarLayout()
+		end
+
 		if
 			resizing
 			and (
@@ -689,7 +753,7 @@ function Wolf:AddToggle(Idx, Config)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
-	ToggleFrame.Parent = self.Page
+	ToggleFrame.Parent = ElementParent(self)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -764,7 +828,7 @@ function Wolf:AddButton(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
-	ButtonFrame.Parent = self.Page
+	ButtonFrame.Parent = ElementParent(self)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -804,25 +868,77 @@ function Wolf:AddSection(Title)
 	local SectionConfig = typeof(Title) == "table" and Title or { Title = Title }
 	local SectionTitle = SectionConfig.Title or SectionConfig.title or "Section"
 	local IconName = SectionConfig.Icon or SectionConfig.icon
+	local Collapsed = SectionConfig.Collapsed == true
 	local SectionFrame = Instance.new("Frame")
 	SectionFrame.Size = UDim2.new(1, 0, 0, 24)
-	SectionFrame.BackgroundTransparency = 1
+	SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
+	SectionFrame.BackgroundColor3 = self.Theme.Card
 	SectionFrame.Parent = self.Page
+	Corner(SectionFrame, 6)
+	Stroke(SectionFrame, self.Theme.Border)
+
+	local SectionLayout = Instance.new("UIListLayout")
+	SectionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	SectionLayout.Padding = UDim.new(0, 0)
+	SectionLayout.Parent = SectionFrame
+
+	local SectionHeader = Instance.new("TextButton")
+	SectionHeader.Name = "SectionHeader"
+	SectionHeader.Size = UDim2.new(1, 0, 0, 30)
+	SectionHeader.LayoutOrder = 1
+	SectionHeader.BackgroundTransparency = 1
+	SectionHeader.Text = ""
+	SectionHeader.AutoButtonColor = false
+	SectionHeader.Parent = SectionFrame
 
 	local Label = Instance.new("TextLabel")
-	Label.Size = UDim2.new(1, 0, 1, 0)
+	Label.Position = UDim2.fromOffset(12, 0)
+	Label.Size = UDim2.new(1, -42, 1, 0)
 	Label.BackgroundTransparency = 1
 	Label.FontFace = self.Fonts.Title
 	Label.Text = tostring(SectionTitle):upper()
 	Label.TextColor3 = self.Theme.Accent
 	Label.TextSize = 11
 	Label.TextXAlignment = Enum.TextXAlignment.Left
-	Label.Parent = SectionFrame
+	Label.Parent = SectionHeader
 	if IconName then
-		Label.Position = UDim2.fromOffset(24, 0)
-		Label.Size = UDim2.new(1, -24, 1, 0)
-		CreateIcon(SectionFrame, IconName, UDim2.fromOffset(0, 4), UDim2.fromOffset(16, 16), self.Theme.Accent, 2)
+		Label.Position = UDim2.fromOffset(36, 0)
+		Label.Size = UDim2.new(1, -66, 1, 0)
+		CreateIcon(SectionHeader, IconName, UDim2.fromOffset(12, 7), UDim2.fromOffset(16, 16), self.Theme.Accent, 2)
 	end
+
+	local Chevron = CreateIcon(
+		SectionHeader,
+		Collapsed and "chevron-down" or "chevron-up",
+		UDim2.new(1, -28, 0.5, 0),
+		UDim2.fromOffset(16, 16),
+		self.Theme.SubText,
+		2
+	)
+	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+
+	local SectionContent = Instance.new("Frame")
+	SectionContent.Name = "SectionContent"
+	SectionContent.Size = UDim2.new(1, 0, 0, 0)
+	SectionContent.AutomaticSize = Enum.AutomaticSize.Y
+	SectionContent.LayoutOrder = 2
+	SectionContent.BackgroundTransparency = 1
+	SectionContent.Visible = not Collapsed
+	SectionContent.Parent = SectionFrame
+	Padding(SectionContent, 8, 8, 0, 8)
+
+	local ContentLayout = Instance.new("UIListLayout")
+	ContentLayout.Padding = UDim.new(0, 8)
+	ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	ContentLayout.Parent = SectionContent
+
+	SectionHeader.MouseButton1Click:Connect(function()
+		Collapsed = not Collapsed
+		SectionContent.Visible = not Collapsed
+		ApplyIcon(Chevron, Collapsed and "chevron-down" or "chevron-up")
+	end)
+
+	self.CurrentSectionContent = SectionContent
 
 	table.insert(self.Library.Elements, { Text = SectionTitle, Frame = SectionFrame })
 	return SectionFrame
@@ -838,7 +954,7 @@ function Wolf:AddButton(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
-	ButtonFrame.Parent = self.Page
+	ButtonFrame.Parent = ElementParent(self)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -890,7 +1006,7 @@ function Wolf:AddToggle(Config)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
-	ToggleFrame.Parent = self.Page
+	ToggleFrame.Parent = ElementParent(self)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -964,7 +1080,7 @@ function Wolf:AddSlider(Config)
 	local SliderFrame = Instance.new("Frame")
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
 	SliderFrame.BackgroundColor3 = self.Theme.Card
-	SliderFrame.Parent = self.Page
+	SliderFrame.Parent = ElementParent(self)
 	Corner(SliderFrame, 6)
 	Stroke(SliderFrame, self.Theme.Border)
 
@@ -1063,7 +1179,7 @@ function Wolf:AddTextbox(Config)
 	local InputFrame = Instance.new("Frame")
 	InputFrame.Size = UDim2.new(1, 0, 0, 36)
 	InputFrame.BackgroundColor3 = self.Theme.Card
-	InputFrame.Parent = self.Page
+	InputFrame.Parent = ElementParent(self)
 	Corner(InputFrame, 6)
 	Stroke(InputFrame, self.Theme.Border)
 
