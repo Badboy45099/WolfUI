@@ -184,6 +184,49 @@ function Wolf:CreateWindow(Config)
 		end
 	end)
 
+	if ParentContainer:FindFirstChild("WolfUILoading") then
+		ParentContainer.WolfUILoading:Destroy()
+	end
+
+	local LoadingGui = Instance.new("ScreenGui")
+	LoadingGui.Name = "WolfUILoading"
+	LoadingGui.ResetOnSpawn = false
+	LoadingGui.DisplayOrder = 200
+	LoadingGui.Parent = ParentContainer
+
+	local LoadingFrame = Instance.new("Frame")
+	LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+	LoadingFrame.Position = UDim2.fromScale(0.5, 0.5)
+	LoadingFrame.Size = UDim2.fromOffset(112, 112)
+	LoadingFrame.BackgroundColor3 = self.Theme.Background
+	LoadingFrame.BackgroundTransparency = 0.12
+	LoadingFrame.BorderSizePixel = 0
+	LoadingFrame.Parent = LoadingGui
+	Corner(LoadingFrame, 12)
+	local LoadingStroke = Stroke(LoadingFrame, self.Theme.Accent, 0.25)
+
+	local LoadingImage = Instance.new("ImageLabel")
+	LoadingImage.AnchorPoint = Vector2.new(0.5, 0.5)
+	LoadingImage.Position = UDim2.fromScale(0.5, 0.5)
+	LoadingImage.Size = UDim2.fromOffset(64, 64)
+	LoadingImage.BackgroundTransparency = 1
+	LoadingImage.Image = "rbxthumb://type=Asset&id=112381138279003&w=150&h=150"
+	LoadingImage.ImageColor3 = self.Theme.Text
+	LoadingImage.Parent = LoadingFrame
+
+	local LoadingStarted = os.clock()
+	local LoadingConnection
+	LoadingConnection = RunService.RenderStepped:Connect(function()
+		if not LoadingGui.Parent then
+			LoadingConnection:Disconnect()
+			return
+		end
+		local Elapsed = os.clock() - LoadingStarted
+		LoadingImage.Rotation = (Elapsed * 180) % 360
+		LoadingImage.Size = UDim2.fromOffset(64 * math.abs(math.cos(Elapsed * 4)) + 10, 64)
+		LoadingStroke.Transparency = 0.2 + (math.sin(Elapsed * 5) + 1) * 0.25
+	end)
+
 	if ParentContainer:FindFirstChild("WolfUI") then
 		ParentContainer.WolfUI:Destroy()
 	end
@@ -612,6 +655,14 @@ function Wolf:CreateWindow(Config)
 	MainFrame.BackgroundTransparency = 1
 	task.defer(function()
 		SetUIVisible(true)
+		task.delay(0.34, function()
+			if LoadingConnection then
+				LoadingConnection:Disconnect()
+			end
+			if LoadingGui.Parent then
+				LoadingGui:Destroy()
+			end
+		end)
 	end)
 
 	---------------------------------------------------------
@@ -667,11 +718,8 @@ function Wolf:CreateWindow(Config)
 				local Y = AnchorPosition.Y + AnchorSize.Y + 4
 				local MinX = WindowPosition.X + 4
 				local MaxX = WindowPosition.X + WindowSize.X - FrameSize.X - 4
-				local MinY = WindowPosition.Y + 4
-				local MaxY = WindowPosition.Y + WindowSize.Y - FrameSize.Y - 4
 
 				X = math.clamp(X, MinX, math.max(MinX, MaxX))
-				Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
 				Dropdown.Frame.Position = UDim2.fromOffset(X, Y)
 			end
 		end
@@ -1430,7 +1478,7 @@ function Wolf:AddTextbox(Config)
 end
 
 -- Color picker component
-function Wolf:AddColorPicker(Config)
+function Wolf:AddRGBColorPickerLegacy(Config)
 	Config = Config or {}
 	local Title = Config.Title or "Color"
 	local IconName = Config.Icon or Config.icon or "pipette"
@@ -1550,6 +1598,334 @@ function Wolf:AddColorPicker(Config)
 					Inputs[Index].Text = tostring(math.floor(ChannelValue(Value, Channel) * 255 + 0.5))
 				end
 				UpdateColor()
+			end
+		end,
+		Value = CurrentColor,
+	}
+end
+
+function Wolf:AddColorPicker(Config)
+	Config = Config or {}
+	local Title = Config.Title or "Color"
+	local IconName = Config.Icon or Config.icon or "pipette"
+	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
+	local Callback = Config.Callback or function() end
+	local H, S, V = Default:ToHSV()
+	local A = Config.Alpha == nil and 1 or math.clamp(Config.Alpha, 0, 1)
+
+	local PickerFrame = Instance.new("Frame")
+	PickerFrame.Name = "ColorPicker"
+	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
+	PickerFrame.BackgroundColor3 = self.Theme.Card
+	PickerFrame.Parent = ElementParent(self)
+	Corner(PickerFrame, 6)
+	Stroke(PickerFrame, self.Theme.Border)
+
+	local Label = Instance.new("TextLabel")
+	Label.Position = UDim2.fromOffset(36, 0)
+	Label.Size = UDim2.new(1, -88, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.FontFace = self.Fonts.Body
+	Label.Text = Title
+	Label.TextColor3 = self.Theme.Text
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = PickerFrame
+	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+
+	local Swatch = Instance.new("TextButton")
+	Swatch.Name = "ColorSwatch"
+	Swatch.AnchorPoint = Vector2.new(1, 0.5)
+	Swatch.Position = UDim2.new(1, -10, 0.5, 0)
+	Swatch.Size = UDim2.fromOffset(42, 22)
+	Swatch.BackgroundColor3 = Default
+	Swatch.Text = ""
+	Swatch.AutoButtonColor = false
+	Swatch.Parent = PickerFrame
+	Corner(Swatch, 4)
+	Stroke(Swatch, self.Theme.Border)
+
+	local Popup = Instance.new("Frame")
+	Popup.Name = "ColorPickerPopup"
+	Popup.Size = UDim2.fromOffset(260, 220)
+	Popup.BackgroundColor3 = self.Theme.Background
+	Popup.BackgroundTransparency = 0.05
+	Popup.Visible = false
+	Popup.ZIndex = 50
+	Popup.Parent = self.Library.Gui
+	Corner(Popup, 8)
+	Stroke(Popup, self.Theme.Border)
+	Padding(Popup, 8, 8, 8, 8)
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, 8)
+	Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	Layout.Parent = Popup
+
+	local function NewBar(Name, Height)
+		local Bar = Instance.new("Frame")
+		Bar.Name = Name
+		Bar.Size = UDim2.new(1, 0, 0, Height)
+		Bar.BorderSizePixel = 0
+		Bar.ClipsDescendants = false
+		Bar.ZIndex = 51
+		Bar.Parent = Popup
+		Corner(Bar, 6)
+		return Bar
+	end
+
+	local SatValBox = NewBar("SaturationValue", 110)
+	SatValBox.BackgroundColor3 = Color3.new(1, 1, 1)
+	local SatGradient = Instance.new("UIGradient")
+	SatGradient.Parent = SatValBox
+	local ValOverlay = Instance.new("Frame")
+	ValOverlay.Size = UDim2.fromScale(1, 1)
+	ValOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
+	ValOverlay.BorderSizePixel = 0
+	ValOverlay.ZIndex = 52
+	ValOverlay.Parent = SatValBox
+	Corner(ValOverlay, 6)
+	local ValGradient = Instance.new("UIGradient")
+	ValGradient.Rotation = 90
+	ValGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	ValGradient.Parent = ValOverlay
+
+	local SVCursor = Instance.new("Frame")
+	SVCursor.Size = UDim2.fromOffset(14, 14)
+	SVCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+	SVCursor.BackgroundTransparency = 1
+	SVCursor.BorderSizePixel = 0
+	SVCursor.ZIndex = 55
+	SVCursor.Parent = ValOverlay
+	Corner(SVCursor, 7)
+	Stroke(SVCursor, Color3.new(1, 1, 1), 0)
+
+	local HueBar = NewBar("Hue", 14)
+	local HueGradient = Instance.new("UIGradient")
+	HueGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
+		ColorSequenceKeypoint.new(0.16, Color3.fromRGB(255, 255, 0)),
+		ColorSequenceKeypoint.new(0.33, Color3.fromRGB(0, 255, 0)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 255, 255)),
+		ColorSequenceKeypoint.new(0.66, Color3.fromRGB(0, 0, 255)),
+		ColorSequenceKeypoint.new(0.83, Color3.fromRGB(255, 0, 255)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 0, 0)),
+	})
+	HueGradient.Parent = HueBar
+
+	local HueCursor = Instance.new("Frame")
+	HueCursor.Size = UDim2.fromOffset(10, 20)
+	HueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+	HueCursor.BackgroundTransparency = 1
+	HueCursor.ZIndex = 55
+	HueCursor.Parent = HueBar
+	Corner(HueCursor, 4)
+	Stroke(HueCursor, Color3.new(1, 1, 1), 0)
+
+	local AlphaBar = NewBar("Alpha", 14)
+	local AlphaCanvas = Instance.new("Frame")
+	AlphaCanvas.Size = UDim2.fromScale(1, 1)
+	AlphaCanvas.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+	AlphaCanvas.BorderSizePixel = 0
+	AlphaCanvas.ZIndex = 51
+	AlphaCanvas.Parent = AlphaBar
+	Corner(AlphaCanvas, 6)
+	local Grid = Instance.new("UIGridLayout")
+	Grid.CellSize = UDim2.new(1 / 30, 0, 0.5, 0)
+	Grid.CellPadding = UDim2.fromOffset(0, 0)
+	Grid.Parent = AlphaCanvas
+	for Row = 1, 2 do
+		for Column = 1, 30 do
+			local Tile = Instance.new("Frame")
+			Tile.BorderSizePixel = 0
+			Tile.BackgroundColor3 = (Row + Column) % 2 == 0 and Color3.fromRGB(220, 220, 220)
+				or Color3.fromRGB(80, 80, 80)
+			Tile.BackgroundTransparency = 0.35
+			Tile.Parent = AlphaCanvas
+		end
+	end
+	local AlphaOverlay = Instance.new("Frame")
+	AlphaOverlay.Size = UDim2.fromScale(1, 1)
+	AlphaOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
+	AlphaOverlay.BorderSizePixel = 0
+	AlphaOverlay.ZIndex = 52
+	AlphaOverlay.Parent = AlphaCanvas
+	local AlphaGradient = Instance.new("UIGradient")
+	AlphaGradient.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.85),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	AlphaGradient.Parent = AlphaOverlay
+
+	local AlphaCursor = Instance.new("Frame")
+	AlphaCursor.Size = UDim2.fromOffset(10, 20)
+	AlphaCursor.AnchorPoint = Vector2.new(0.5, 0.5)
+	AlphaCursor.BackgroundTransparency = 1
+	AlphaCursor.ZIndex = 55
+	AlphaCursor.Parent = AlphaBar
+	Corner(AlphaCursor, 4)
+	Stroke(AlphaCursor, Color3.new(1, 1, 1), 0)
+
+	local Footer = Instance.new("Frame")
+	Footer.Size = UDim2.new(1, 0, 0, 32)
+	Footer.BackgroundTransparency = 1
+	Footer.LayoutOrder = 4
+	Footer.ZIndex = 51
+	Footer.Parent = Popup
+	local HexBox = Instance.new("TextBox")
+	HexBox.Size = UDim2.new(1, -40, 1, 0)
+	HexBox.BackgroundColor3 = self.Theme.Card
+	HexBox.TextColor3 = self.Theme.Text
+	HexBox.PlaceholderColor3 = self.Theme.SubText
+	HexBox.FontFace = self.Fonts.Small
+	HexBox.TextSize = 11
+	HexBox.TextXAlignment = Enum.TextXAlignment.Left
+	HexBox.ClearTextOnFocus = false
+	HexBox.ZIndex = 52
+	HexBox.Parent = Footer
+	Corner(HexBox, 6)
+	Stroke(HexBox, self.Theme.Border)
+	Padding(HexBox, 10, 4, 0, 0)
+	local AlphaInput = Instance.new("TextBox")
+	AlphaInput.AnchorPoint = Vector2.new(1, 0)
+	AlphaInput.Position = UDim2.new(0.6, 1, 0, 0)
+	AlphaInput.Size = UDim2.new(0.4, -1, 1, 0)
+	AlphaInput.BackgroundColor3 = self.Theme.Card
+	AlphaInput.TextColor3 = self.Theme.Text
+	AlphaInput.FontFace = self.Fonts.Small
+	AlphaInput.TextSize = 10
+	AlphaInput.TextXAlignment = Enum.TextXAlignment.Center
+	AlphaInput.ClearTextOnFocus = false
+	AlphaInput.ZIndex = 53
+	AlphaInput.Parent = Footer
+	Corner(AlphaInput, 6)
+	Stroke(AlphaInput, self.Theme.Border)
+
+	local PipetteButton = Instance.new("ImageButton")
+	PipetteButton.AnchorPoint = Vector2.new(1, 0)
+	PipetteButton.Position = UDim2.new(1, 0, 0, 0)
+	PipetteButton.Size = UDim2.fromOffset(32, 32)
+	PipetteButton.BackgroundColor3 = self.Theme.Card
+	PipetteButton.BackgroundTransparency = 0.1
+	PipetteButton.AutoButtonColor = false
+	PipetteButton.ZIndex = 54
+	PipetteButton.Parent = Footer
+	Corner(PipetteButton, 6)
+	Stroke(PipetteButton, self.Theme.Border)
+	ApplyIcon(PipetteButton, "pipette")
+	PipetteButton.ImageColor3 = self.Theme.Text
+
+	local CurrentColor = Default
+	local function UpdateUI(SkipText)
+		CurrentColor = Color3.fromHSV(H, S, V)
+		SatGradient.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(1, Color3.fromHSV(H, 1, 1)),
+		})
+		AlphaGradient.Color = ColorSequence.new(CurrentColor)
+		SVCursor.Position = UDim2.new(S, 0, 1 - V, 0)
+		HueCursor.Position = UDim2.new(H, 0, 0.5, 0)
+		AlphaCursor.Position = UDim2.new(A, 0, 0.5, 0)
+		Swatch.BackgroundColor3 = CurrentColor
+		if not SkipText then
+			HexBox.Text = "#" .. CurrentColor:ToHex():upper()
+			AlphaInput.Text = tostring(math.round(A * 100)) .. "%"
+		end
+		Callback(CurrentColor, A)
+	end
+
+	local ActiveSlider
+	local function BindSlider(Frame, Update)
+		Frame.InputBegan:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseButton1
+				or Input.UserInputType == Enum.UserInputType.Touch
+			then
+				ActiveSlider = Update
+				Update(Input)
+			end
+		end)
+	end
+	BindSlider(SatValBox, function(Input)
+		local Size = SatValBox.AbsoluteSize
+		local Position = SatValBox.AbsolutePosition
+		S = math.clamp((Input.Position.X - Position.X) / Size.X, 0, 1)
+		V = math.clamp(1 - (Input.Position.Y - Position.Y) / Size.Y, 0, 1)
+		UpdateUI(false)
+	end)
+	BindSlider(HueBar, function(Input)
+		H = math.clamp((Input.Position.X - HueBar.AbsolutePosition.X) / HueBar.AbsoluteSize.X, 0, 1)
+		UpdateUI(false)
+	end)
+	BindSlider(AlphaBar, function(Input)
+		A = math.clamp((Input.Position.X - AlphaBar.AbsolutePosition.X) / AlphaBar.AbsoluteSize.X, 0, 1)
+		UpdateUI(false)
+	end)
+	UserInputService.InputChanged:Connect(function(Input)
+		if
+			ActiveSlider
+			and (
+				Input.UserInputType == Enum.UserInputType.MouseMovement
+				or Input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			ActiveSlider(Input)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(Input)
+		if
+			Input.UserInputType == Enum.UserInputType.MouseButton1
+			or Input.UserInputType == Enum.UserInputType.Touch
+		then
+			ActiveSlider = nil
+		end
+	end)
+
+	HexBox.FocusLost:Connect(function()
+		local Success, Parsed = pcall(Color3.fromHex, HexBox.Text:gsub("#", ""))
+		if Success and Parsed then
+			H, S, V = Parsed:ToHSV()
+		end
+		UpdateUI(false)
+	end)
+	AlphaInput.FocusLost:Connect(function()
+		local Value = tonumber(AlphaInput.Text:match("%d+"))
+		if Value then
+			A = math.clamp(Value / 100, 0, 1)
+		end
+		UpdateUI(false)
+	end)
+
+	Swatch.MouseButton1Click:Connect(function()
+		local WasVisible = Popup.Visible
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
+		Popup.Visible = not WasVisible
+		if Popup.Visible then
+			table.insert(self.OpenDropdowns, { Frame = Popup, Anchor = Swatch })
+			self._UpdateDropdownPositions()
+		end
+	end)
+
+	PipetteButton.MouseButton1Click:Connect(function()
+		Swatch.BackgroundColor3 = CurrentColor
+	end)
+
+	UpdateUI(false)
+	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
+	return {
+		SetValue = function(_, Value, Alpha)
+			if typeof(Value) == "Color3" then
+				H, S, V = Value:ToHSV()
+				if Alpha ~= nil then
+					A = math.clamp(Alpha, 0, 1)
+				end
+				UpdateUI(false)
 			end
 		end,
 		Value = CurrentColor,
