@@ -6,6 +6,7 @@ local Wolf = {
 	Tabs = {},
 	ActiveTab = nil,
 	Elements = {},
+	OpenDropdowns = {},
 	Locked = false,
 }
 Wolf.__index = Wolf
@@ -172,6 +173,7 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	self.OpenDropdowns = {}
 
 	local ParentContainer = CoreGui
 	pcall(function()
@@ -314,7 +316,7 @@ function Wolf:CreateWindow(Config)
 	TabContainer.CanvasSize = UDim2.new()
 	TabContainer.Parent = Sidebar
 
-	Padding(TabContainer, 8, 8, 8, 8)
+	Padding(TabContainer, 2, 8, 8, 8)
 
 	local TabLayout = Instance.new("UIListLayout")
 	TabLayout.Padding = UDim.new(0, 4)
@@ -492,6 +494,60 @@ function Wolf:CreateWindow(Config)
 	ResizeIcon.Rotation = 90
 	ResizeIcon.Parent = MainFrame
 
+	local ToggleGui = Instance.new("ScreenGui")
+	ToggleGui.Name = "WolfUIToggle"
+	ToggleGui.ResetOnSpawn = false
+	ToggleGui.DisplayOrder = 100
+	ToggleGui.Parent = ParentContainer
+
+	local ToggleButton = Instance.new("ImageButton")
+	ToggleButton.Name = "ToggleButton"
+	ToggleButton.AnchorPoint = Vector2.new(0, 1)
+	ToggleButton.Position = UDim2.new(0, 18, 1, -18)
+	ToggleButton.Size = UDim2.fromOffset(46, 46)
+	ToggleButton.BackgroundColor3 = self.Theme.Card
+	ToggleButton.BackgroundTransparency = 0.08
+	ToggleButton.AutoButtonColor = false
+	ToggleButton.Image = "rbxthumb://type=Asset&id=112381138279003&w=150&h=150"
+	ToggleButton.ImageColor3 = self.Theme.Text
+	ToggleButton.ZIndex = 100
+	ToggleButton.Parent = ToggleGui
+	Corner(ToggleButton, 8)
+	Stroke(ToggleButton, self.Theme.Border)
+
+	local uiVisible = true
+	local TargetWindowSize = UDim2.fromOffset(720, 460)
+	local function SetUIVisible(Visible)
+		uiVisible = Visible
+		if Visible then
+			MainFrame.Visible = true
+			MainFrame.Size = UDim2.fromOffset(0, 0)
+			MainFrame.BackgroundTransparency = 1
+			Tween(MainFrame, { Size = TargetWindowSize, BackgroundTransparency = 0.05 }, 0.28)
+		else
+			if self._CloseDropdowns then
+				self._CloseDropdowns()
+			end
+			Tween(MainFrame, { Size = UDim2.fromOffset(0, 0), BackgroundTransparency = 1 }, 0.22)
+			task.delay(0.24, function()
+				if not uiVisible then
+					MainFrame.Visible = false
+				end
+			end)
+		end
+	end
+
+	ToggleButton.MouseButton1Click:Connect(function()
+		SetUIVisible(not uiVisible)
+	end)
+	self.SetVisible = SetUIVisible
+	self.ToggleButton = ToggleButton
+	MainFrame.Size = UDim2.fromOffset(0, 0)
+	MainFrame.BackgroundTransparency = 1
+	task.defer(function()
+		SetUIVisible(true)
+	end)
+
 	---------------------------------------------------------
 	-- RESIZING MECHANISM
 	---------------------------------------------------------
@@ -520,6 +576,15 @@ function Wolf:CreateWindow(Config)
 		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
 	end
+
+	local function CloseDropdowns()
+		for _, Dropdown in ipairs(self.OpenDropdowns) do
+			Dropdown.Frame.Visible = false
+			ApplyIcon(Dropdown.Chevron, "chevron-down")
+		end
+		table.clear(self.OpenDropdowns)
+	end
+	self._CloseDropdowns = CloseDropdowns
 
 	local sidebarResizing = false
 	local sidebarResizeStartX
@@ -746,7 +811,7 @@ function Wolf:AddTab(Config)
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
 	Padding(TabButton, TabIcon and 32 or 12, 8, 0, 0)
-	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(9, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
+	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(6, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
 	local TabText = Instance.new("TextLabel")
 	TabText.BackgroundTransparency = 1
 	TabText.Position = UDim2.fromOffset(TabIcon and 31 or 12, 0)
@@ -770,6 +835,9 @@ function Wolf:AddTab(Config)
 	table.insert(self.Tabs, Tab)
 
 	local function SelectTab()
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
 		for _, ExistingTab in ipairs(self.Tabs) do
 			ExistingTab.Page.Visible = ExistingTab == Tab
 			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.Accent or self.Theme.Card
@@ -1341,6 +1409,7 @@ function Wolf:AddDropdown(Config)
 	OptionsFrame.CanvasSize = UDim2.new()
 	OptionsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	OptionsFrame.BackgroundColor3 = self.Theme.Surface
+	OptionsFrame.BackgroundTransparency = 0.18
 	OptionsFrame.BorderSizePixel = 0
 	OptionsFrame.ScrollBarThickness = 3
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
@@ -1362,9 +1431,13 @@ function Wolf:AddDropdown(Config)
 		return tostring(Option), Option
 	end
 
+	local OptionIcons = {}
 	local function UpdateValue(Value)
 		Selected = Value
 		ValueLabel.Text = Value == nil and "Select..." or tostring(Value)
+		for OptionValue, OptionIcon in pairs(OptionIcons) do
+			OptionIcon.Visible = OptionValue == Selected
+		end
 		Callback(Value)
 	end
 
@@ -1373,7 +1446,7 @@ function Wolf:AddDropdown(Config)
 		local OptionButton = Instance.new("TextButton")
 		OptionButton.Size = UDim2.new(1, 0, 0, 28)
 		OptionButton.BackgroundColor3 = self.Theme.Surface
-		OptionButton.Text = OptionTitle
+		OptionButton.Text = ""
 		OptionButton.TextColor3 = self.Theme.Text
 		OptionButton.FontFace = self.Fonts.Small
 		OptionButton.TextSize = 11
@@ -1382,20 +1455,52 @@ function Wolf:AddDropdown(Config)
 		OptionButton.Parent = OptionsFrame
 		Padding(OptionButton, 10, 8, 0, 0)
 		Corner(OptionButton, 4)
+		local OptionIcon =
+			CreateIcon(OptionButton, "check", UDim2.fromOffset(8, 6), UDim2.fromOffset(16, 16), self.Theme.Accent, 52)
+		OptionIcon.Visible = OptionValue == Selected
+		OptionIcons[OptionValue] = OptionIcon
+		local OptionText = Instance.new("TextLabel")
+		OptionText.BackgroundTransparency = 1
+		OptionText.Position = UDim2.fromOffset(30, 0)
+		OptionText.Size = UDim2.new(1, -34, 1, 0)
+		OptionText.FontFace = self.Fonts.Small
+		OptionText.Text = OptionTitle
+		OptionText.TextColor3 = self.Theme.Text
+		OptionText.TextSize = 11
+		OptionText.TextXAlignment = Enum.TextXAlignment.Left
+		OptionText.ZIndex = 52
+		OptionText.Parent = OptionButton
 		OptionButton.MouseButton1Click:Connect(function()
 			UpdateValue(OptionValue)
+			OptionIcon.Visible = true
+			for _, Sibling in ipairs(OptionsFrame:GetChildren()) do
+				if Sibling:IsA("TextButton") and Sibling ~= OptionButton then
+					local SiblingIcon = Sibling:FindFirstChild("Icon")
+					if SiblingIcon then
+						SiblingIcon.Visible = false
+					end
+				end
+			end
 			OptionsFrame.Visible = false
+			table.clear(self.OpenDropdowns)
 			ApplyIcon(Chevron, "chevron-down")
 		end)
 	end
 
 	ValueLabel.Text = Selected == nil and "Select..." or tostring(Selected)
 	DropdownButton.MouseButton1Click:Connect(function()
-		OptionsFrame.Visible = not OptionsFrame.Visible
+		local WasVisible = OptionsFrame.Visible
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
+		OptionsFrame.Visible = not WasVisible
 		OptionsFrame.Position = UDim2.fromOffset(
 			DropdownButton.AbsolutePosition.X,
 			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
 		)
+		if OptionsFrame.Visible then
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron })
+		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
@@ -1484,6 +1589,7 @@ function Wolf:AddMultiDropdown(Config)
 	OptionsFrame.CanvasSize = UDim2.new()
 	OptionsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	OptionsFrame.BackgroundColor3 = self.Theme.Surface
+	OptionsFrame.BackgroundTransparency = 0.18
 	OptionsFrame.BorderSizePixel = 0
 	OptionsFrame.ScrollBarThickness = 3
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
@@ -1505,6 +1611,7 @@ function Wolf:AddMultiDropdown(Config)
 		return tostring(Option), Option
 	end
 
+	local OptionIcons = {}
 	local function UpdateValueLabel()
 		local Values = {}
 		for _, Option in ipairs(Options) do
@@ -1514,14 +1621,18 @@ function Wolf:AddMultiDropdown(Config)
 			end
 		end
 		ValueLabel.Text = #Values == 0 and "None" or table.concat(Values, ", ")
+		for OptionValue, OptionIcon in pairs(OptionIcons) do
+			ApplyIcon(OptionIcon, Selected[OptionValue] and "square-check" or "square")
+			OptionIcon.ImageColor3 = Selected[OptionValue] and self.Theme.Accent or self.Theme.SubText
+		end
 	end
 
 	for _, Option in ipairs(Options) do
 		local OptionTitle, OptionValue = OptionData(Option)
 		local OptionButton = Instance.new("TextButton")
 		OptionButton.Size = UDim2.new(1, 0, 0, 28)
-		OptionButton.BackgroundColor3 = Selected[OptionValue] and self.Theme.Accent or self.Theme.Surface
-		OptionButton.Text = OptionTitle
+		OptionButton.BackgroundColor3 = self.Theme.Surface
+		OptionButton.Text = ""
 		OptionButton.TextColor3 = self.Theme.Text
 		OptionButton.FontFace = self.Fonts.Small
 		OptionButton.TextSize = 11
@@ -1530,9 +1641,28 @@ function Wolf:AddMultiDropdown(Config)
 		OptionButton.Parent = OptionsFrame
 		Padding(OptionButton, 10, 8, 0, 0)
 		Corner(OptionButton, 4)
+		local OptionIcon = CreateIcon(
+			OptionButton,
+			Selected[OptionValue] and "square-check" or "square",
+			UDim2.fromOffset(8, 6),
+			UDim2.fromOffset(16, 16),
+			Selected[OptionValue] and self.Theme.Accent or self.Theme.SubText,
+			52
+		)
+		OptionIcons[OptionValue] = OptionIcon
+		local OptionText = Instance.new("TextLabel")
+		OptionText.BackgroundTransparency = 1
+		OptionText.Position = UDim2.fromOffset(30, 0)
+		OptionText.Size = UDim2.new(1, -34, 1, 0)
+		OptionText.FontFace = self.Fonts.Small
+		OptionText.Text = OptionTitle
+		OptionText.TextColor3 = self.Theme.Text
+		OptionText.TextSize = 11
+		OptionText.TextXAlignment = Enum.TextXAlignment.Left
+		OptionText.ZIndex = 52
+		OptionText.Parent = OptionButton
 		OptionButton.MouseButton1Click:Connect(function()
 			Selected[OptionValue] = not Selected[OptionValue]
-			OptionButton.BackgroundColor3 = Selected[OptionValue] and self.Theme.Accent or self.Theme.Surface
 			UpdateValueLabel()
 			Callback(Selected)
 		end)
@@ -1540,11 +1670,18 @@ function Wolf:AddMultiDropdown(Config)
 
 	UpdateValueLabel()
 	DropdownButton.MouseButton1Click:Connect(function()
-		OptionsFrame.Visible = not OptionsFrame.Visible
+		local WasVisible = OptionsFrame.Visible
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
+		OptionsFrame.Visible = not WasVisible
 		OptionsFrame.Position = UDim2.fromOffset(
 			DropdownButton.AbsolutePosition.X,
 			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
 		)
+		if OptionsFrame.Visible then
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron })
+		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
@@ -1560,6 +1697,86 @@ function Wolf:AddMultiDropdown(Config)
 		end,
 		Value = Selected,
 	}
+end
+
+function Wolf:Notify(Config)
+	Config = typeof(Config) == "table" and Config or { Content = tostring(Config) }
+	local Holder = self.NotificationHolder
+	if not Holder then
+		Holder = Instance.new("Frame")
+		Holder.Name = "Notifications"
+		Holder.AnchorPoint = Vector2.new(1, 0)
+		Holder.Position = UDim2.new(1, -16, 0, 16)
+		Holder.Size = UDim2.fromOffset(280, 0)
+		Holder.AutomaticSize = Enum.AutomaticSize.Y
+		Holder.BackgroundTransparency = 1
+		Holder.ZIndex = 80
+		Holder.Parent = self.Gui
+
+		local Layout = Instance.new("UIListLayout")
+		Layout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+		Layout.Padding = UDim.new(0, 8)
+		Layout.Parent = Holder
+		self.NotificationHolder = Holder
+	end
+
+	local Toast = Instance.new("Frame")
+	Toast.Size = UDim2.fromOffset(260, 64)
+	Toast.BackgroundColor3 = self.Theme.Card
+	Toast.BackgroundTransparency = 0.06
+	Toast.BorderSizePixel = 0
+	Toast.ZIndex = 81
+	Toast.Parent = Holder
+	Corner(Toast, 6)
+	Stroke(Toast, self.Theme.Border)
+
+	local Icon = CreateIcon(
+		Toast,
+		Config.Icon or "bell",
+		UDim2.fromOffset(12, 12),
+		UDim2.fromOffset(18, 18),
+		self.Theme.Accent,
+		82
+	)
+	local Title = Instance.new("TextLabel")
+	Title.BackgroundTransparency = 1
+	Title.Position = UDim2.fromOffset(38, 8)
+	Title.Size = UDim2.new(1, -50, 0, 18)
+	Title.FontFace = self.Fonts.Button
+	Title.Text = Config.Title or "Wolf UI"
+	Title.TextColor3 = self.Theme.Text
+	Title.TextSize = 12
+	Title.TextXAlignment = Enum.TextXAlignment.Left
+	Title.ZIndex = 82
+	Title.Parent = Toast
+
+	local Content = Instance.new("TextLabel")
+	Content.BackgroundTransparency = 1
+	Content.Position = UDim2.fromOffset(38, 28)
+	Content.Size = UDim2.new(1, -50, 0, 28)
+	Content.FontFace = self.Fonts.Small
+	Content.Text = Config.Content or Config.Message or ""
+	Content.TextColor3 = self.Theme.SubText
+	Content.TextSize = 11
+	Content.TextWrapped = true
+	Content.TextXAlignment = Enum.TextXAlignment.Left
+	Content.ZIndex = 82
+	Content.Parent = Toast
+
+	Toast.Position = UDim2.fromOffset(300, 0)
+	Tween(Toast, { Position = UDim2.fromOffset(0, 0) }, 0.22)
+	local Duration = Config.Duration or 3
+	task.delay(Duration, function()
+		if Toast.Parent then
+			Tween(Toast, { BackgroundTransparency = 1, Position = UDim2.fromOffset(300, 0) }, 0.2)
+			task.delay(0.22, function()
+				if Toast.Parent then
+					Toast:Destroy()
+				end
+			end)
+		end
+	end)
+	return Toast
 end
 
 return Wolf
