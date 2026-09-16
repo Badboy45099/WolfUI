@@ -81,6 +81,19 @@ local function ApplyIcon(ImageObject, iconName)
 	ImageObject.ImageRectSize = Vector2.new(0, 0)
 end
 
+local function CreateIcon(Parent, IconName, Position, Size, Color, ZIndex)
+	local Icon = Instance.new("ImageLabel")
+	Icon.Name = "Icon"
+	Icon.BackgroundTransparency = 1
+	Icon.Position = Position
+	Icon.Size = Size or UDim2.fromOffset(16, 16)
+	Icon.ImageColor3 = Color or Wolf.Theme.Text
+	Icon.ZIndex = ZIndex or 2
+	ApplyIcon(Icon, IconName)
+	Icon.Parent = Parent
+	return Icon
+end
+
 ---------------------------------------------------------------------
 -- FONTS & THEME DEFINITION
 ---------------------------------------------------------------------
@@ -194,7 +207,8 @@ function Wolf:CreateWindow(Config)
 	Sidebar.Size = UDim2.new(0, 190, 1, 0)
 	Sidebar.BackgroundColor3 = self.Theme.Sidebar
 	Sidebar.BorderSizePixel = 0
-	Sidebar.ZIndex = 2
+	Sidebar.ClipsDescendants = true
+	Sidebar.ZIndex = 1
 	Sidebar.Parent = MainFrame
 
 	local Divider = Instance.new("Frame")
@@ -297,6 +311,7 @@ function Wolf:CreateWindow(Config)
 	HeaderFrame.Size = UDim2.new(1, -190, 0, 52)
 	HeaderFrame.BackgroundColor3 = self.Theme.Header
 	HeaderFrame.BorderSizePixel = 0
+	HeaderFrame.ZIndex = 2
 	HeaderFrame.Parent = MainFrame
 
 	local AccentBar = Instance.new("Frame")
@@ -388,8 +403,11 @@ function Wolf:CreateWindow(Config)
 	LockButton.FontFace = self.Fonts.Button
 	LockButton.TextSize = 11
 	LockButton.Text = "LOCK"
+	LockButton.TextXAlignment = Enum.TextXAlignment.Right
 	LockButton.Parent = ControlsHolder
 	Corner(LockButton, 6)
+	local LockIcon =
+		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 0), UDim2.fromOffset(16, 30), Color3.new(1, 1, 1), 2)
 
 	-- Main Display Container
 	local ContentArea = Instance.new("ScrollingFrame")
@@ -403,6 +421,7 @@ function Wolf:CreateWindow(Config)
 	ContentArea.ScrollBarImageColor3 = self.Theme.Accent
 	ContentArea.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	ContentArea.CanvasSize = UDim2.new()
+	ContentArea.ZIndex = 2
 	ContentArea.Parent = MainFrame
 
 	Padding(ContentArea, 16, 16, 8, 16)
@@ -418,6 +437,7 @@ function Wolf:CreateWindow(Config)
 	Footnote.Position = UDim2.new(0, 190, 1, -24)
 	Footnote.BackgroundColor3 = self.Theme.Header
 	Footnote.BorderSizePixel = 0
+	Footnote.ZIndex = 2
 	Footnote.Parent = MainFrame
 
 	local FootText = Instance.new("TextLabel")
@@ -430,6 +450,12 @@ function Wolf:CreateWindow(Config)
 	FootText.TextSize = 11
 	FootText.TextXAlignment = Enum.TextXAlignment.Center
 	FootText.Parent = Footnote
+
+	local FooterIcon =
+		CreateIcon(Footnote, Config.Icon, UDim2.new(0, 8, 0.5, 0), UDim2.fromOffset(14, 14), self.Theme.SubText, 3)
+	FooterIcon.AnchorPoint = Vector2.new(0, 0.5)
+	FootText.Position = UDim2.fromOffset(Config.Icon and 28 or 12, 0)
+	FootText.Size = UDim2.new(1, Config.Icon and -56 or -40, 1, 0)
 
 	local ResizeIcon = Instance.new("ImageButton")
 	ResizeIcon.Name = "ResizeIcon"
@@ -543,6 +569,7 @@ function Wolf:CreateWindow(Config)
 	LockButton.MouseButton1Click:Connect(function()
 		self.Locked = not self.Locked
 		LockButton.Text = self.Locked and "UNLOCK" or "LOCK"
+		ApplyIcon(LockIcon, self.Locked and "unlock" or "lock")
 		Tween(LockButton, {
 			BackgroundColor3 = self.Locked and self.Theme.Surface or self.Theme.AccentDark,
 		})
@@ -576,6 +603,7 @@ function Wolf:AddTab(Config)
 	Config = typeof(Config) == "table" and Config or { Title = Config }
 
 	local TabTitle = Config.Title or "Tab"
+	local TabIcon = Config.Icon or Config.icon
 	local TabPage = Instance.new("Frame")
 	TabPage.Name = TabTitle .. "Page"
 	TabPage.Size = UDim2.new(1, 0, 0, 0)
@@ -587,10 +615,10 @@ function Wolf:AddTab(Config)
 
 	local PageTitle = Instance.new("TextLabel")
 	PageTitle.Name = "TabTitle"
-	PageTitle.LayoutOrder = 1
+	PageTitle.LayoutOrder = -1
 	PageTitle.Size = UDim2.new(1, 0, 0, 42)
 	PageTitle.BackgroundTransparency = 1
-	PageTitle.FontFace = self.Fonts.Title
+	PageTitle.FontFace = Font.fromName("PermanentMarker", Enum.FontWeight.Bold)
 	PageTitle.Text = TabTitle
 	PageTitle.TextColor3 = self.Theme.Text
 	PageTitle.TextSize = 20
@@ -610,9 +638,14 @@ function Wolf:AddTab(Config)
 	TabButton.FontFace = self.Fonts.Body
 	TabButton.Text = TabTitle
 	TabButton.TextSize = 12
+	TabButton.TextXAlignment = Enum.TextXAlignment.Left
+	TabButton.TextTruncate = Enum.TextTruncate.AtEnd
+	TabButton.ZIndex = 2
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
+	Padding(TabButton, TabIcon and 34 or 12, 8, 0, 0)
+	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(10, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 3)
 
 	local Tab = setmetatable({
 		Library = self,
@@ -764,6 +797,11 @@ end
 
 -- Section Header
 function Wolf:AddSection(Title)
+	local IconName
+	if typeof(Title) == "table" then
+		IconName = Title.Icon or Title.icon
+		Title = Title.Title or "Section"
+	end
 	local SectionFrame = Instance.new("Frame")
 	SectionFrame.Size = UDim2.new(1, 0, 0, 24)
 	SectionFrame.BackgroundTransparency = 1
@@ -778,6 +816,11 @@ function Wolf:AddSection(Title)
 	Label.TextSize = 11
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = SectionFrame
+	if IconName then
+		Label.Position = UDim2.fromOffset(24, 0)
+		Label.Size = UDim2.new(1, -24, 1, 0)
+		CreateIcon(SectionFrame, IconName, UDim2.fromOffset(0, 4), UDim2.fromOffset(16, 16), self.Theme.Accent, 2)
+	end
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = SectionFrame })
 	return SectionFrame
@@ -787,6 +830,7 @@ end
 function Wolf:AddButton(Config)
 	Config = typeof(Config) == "table" and Config or { Title = Config }
 	local Title = Config.Title or "Button"
+	local IconName = Config.Icon or Config.icon
 	local Callback = Config.Callback or function() end
 
 	local ButtonFrame = Instance.new("Frame")
@@ -801,9 +845,17 @@ function Wolf:AddButton(Config)
 	TextBtn.BackgroundTransparency = 1
 	TextBtn.FontFace = self.Fonts.Body
 	TextBtn.Text = Title
+	TextBtn.TextXAlignment = IconName and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+	TextBtn.TextTruncate = Enum.TextTruncate.AtEnd
 	TextBtn.TextColor3 = self.Theme.Text
 	TextBtn.TextSize = 12
+	TextBtn.ZIndex = 1
 	TextBtn.Parent = ButtonFrame
+	if IconName then
+		TextBtn.Position = UDim2.fromOffset(36, 0)
+		TextBtn.Size = UDim2.new(1, -48, 1, 0)
+		CreateIcon(ButtonFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
 
 	TextBtn.MouseEnter:Connect(function()
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
@@ -827,6 +879,7 @@ end
 function Wolf:AddToggle(Config)
 	Config = typeof(Config) == "table" and Config or { Title = Config }
 	local Title = Config.Title or "Toggle"
+	local IconName = Config.Icon or Config.icon
 	local Default = Config.Default or false
 	local Callback = Config.Callback or function() end
 
@@ -849,6 +902,11 @@ function Wolf:AddToggle(Config)
 	Label.TextSize = 12
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = ToggleFrame
+	if IconName then
+		Label.Position = UDim2.fromOffset(36, 0)
+		Label.Size = UDim2.new(1, -84, 1, 0)
+		CreateIcon(ToggleFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
 
 	local Indicator = Instance.new("Frame")
 	Indicator.AnchorPoint = Vector2.new(1, 0.5)
@@ -895,6 +953,7 @@ end
 -- Slider Component
 function Wolf:AddSlider(Config)
 	local Title = Config.Title or "Slider"
+	local IconName = Config.Icon or Config.icon
 	local Min = Config.Min or 0
 	local Max = Config.Max or 100
 	local Default = Config.Default or Min
@@ -917,6 +976,11 @@ function Wolf:AddSlider(Config)
 	Label.TextSize = 12
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = SliderFrame
+	if IconName then
+		Label.Position = UDim2.fromOffset(36, 6)
+		Label.Size = UDim2.new(1, -94, 0, 18)
+		CreateIcon(SliderFrame, IconName, UDim2.fromOffset(12, 8), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
 
 	local ValueLabel = Instance.new("TextLabel")
 	ValueLabel.Position = UDim2.new(1, -60, 0, 6)
@@ -990,6 +1054,7 @@ end
 -- Textbox Input Component
 function Wolf:AddTextbox(Config)
 	local Title = Config.Title or "Input"
+	local IconName = Config.Icon or Config.icon
 	local Placeholder = Config.Placeholder or "Enter text..."
 	local Callback = Config.Callback or function() end
 
@@ -1010,6 +1075,11 @@ function Wolf:AddTextbox(Config)
 	Label.TextSize = 12
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = InputFrame
+	if IconName then
+		Label.Position = UDim2.fromOffset(36, 0)
+		Label.Size = UDim2.new(0.5, -36, 1, 0)
+		CreateIcon(InputFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
 
 	local Box = Instance.new("TextBox")
 	Box.AnchorPoint = Vector2.new(1, 0.5)
