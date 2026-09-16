@@ -50,6 +50,7 @@ local function ApplyIcon(ImageObject, iconName)
 		return
 	end
 	ImageObject.Visible = true
+	ImageObject.ImageTransparency = 0
 
 	if tonumber(iconName) then
 		iconName = "rbxassetid://" .. iconName
@@ -460,13 +461,16 @@ function Wolf:CreateWindow(Config)
 	local ResizeIcon = Instance.new("ImageButton")
 	ResizeIcon.Name = "ResizeIcon"
 	ResizeIcon.AnchorPoint = Vector2.new(1, 0.5)
-	ResizeIcon.Position = UDim2.new(1, -6, 0.5, 0)
-	ResizeIcon.Size = UDim2.fromOffset(16, 16)
+	ResizeIcon.Position = UDim2.new(1, -6, 1, -6)
+	ResizeIcon.Size = UDim2.fromOffset(28, 28)
 	ResizeIcon.BackgroundTransparency = 1
+	ResizeIcon.AutoButtonColor = false
+	ResizeIcon.Active = true
+	ResizeIcon.ZIndex = 20
 	ApplyIcon(ResizeIcon, "minimize-2")
 	ResizeIcon.ImageColor3 = self.Theme.SubText
 	ResizeIcon.Rotation = 90
-	ResizeIcon.Parent = Footnote
+	ResizeIcon.Parent = MainFrame
 
 	---------------------------------------------------------
 	-- RESIZING MECHANISM
@@ -797,11 +801,9 @@ end
 
 -- Section Header
 function Wolf:AddSection(Title)
-	local IconName
-	if typeof(Title) == "table" then
-		IconName = Title.Icon or Title.icon
-		Title = Title.Title or "Section"
-	end
+	local SectionConfig = typeof(Title) == "table" and Title or { Title = Title }
+	local SectionTitle = SectionConfig.Title or SectionConfig.title or "Section"
+	local IconName = SectionConfig.Icon or SectionConfig.icon
 	local SectionFrame = Instance.new("Frame")
 	SectionFrame.Size = UDim2.new(1, 0, 0, 24)
 	SectionFrame.BackgroundTransparency = 1
@@ -811,7 +813,7 @@ function Wolf:AddSection(Title)
 	Label.Size = UDim2.new(1, 0, 1, 0)
 	Label.BackgroundTransparency = 1
 	Label.FontFace = self.Fonts.Title
-	Label.Text = Title:upper()
+	Label.Text = tostring(SectionTitle):upper()
 	Label.TextColor3 = self.Theme.Accent
 	Label.TextSize = 11
 	Label.TextXAlignment = Enum.TextXAlignment.Left
@@ -822,7 +824,7 @@ function Wolf:AddSection(Title)
 		CreateIcon(SectionFrame, IconName, UDim2.fromOffset(0, 4), UDim2.fromOffset(16, 16), self.Theme.Accent, 2)
 	end
 
-	table.insert(self.Library.Elements, { Text = Title, Frame = SectionFrame })
+	table.insert(self.Library.Elements, { Text = SectionTitle, Frame = SectionFrame })
 	return SectionFrame
 end
 
