@@ -502,8 +502,8 @@ function Wolf:CreateWindow(Config)
 
 	local ToggleButton = Instance.new("ImageButton")
 	ToggleButton.Name = "ToggleButton"
-	ToggleButton.AnchorPoint = Vector2.new(0, 1)
-	ToggleButton.Position = UDim2.new(0, 18, 1, -18)
+	ToggleButton.AnchorPoint = Vector2.new(0, 0)
+	ToggleButton.Position = UDim2.fromOffset(18, 18)
 	ToggleButton.Size = UDim2.fromOffset(46, 46)
 	ToggleButton.BackgroundTransparency = 1
 	ToggleButton.AutoButtonColor = false
@@ -646,7 +646,9 @@ function Wolf:CreateWindow(Config)
 	local function CloseDropdowns()
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
 			Dropdown.Frame.Visible = false
-			ApplyIcon(Dropdown.Chevron, "chevron-down")
+			if Dropdown.Chevron then
+				ApplyIcon(Dropdown.Chevron, Dropdown.ClosedIcon or "chevron-down")
+			end
 		end
 		table.clear(self.OpenDropdowns)
 	end
@@ -669,11 +671,7 @@ function Wolf:CreateWindow(Config)
 				local MaxY = WindowPosition.Y + WindowSize.Y - FrameSize.Y - 4
 
 				X = math.clamp(X, MinX, math.max(MinX, MaxX))
-				if Y > MaxY and AnchorPosition.Y - FrameSize.Y - 4 >= MinY then
-					Y = AnchorPosition.Y - FrameSize.Y - 4
-				else
-					Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
-				end
+				Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
 				Dropdown.Frame.Position = UDim2.fromOffset(X, Y)
 			end
 		end
@@ -1429,6 +1427,133 @@ function Wolf:AddTextbox(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = InputFrame })
 	return InputFrame
+end
+
+-- Color picker component
+function Wolf:AddColorPicker(Config)
+	Config = Config or {}
+	local Title = Config.Title or "Color"
+	local IconName = Config.Icon or Config.icon or "pipette"
+	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
+	local Callback = Config.Callback or function() end
+	local CurrentColor = Default
+
+	local PickerFrame = Instance.new("Frame")
+	PickerFrame.Name = "ColorPicker"
+	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
+	PickerFrame.BackgroundColor3 = self.Theme.Card
+	PickerFrame.Parent = ElementParent(self)
+	Corner(PickerFrame, 6)
+	Stroke(PickerFrame, self.Theme.Border)
+
+	local Label = Instance.new("TextLabel")
+	Label.Position = UDim2.fromOffset(36, 0)
+	Label.Size = UDim2.new(1, -88, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.FontFace = self.Fonts.Body
+	Label.Text = Title
+	Label.TextColor3 = self.Theme.Text
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = PickerFrame
+	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+
+	local Swatch = Instance.new("TextButton")
+	Swatch.Name = "ColorSwatch"
+	Swatch.AnchorPoint = Vector2.new(1, 0.5)
+	Swatch.Position = UDim2.new(1, -10, 0.5, 0)
+	Swatch.Size = UDim2.fromOffset(42, 22)
+	Swatch.BackgroundColor3 = CurrentColor
+	Swatch.Text = ""
+	Swatch.AutoButtonColor = false
+	Swatch.Parent = PickerFrame
+	Corner(Swatch, 4)
+	Stroke(Swatch, self.Theme.Border)
+
+	local Popup = Instance.new("Frame")
+	Popup.Name = "ColorPickerPopup"
+	Popup.Size = UDim2.fromOffset(220, 122)
+	Popup.BackgroundColor3 = self.Theme.Surface
+	Popup.Visible = false
+	Popup.ZIndex = 50
+	Popup.Parent = self.Library.Gui
+	Corner(Popup, 6)
+	Stroke(Popup, self.Theme.Border)
+	Padding(Popup, 10, 10, 10, 10)
+
+	local Preview = Instance.new("Frame")
+	Preview.Size = UDim2.new(1, 0, 0, 24)
+	Preview.BackgroundColor3 = CurrentColor
+	Preview.ZIndex = 51
+	Preview.Parent = Popup
+	Corner(Preview, 4)
+
+	local Inputs = {}
+	local Channels = { "R", "G", "B" }
+	local function ChannelValue(Color, Channel)
+		return Color[Channel]
+	end
+	local function UpdateColor()
+		local Values = {}
+		for Index, Input in ipairs(Inputs) do
+			Values[Index] = math.clamp(tonumber(Input.Text) or 0, 0, 255)
+			Input.Text = tostring(Values[Index])
+		end
+		CurrentColor = Color3.fromRGB(Values[1], Values[2], Values[3])
+		Swatch.BackgroundColor3 = CurrentColor
+		Preview.BackgroundColor3 = CurrentColor
+		Callback(CurrentColor)
+	end
+
+	for Index, Channel in ipairs(Channels) do
+		local Input = Instance.new("TextBox")
+		Input.Position = UDim2.new((Index - 1) / 3, (Index - 1) * 4, 0, 34)
+		Input.Size = UDim2.new(1 / 3, -8, 0, 26)
+		Input.BackgroundColor3 = self.Theme.Card
+		Input.TextColor3 = self.Theme.Text
+		Input.PlaceholderText = Channel
+		Input.Text = tostring(math.floor(ChannelValue(Default, Channel) * 255 + 0.5))
+		Input.FontFace = self.Fonts.Small
+		Input.TextSize = 11
+		Input.ClearTextOnFocus = false
+		Input.ZIndex = 51
+		Input.Parent = Popup
+		Corner(Input, 4)
+		Stroke(Input, self.Theme.Border)
+		Inputs[Index] = Input
+		Input.FocusLost:Connect(UpdateColor)
+	end
+
+	Swatch.MouseButton1Click:Connect(function()
+		local WasVisible = Popup.Visible
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
+		Popup.Visible = not WasVisible
+		if Popup.Visible then
+			table.insert(self.OpenDropdowns, {
+				Frame = Popup,
+				Chevron = PickerFrame:FindFirstChild("Icon"),
+				ClosedIcon = IconName,
+				Anchor = Swatch,
+			})
+			self._UpdateDropdownPositions()
+		end
+	end)
+
+	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
+	return {
+		SetValue = function(_, Value)
+			if typeof(Value) == "Color3" then
+				CurrentColor = Value
+				for Index, Channel in ipairs(Channels) do
+					Inputs[Index].Text = tostring(math.floor(ChannelValue(Value, Channel) * 255 + 0.5))
+				end
+				UpdateColor()
+			end
+		end,
+		Value = CurrentColor,
+	}
 end
 
 -- Single-selection dropdown
