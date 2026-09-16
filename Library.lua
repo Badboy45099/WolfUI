@@ -27,13 +27,15 @@ local LocalPlayer = Players.LocalPlayer
 -- ICON MODULE (Lucide + Spritesheet Cropping)
 ---------------------------------------------------------------------
 
-local Lucide = pcall(function()
-	return loadstring(
-		game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
-	)()
-end) and loadstring(
-	game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
-)() or nil
+local Lucide
+do
+	local Success, Module = pcall(function()
+		local Source =
+			game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
+		return loadstring(Source)()
+	end)
+	Lucide = Success and Module or nil
+end
 
 local function IsValidCustomIcon(Icon)
 	return typeof(Icon) == "string"
@@ -177,7 +179,12 @@ function Wolf:CreateWindow(Config)
 	self.Elements = {}
 	self.ActiveTab = nil
 	self.ShortcutHolder = nil
+	self.ShortcutCount = 0
 	self.OpenDropdowns = {}
+	if self._RenderConnection then
+		self._RenderConnection:Disconnect()
+		self._RenderConnection = nil
+	end
 
 	local ParentContainer = CoreGui
 	pcall(function()
@@ -711,7 +718,7 @@ function Wolf:CreateWindow(Config)
 		end
 	end
 	self._UpdateDropdownPositions = UpdateDropdownPositions
-	RunService.RenderStepped:Connect(UpdateDropdownPositions)
+	self._RenderConnection = RunService.RenderStepped:Connect(UpdateDropdownPositions)
 
 	local sidebarResizing = false
 	local sidebarResizeStartX
@@ -996,7 +1003,7 @@ function Wolf:AddTab(Config)
 	return Tab
 end
 
-function Wolf:AddToggle(Idx, Config)
+function Wolf:AddToggleLegacy(Idx, Config)
 	Config = Config or {}
 	local Title = Config.Title or Idx
 	local Default = Config.Default or false
@@ -1080,7 +1087,7 @@ function Wolf:AddToggle(Idx, Config)
 end
 
 -- AddButton(Idx, Config) or AddButton(Config)
-function Wolf:AddButton(Config)
+function Wolf:AddButtonLegacy(Config)
 	if typeof(Config) == "string" then
 		Config = { Title = Config }
 	end
@@ -1310,10 +1317,17 @@ function Wolf:AddToggle(Config)
 	ClickBtn.Text = ""
 	ClickBtn.Parent = ToggleFrame
 
+	local ToggleObj = {
+		Value = State,
+		OnChanged = Instance.new("BindableEvent"),
+	}
+
 	local function Update()
+		ToggleObj.Value = State
 		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
 		Callback(State)
+		ToggleObj.OnChanged:Fire(State)
 	end
 
 	ClickBtn.MouseButton1Click:Connect(function()
@@ -1389,7 +1403,8 @@ function Wolf:AddSlider(Config)
 	Corner(Track, 100)
 
 	local Fill = Instance.new("Frame")
-	Fill.Size = UDim2.new((Default - Min) / (Max - Min), 0, 1, 0)
+	local Range = math.max(Max - Min, 1)
+	Fill.Size = UDim2.new(math.clamp((Default - Min) / Range, 0, 1), 0, 1, 0)
 	Fill.BackgroundColor3 = self.Theme.Accent
 	Fill.Parent = Track
 	Corner(Fill, 100)
@@ -1891,6 +1906,7 @@ function Wolf:AddColorPicker(Config)
 		SVCursor.Position = UDim2.new(S, 0, 1 - V, 0)
 		HueCursor.Position = UDim2.new(H, 0, 0.5, 0)
 		AlphaCursor.Position = UDim2.new(A, 0, 0.5, 0)
+		Swatch.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundTransparency = 1 - A
 		if not SkipText then
@@ -1996,6 +2012,9 @@ function Wolf:AddColorPicker(Config)
 			end
 		end,
 		Value = CurrentColor,
+		GetValue = function()
+			return CurrentColor, A
+		end,
 	}
 	function PickerObject:Open()
 		if Library._CloseDropdowns then
@@ -2015,6 +2034,9 @@ function Wolf:AddColorPicker(Config)
 		else
 			self:Open()
 		end
+	end
+	function PickerObject:Activate()
+		self:Toggle()
 	end
 	return PickerObject
 end
@@ -2041,12 +2063,13 @@ function Wolf:AddShortcut(Config)
 
 	local Button = Instance.new("TextButton")
 	Button.Name = Side .. "Shortcut"
+	self.ShortcutCount = self.ShortcutCount + 1
 	local ShortcutText = Config.Text or Config.Title or ""
 	local ShortcutWidth = Config.Width or (ShortcutText == "" and (Config.Icon and 34 or 86) or 86)
 	local ChevronWidth = IsToggleShortcut and 20 or 0
 	Button.Size = UDim2.fromOffset(ShortcutWidth, Config.Height or 34)
 	Button.AnchorPoint = Vector2.new(1, 0)
-	Button.Position = UDim2.new(1, 0, 0, #self.ShortcutHolder:GetChildren() * 42)
+	Button.Position = UDim2.new(1, 0, 0, (self.ShortcutCount - 1) * 42)
 	Button.BackgroundColor3 = self.Theme.Card
 	Button.BackgroundTransparency = 0.15
 	Button.BorderSizePixel = 0
@@ -2058,6 +2081,7 @@ function Wolf:AddShortcut(Config)
 	Button.TextXAlignment = Config.Icon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
 	Button.ZIndex = 101
 	Button.Parent = self.ShortcutHolder
+	self.ShortcutHolder.Size = UDim2.fromOffset(120, math.max(100, self.ShortcutCount * 42))
 	Corner(Button, 6)
 	Stroke(Button, self.Theme.Border, 0.35)
 
@@ -2349,6 +2373,9 @@ function Wolf:AddDropdown(Config)
 			UpdateValue(Value)
 		end,
 		Value = Selected,
+		GetValue = function()
+			return Selected
+		end,
 	}
 	function DropdownObject:Open()
 		self.Library._CloseDropdowns()
@@ -2561,6 +2588,9 @@ function Wolf:AddMultiDropdown(Config)
 			Callback(Selected)
 		end,
 		Value = Selected,
+		GetValue = function()
+			return Selected
+		end,
 	}
 	function DropdownObject:Open()
 		self.Library._CloseDropdowns()
