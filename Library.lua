@@ -103,9 +103,9 @@ end
 Wolf.Fonts = {
 	Logo = Font.fromName("Bangers", Enum.FontWeight.Bold),
 	Title = Font.fromName("BuilderSans", Enum.FontWeight.SemiBold),
-	Body = Font.fromName("Code", Enum.FontWeight.Medium),
-	Small = Font.fromName("Code", Enum.FontWeight.Regular),
-	Button = Font.fromName("Code", Enum.FontWeight.Bold),
+	Body = Font.fromName("BuilderSans", Enum.FontWeight.Medium),
+	Small = Font.fromName("BuilderSans", Enum.FontWeight.Regular),
+	Button = Font.fromName("BuilderSans", Enum.FontWeight.Bold),
 }
 
 Wolf.Theme = {
@@ -1642,6 +1642,7 @@ function Wolf:AddColorPicker(Config)
 	ValOverlay.Size = UDim2.fromScale(1, 1)
 	ValOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
 	ValOverlay.BorderSizePixel = 0
+	ValOverlay.ClipsDescendants = true
 	ValOverlay.ZIndex = 52
 	ValOverlay.Parent = SatValBox
 	Corner(ValOverlay, 6)
@@ -1660,7 +1661,7 @@ function Wolf:AddColorPicker(Config)
 	SVCursor.BorderSizePixel = 0
 	SVCursor.ZIndex = 55
 	SVCursor.Parent = ValOverlay
-	Corner(SVCursor, 7)
+	Corner(SVCursor, 4)
 	Stroke(SVCursor, Color3.new(1, 1, 1), 0)
 
 	local HueBar = NewBar("Hue", 14)
@@ -1680,6 +1681,7 @@ function Wolf:AddColorPicker(Config)
 	HueCursor.Size = UDim2.fromOffset(10, 20)
 	HueCursor.AnchorPoint = Vector2.new(0.5, 0.5)
 	HueCursor.BackgroundTransparency = 1
+	HueCursor.BorderSizePixel = 0
 	HueCursor.ZIndex = 55
 	HueCursor.Parent = HueBar
 	Corner(HueCursor, 4)
@@ -1693,10 +1695,15 @@ function Wolf:AddColorPicker(Config)
 	AlphaCanvas.ZIndex = 51
 	AlphaCanvas.Parent = AlphaBar
 	Corner(AlphaCanvas, 6)
+	local CheckerFrame = Instance.new("Frame")
+	CheckerFrame.Size = UDim2.fromScale(1, 1)
+	CheckerFrame.BackgroundTransparency = 1
+	CheckerFrame.ZIndex = 51
+	CheckerFrame.Parent = AlphaCanvas
 	local Grid = Instance.new("UIGridLayout")
 	Grid.CellSize = UDim2.new(1 / 30, 0, 0.5, 0)
 	Grid.CellPadding = UDim2.fromOffset(0, 0)
-	Grid.Parent = AlphaCanvas
+	Grid.Parent = CheckerFrame
 	for Row = 1, 2 do
 		for Column = 1, 30 do
 			local Tile = Instance.new("Frame")
@@ -1704,13 +1711,14 @@ function Wolf:AddColorPicker(Config)
 			Tile.BackgroundColor3 = (Row + Column) % 2 == 0 and Color3.fromRGB(220, 220, 220)
 				or Color3.fromRGB(80, 80, 80)
 			Tile.BackgroundTransparency = 0.35
-			Tile.Parent = AlphaCanvas
+			Tile.Parent = CheckerFrame
 		end
 	end
 	local AlphaOverlay = Instance.new("Frame")
 	AlphaOverlay.Size = UDim2.fromScale(1, 1)
 	AlphaOverlay.BackgroundColor3 = Color3.new(1, 1, 1)
 	AlphaOverlay.BorderSizePixel = 0
+	AlphaOverlay.ClipsDescendants = true
 	AlphaOverlay.ZIndex = 52
 	AlphaOverlay.Parent = AlphaCanvas
 	local AlphaGradient = Instance.new("UIGradient")
@@ -1724,6 +1732,7 @@ function Wolf:AddColorPicker(Config)
 	AlphaCursor.Size = UDim2.fromOffset(10, 20)
 	AlphaCursor.AnchorPoint = Vector2.new(0.5, 0.5)
 	AlphaCursor.BackgroundTransparency = 1
+	AlphaCursor.BorderSizePixel = 0
 	AlphaCursor.ZIndex = 55
 	AlphaCursor.Parent = AlphaBar
 	Corner(AlphaCursor, 4)
@@ -1738,6 +1747,7 @@ function Wolf:AddColorPicker(Config)
 	local HexBox = Instance.new("Frame")
 	HexBox.Size = UDim2.new(1, -40, 1, 0)
 	HexBox.BackgroundColor3 = self.Theme.Card
+	HexBox.BackgroundTransparency = 0.3
 	HexBox.ZIndex = 52
 	HexBox.Parent = Footer
 	Corner(HexBox, 6)
@@ -1767,6 +1777,7 @@ function Wolf:AddColorPicker(Config)
 	AlphaInput.Size = UDim2.new(0.4, -1, 1, 0)
 	AlphaInput.Position = UDim2.new(0.6, 1, 0, 0)
 	AlphaInput.BackgroundColor3 = self.Theme.Card
+	AlphaInput.BackgroundTransparency = 0.3
 	AlphaInput.TextColor3 = self.Theme.Text
 	AlphaInput.FontFace = self.Fonts.Small
 	AlphaInput.TextSize = 10
@@ -1782,7 +1793,7 @@ function Wolf:AddColorPicker(Config)
 	PipetteButton.Position = UDim2.new(1, 0, 0, 0)
 	PipetteButton.Size = UDim2.fromOffset(32, 32)
 	PipetteButton.BackgroundColor3 = self.Theme.Card
-	PipetteButton.BackgroundTransparency = 0.1
+	PipetteButton.BackgroundTransparency = 0.3
 	PipetteButton.AutoButtonColor = false
 	PipetteButton.ZIndex = 54
 	PipetteButton.Parent = Footer
@@ -1893,7 +1904,10 @@ function Wolf:AddColorPicker(Config)
 
 	UpdateUI(false)
 	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
-	return {
+	local Library = self
+	local PickerObject = {
+		Frame = PickerFrame,
+		Popup = Popup,
 		SetValue = function(_, Value, Alpha)
 			if typeof(Value) == "Color3" then
 				H, S, V = Value:ToHSV()
@@ -1905,6 +1919,147 @@ function Wolf:AddColorPicker(Config)
 		end,
 		Value = CurrentColor,
 	}
+	function PickerObject:Open()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
+		end
+		Popup.Visible = true
+		table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = Swatch })
+		Library._UpdateDropdownPositions()
+	end
+	function PickerObject:Close()
+		Popup.Visible = false
+		table.clear(Library.OpenDropdowns)
+	end
+	function PickerObject:Toggle()
+		if Popup.Visible then
+			self:Close()
+		else
+			self:Open()
+		end
+	end
+	return PickerObject
+end
+
+function Wolf:AddShortcut(Config)
+	Config = Config or {}
+	local Side = tostring(Config.Side or Config.Type or "S1"):upper()
+	local IsToggleShortcut = Side == "S2"
+	local Element = Config.Element or Config.Target
+	local Callback = Config.Callback
+
+	if not self.ShortcutHolder then
+		local Holder = Instance.new("Frame")
+		Holder.Name = "Shortcuts"
+		Holder.AnchorPoint = Vector2.new(1, 0.5)
+		Holder.Position = UDim2.new(1, -18, 0.5, 0)
+		Holder.Size = UDim2.fromOffset(96, 100)
+		Holder.BackgroundTransparency = 1
+		Holder.ZIndex = 100
+		Holder.Parent = self.Gui
+
+		self.ShortcutHolder = Holder
+	end
+
+	local Button = Instance.new("TextButton")
+	Button.Name = Side .. "Shortcut"
+	Button.Size = UDim2.fromOffset(Config.Width or 86, Config.Height or 34)
+	Button.AnchorPoint = Vector2.new(1, 0)
+	Button.Position = UDim2.new(1, 0, 0, #self.ShortcutHolder:GetChildren() * 42)
+	Button.BackgroundColor3 = self.Theme.Card
+	Button.BackgroundTransparency = 0.15
+	Button.BorderSizePixel = 0
+	Button.AutoButtonColor = false
+	Button.Text = Config.Text or Config.Title or ""
+	Button.TextColor3 = self.Theme.Text
+	Button.FontFace = self.Fonts.Button
+	Button.TextSize = 11
+	Button.TextXAlignment = Config.Icon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+	Button.ZIndex = 101
+	Button.Parent = self.ShortcutHolder
+	Corner(Button, 6)
+	Stroke(Button, self.Theme.Border, 0.35)
+
+	if Config.Icon then
+		CreateIcon(Button, Config.Icon, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
+		Button.Text = "   " .. (Config.Text or Config.Title or "")
+	end
+	local Chevron
+	if IsToggleShortcut then
+		Chevron = CreateIcon(
+			Button,
+			"chevron-right",
+			UDim2.new(1, -24, 0.5, 0),
+			UDim2.fromOffset(16, 16),
+			self.Theme.SubText,
+			102
+		)
+		Chevron.AnchorPoint = Vector2.new(0, 0.5)
+	end
+
+	local Dragging = false
+	local DragStart
+	local StartPosition
+	Button.InputBegan:Connect(function(Input)
+		if
+			Input.UserInputType == Enum.UserInputType.MouseButton1
+			or Input.UserInputType == Enum.UserInputType.Touch
+		then
+			Dragging = true
+			DragStart = Input.Position
+			StartPosition = Button.Position
+		end
+	end)
+	UserInputService.InputChanged:Connect(function(Input)
+		if
+			Dragging
+			and (
+				Input.UserInputType == Enum.UserInputType.MouseMovement
+				or Input.UserInputType == Enum.UserInputType.Touch
+			)
+		then
+			local Delta = Input.Position - DragStart
+			Button.Position = UDim2.new(
+				StartPosition.X.Scale,
+				StartPosition.X.Offset + Delta.X,
+				StartPosition.Y.Scale,
+				StartPosition.Y.Offset + Delta.Y
+			)
+		end
+	end)
+	UserInputService.InputEnded:Connect(function(Input)
+		if
+			Input.UserInputType == Enum.UserInputType.MouseButton1
+			or Input.UserInputType == Enum.UserInputType.Touch
+		then
+			Dragging = false
+		end
+	end)
+
+	Button.MouseButton1Click:Connect(function()
+		if IsToggleShortcut and Element then
+			local Open = false
+			if Element.Toggle then
+				Element:Toggle()
+				Open = Element.Popup and Element.Popup.Visible or false
+			elseif Element.Visible ~= nil then
+				Element.Visible = not Element.Visible
+				Open = Element.Visible
+			elseif Element.Popup then
+				Element.Popup.Visible = not Element.Popup.Visible
+				Open = Element.Popup.Visible
+			end
+			if Chevron then
+				ApplyIcon(Chevron, Open and "chevron-left" or "chevron-right")
+			end
+		elseif Element and Element.Activate then
+			Element:Activate()
+		elseif Callback then
+			Callback(Element)
+		end
+	end)
+
+	return Button
 end
 
 -- Single-selection dropdown
