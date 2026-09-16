@@ -184,49 +184,6 @@ function Wolf:CreateWindow(Config)
 		end
 	end)
 
-	if ParentContainer:FindFirstChild("WolfUILoading") then
-		ParentContainer.WolfUILoading:Destroy()
-	end
-
-	local LoadingGui = Instance.new("ScreenGui")
-	LoadingGui.Name = "WolfUILoading"
-	LoadingGui.ResetOnSpawn = false
-	LoadingGui.DisplayOrder = 200
-	LoadingGui.Parent = ParentContainer
-
-	local LoadingFrame = Instance.new("Frame")
-	LoadingFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-	LoadingFrame.Position = UDim2.fromScale(0.5, 0.5)
-	LoadingFrame.Size = UDim2.fromOffset(112, 112)
-	LoadingFrame.BackgroundColor3 = self.Theme.Background
-	LoadingFrame.BackgroundTransparency = 0.12
-	LoadingFrame.BorderSizePixel = 0
-	LoadingFrame.Parent = LoadingGui
-	Corner(LoadingFrame, 12)
-	local LoadingStroke = Stroke(LoadingFrame, self.Theme.Accent, 0.25)
-
-	local LoadingImage = Instance.new("ImageLabel")
-	LoadingImage.AnchorPoint = Vector2.new(0.5, 0.5)
-	LoadingImage.Position = UDim2.fromScale(0.5, 0.5)
-	LoadingImage.Size = UDim2.fromOffset(64, 64)
-	LoadingImage.BackgroundTransparency = 1
-	LoadingImage.Image = "rbxthumb://type=Asset&id=112381138279003&w=150&h=150"
-	LoadingImage.ImageColor3 = self.Theme.Text
-	LoadingImage.Parent = LoadingFrame
-
-	local LoadingStarted = os.clock()
-	local LoadingConnection
-	LoadingConnection = RunService.RenderStepped:Connect(function()
-		if not LoadingGui.Parent then
-			LoadingConnection:Disconnect()
-			return
-		end
-		local Elapsed = os.clock() - LoadingStarted
-		LoadingImage.Rotation = (Elapsed * 180) % 360
-		LoadingImage.Size = UDim2.fromOffset(64 * math.abs(math.cos(Elapsed * 4)) + 10, 64)
-		LoadingStroke.Transparency = 0.2 + (math.sin(Elapsed * 5) + 1) * 0.25
-	end)
-
 	if ParentContainer:FindFirstChild("WolfUI") then
 		ParentContainer.WolfUI:Destroy()
 	end
@@ -655,14 +612,6 @@ function Wolf:CreateWindow(Config)
 	MainFrame.BackgroundTransparency = 1
 	task.defer(function()
 		SetUIVisible(true)
-		task.delay(0.34, function()
-			if LoadingConnection then
-				LoadingConnection:Disconnect()
-			end
-			if LoadingGui.Parent then
-				LoadingGui:Destroy()
-			end
-		end)
 	end)
 
 	---------------------------------------------------------
@@ -1648,20 +1597,30 @@ function Wolf:AddColorPicker(Config)
 	local Popup = Instance.new("Frame")
 	Popup.Name = "ColorPickerPopup"
 	Popup.Size = UDim2.fromOffset(260, 220)
-	Popup.BackgroundColor3 = self.Theme.Background
-	Popup.BackgroundTransparency = 0.05
+	Popup.BackgroundTransparency = 1
+	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 50
 	Popup.Parent = self.Library.Gui
-	Corner(Popup, 8)
-	Stroke(Popup, self.Theme.Border)
-	Padding(Popup, 8, 8, 8, 8)
+
+	local MainContainer = Instance.new("Frame")
+	MainContainer.Size = UDim2.fromOffset(260, 220)
+	MainContainer.BackgroundColor3 = self.Theme.Background
+	MainContainer.BackgroundTransparency = 0.35
+	MainContainer.BorderSizePixel = 0
+	MainContainer.Active = true
+	MainContainer.ClipsDescendants = false
+	MainContainer.ZIndex = 50
+	MainContainer.Parent = Popup
+	Corner(MainContainer, 12)
+	Stroke(MainContainer, self.Theme.Text, 0.85)
+	Padding(MainContainer, 8, 8, 8, 8)
 
 	local Layout = Instance.new("UIListLayout")
 	Layout.SortOrder = Enum.SortOrder.LayoutOrder
 	Layout.Padding = UDim.new(0, 8)
 	Layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	Layout.Parent = Popup
+	Layout.Parent = MainContainer
 
 	local function NewBar(Name, Height)
 		local Bar = Instance.new("Frame")
@@ -1670,7 +1629,7 @@ function Wolf:AddColorPicker(Config)
 		Bar.BorderSizePixel = 0
 		Bar.ClipsDescendants = false
 		Bar.ZIndex = 51
-		Bar.Parent = Popup
+		Bar.Parent = MainContainer
 		Corner(Bar, 6)
 		return Bar
 	end
@@ -1775,25 +1734,38 @@ function Wolf:AddColorPicker(Config)
 	Footer.BackgroundTransparency = 1
 	Footer.LayoutOrder = 4
 	Footer.ZIndex = 51
-	Footer.Parent = Popup
-	local HexBox = Instance.new("TextBox")
+	Footer.Parent = MainContainer
+	local HexBox = Instance.new("Frame")
 	HexBox.Size = UDim2.new(1, -40, 1, 0)
 	HexBox.BackgroundColor3 = self.Theme.Card
-	HexBox.TextColor3 = self.Theme.Text
-	HexBox.PlaceholderColor3 = self.Theme.SubText
-	HexBox.FontFace = self.Fonts.Small
-	HexBox.TextSize = 11
-	HexBox.TextXAlignment = Enum.TextXAlignment.Left
-	HexBox.ClearTextOnFocus = false
 	HexBox.ZIndex = 52
 	HexBox.Parent = Footer
 	Corner(HexBox, 6)
 	Stroke(HexBox, self.Theme.Border)
-	Padding(HexBox, 10, 4, 0, 0)
+
+	local ColorPreview = Instance.new("Frame")
+	ColorPreview.Size = UDim2.fromOffset(20, 20)
+	ColorPreview.Position = UDim2.new(0, 6, 0.5, -10)
+	ColorPreview.BackgroundColor3 = Default
+	ColorPreview.BorderSizePixel = 0
+	ColorPreview.ZIndex = 53
+	ColorPreview.Parent = HexBox
+	Corner(ColorPreview, 4)
+
+	local HexInput = Instance.new("TextBox")
+	HexInput.Size = UDim2.new(0.5, -30, 1, 0)
+	HexInput.Position = UDim2.new(0, 32, 0, 0)
+	HexInput.BackgroundTransparency = 1
+	HexInput.TextColor3 = self.Theme.Text
+	HexInput.FontFace = self.Fonts.Small
+	HexInput.TextSize = 11
+	HexInput.TextXAlignment = Enum.TextXAlignment.Left
+	HexInput.ClearTextOnFocus = false
+	HexInput.ZIndex = 53
+	HexInput.Parent = HexBox
 	local AlphaInput = Instance.new("TextBox")
-	AlphaInput.AnchorPoint = Vector2.new(1, 0)
-	AlphaInput.Position = UDim2.new(0.6, 1, 0, 0)
 	AlphaInput.Size = UDim2.new(0.4, -1, 1, 0)
+	AlphaInput.Position = UDim2.new(0.6, 1, 0, 0)
 	AlphaInput.BackgroundColor3 = self.Theme.Card
 	AlphaInput.TextColor3 = self.Theme.Text
 	AlphaInput.FontFace = self.Fonts.Small
@@ -1801,7 +1773,7 @@ function Wolf:AddColorPicker(Config)
 	AlphaInput.TextXAlignment = Enum.TextXAlignment.Center
 	AlphaInput.ClearTextOnFocus = false
 	AlphaInput.ZIndex = 53
-	AlphaInput.Parent = Footer
+	AlphaInput.Parent = HexBox
 	Corner(AlphaInput, 6)
 	Stroke(AlphaInput, self.Theme.Border)
 
@@ -1830,12 +1802,12 @@ function Wolf:AddColorPicker(Config)
 		SVCursor.Position = UDim2.new(S, 0, 1 - V, 0)
 		HueCursor.Position = UDim2.new(H, 0, 0.5, 0)
 		AlphaCursor.Position = UDim2.new(A, 0, 0.5, 0)
-		Swatch.BackgroundColor3 = CurrentColor
+		ColorPreview.BackgroundColor3 = CurrentColor
+		ColorPreview.BackgroundTransparency = 1 - A
 		if not SkipText then
-			HexBox.Text = "#" .. CurrentColor:ToHex():upper()
+			HexInput.Text = "#" .. CurrentColor:ToHex():upper()
 			AlphaInput.Text = tostring(math.round(A * 100)) .. "%"
 		end
-		Callback(CurrentColor, A)
 	end
 
 	local ActiveSlider
@@ -1885,8 +1857,8 @@ function Wolf:AddColorPicker(Config)
 		end
 	end)
 
-	HexBox.FocusLost:Connect(function()
-		local Success, Parsed = pcall(Color3.fromHex, HexBox.Text:gsub("#", ""))
+	HexInput.FocusLost:Connect(function()
+		local Success, Parsed = pcall(Color3.fromHex, HexInput.Text:gsub("#", ""))
 		if Success and Parsed then
 			H, S, V = Parsed:ToHSV()
 		end
@@ -1914,6 +1886,9 @@ function Wolf:AddColorPicker(Config)
 
 	PipetteButton.MouseButton1Click:Connect(function()
 		Swatch.BackgroundColor3 = CurrentColor
+		Callback(CurrentColor, A)
+		Popup.Visible = false
+		table.clear(self.OpenDropdowns)
 	end)
 
 	UpdateUI(false)
