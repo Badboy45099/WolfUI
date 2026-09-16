@@ -413,17 +413,18 @@ function Wolf:CreateWindow(Config)
 	-- Lock Button
 	local LockButton = Instance.new("TextButton")
 	LockButton.Name = "LockButton"
-	LockButton.Size = UDim2.fromOffset(60, 30)
+	LockButton.Size = UDim2.fromOffset(68, 30)
 	LockButton.BackgroundColor3 = self.Theme.AccentDark
 	LockButton.TextColor3 = Color3.new(1, 1, 1)
 	LockButton.FontFace = self.Fonts.Button
 	LockButton.TextSize = 11
 	LockButton.Text = "LOCK"
-	LockButton.TextXAlignment = Enum.TextXAlignment.Right
+	LockButton.TextXAlignment = Enum.TextXAlignment.Left
 	LockButton.Parent = ControlsHolder
 	Corner(LockButton, 6)
+	Padding(LockButton, 25, 7, 0, 0)
 	local LockIcon =
-		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(14, 14), Color3.new(1, 1, 1), 2)
+		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(13, 13), Color3.new(1, 1, 1), 2)
 
 	-- Main Display Container
 	local ContentArea = Instance.new("ScrollingFrame")
@@ -475,9 +476,9 @@ function Wolf:CreateWindow(Config)
 
 	local ResizeIcon = Instance.new("ImageButton")
 	ResizeIcon.Name = "ResizeIcon"
-	ResizeIcon.AnchorPoint = Vector2.new(1, 0.5)
-	ResizeIcon.Position = UDim2.new(1, -6, 1, -6)
-	ResizeIcon.Size = UDim2.fromOffset(16, 16)
+	ResizeIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	ResizeIcon.Position = UDim2.new(1, -14, 1, -14)
+	ResizeIcon.Size = UDim2.fromOffset(18, 18)
 	ResizeIcon.BackgroundTransparency = 1
 	ResizeIcon.AutoButtonColor = false
 	ResizeIcon.Active = true
@@ -712,8 +713,8 @@ function Wolf:AddTab(Config)
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
-	Padding(TabButton, TabIcon and 34 or 12, 8, 0, 0)
-	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(10, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 3)
+	Padding(TabButton, TabIcon and 32 or 12, 8, 0, 0)
+	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(9, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
 
 	local Tab = setmetatable({
 		Library = self,
@@ -774,7 +775,7 @@ function Wolf:AddToggle(Idx, Config)
 	Indicator.Size = UDim2.fromOffset(36, 18)
 	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
 	Indicator.Parent = ToggleFrame
-	Corner(Indicator, 100)
+	Corner(Indicator, 5)
 
 	local Knob = Instance.new("Frame")
 	Knob.AnchorPoint = Vector2.new(0, 0.5)
@@ -782,7 +783,7 @@ function Wolf:AddToggle(Idx, Config)
 	Knob.Size = UDim2.fromOffset(14, 14)
 	Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
 	Knob.Parent = Indicator
-	Corner(Knob, 100)
+	Corner(Knob, 4)
 
 	local ClickBtn = Instance.new("TextButton")
 	ClickBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -1032,7 +1033,7 @@ function Wolf:AddToggle(Config)
 	Indicator.Size = UDim2.fromOffset(36, 18)
 	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
 	Indicator.Parent = ToggleFrame
-	Corner(Indicator, 100)
+	Corner(Indicator, 5)
 
 	local Knob = Instance.new("Frame")
 	Knob.AnchorPoint = Vector2.new(0, 0.5)
@@ -1040,7 +1041,7 @@ function Wolf:AddToggle(Config)
 	Knob.Size = UDim2.fromOffset(14, 14)
 	Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
 	Knob.Parent = Indicator
-	Corner(Knob, 100)
+	Corner(Knob, 4)
 
 	local ClickBtn = Instance.new("TextButton")
 	ClickBtn.Size = UDim2.new(1, 0, 1, 0)
@@ -1220,6 +1221,277 @@ function Wolf:AddTextbox(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = InputFrame })
 	return InputFrame
+end
+
+-- Single-selection dropdown
+function Wolf:AddDropdown(Config)
+	Config = Config or {}
+	local Title = Config.Title or "Select"
+	local IconName = Config.Icon or Config.icon
+	local Options = Config.Options or Config.Values or {}
+	local Callback = Config.Callback or function() end
+	local Selected = Config.Default
+
+	local DropdownFrame = Instance.new("Frame")
+	DropdownFrame.Name = "Dropdown"
+	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DropdownFrame.BackgroundColor3 = self.Theme.Card
+	DropdownFrame.Parent = ElementParent(self)
+	Corner(DropdownFrame, 6)
+	Stroke(DropdownFrame, self.Theme.Border)
+
+	local DropdownLayout = Instance.new("UIListLayout")
+	DropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	DropdownLayout.Padding = UDim.new(0, 0)
+	DropdownLayout.Parent = DropdownFrame
+
+	local DropdownButton = Instance.new("TextButton")
+	DropdownButton.Size = UDim2.new(1, 0, 0, 40)
+	DropdownButton.BackgroundTransparency = 1
+	DropdownButton.Text = ""
+	DropdownButton.AutoButtonColor = false
+	DropdownButton.Parent = DropdownFrame
+
+	local Label = Instance.new("TextLabel")
+	Label.Position = UDim2.fromOffset(12, 0)
+	Label.Size = UDim2.new(0.45, -12, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.FontFace = self.Fonts.Body
+	Label.Text = Title
+	Label.TextColor3 = self.Theme.Text
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = DropdownButton
+
+	local ValueLabel = Instance.new("TextLabel")
+	ValueLabel.Position = UDim2.new(0.45, 0, 0, 0)
+	ValueLabel.Size = UDim2.new(0.55, -36, 1, 0)
+	ValueLabel.BackgroundTransparency = 1
+	ValueLabel.FontFace = self.Fonts.Small
+	ValueLabel.TextColor3 = self.Theme.SubText
+	ValueLabel.TextSize = 11
+	ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	ValueLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	ValueLabel.Parent = DropdownButton
+
+	if IconName then
+		Label.Position = UDim2.fromOffset(36, 0)
+		Label.Size = UDim2.new(0.45, -36, 1, 0)
+		CreateIcon(DropdownButton, IconName, UDim2.fromOffset(12, 12), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
+
+	local Chevron = CreateIcon(
+		DropdownButton,
+		"chevron-down",
+		UDim2.new(1, -26, 0.5, 0),
+		UDim2.fromOffset(16, 16),
+		self.Theme.SubText,
+		2
+	)
+	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+
+	local OptionsFrame = Instance.new("Frame")
+	OptionsFrame.Name = "Options"
+	OptionsFrame.Size = UDim2.new(1, 0, 0, 0)
+	OptionsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	OptionsFrame.BackgroundTransparency = 1
+	OptionsFrame.Visible = false
+	OptionsFrame.Parent = DropdownFrame
+	Padding(OptionsFrame, 8, 8, 0, 8)
+
+	local OptionsLayout = Instance.new("UIListLayout")
+	OptionsLayout.Padding = UDim.new(0, 4)
+	OptionsLayout.Parent = OptionsFrame
+
+	local function OptionData(Option)
+		if typeof(Option) == "table" then
+			return tostring(Option.Title or Option.Name or Option.Value), Option.Value or Option.Title or Option.Name
+		end
+		return tostring(Option), Option
+	end
+
+	local function UpdateValue(Value)
+		Selected = Value
+		ValueLabel.Text = Value == nil and "Select..." or tostring(Value)
+		Callback(Value)
+	end
+
+	for _, Option in ipairs(Options) do
+		local OptionTitle, OptionValue = OptionData(Option)
+		local OptionButton = Instance.new("TextButton")
+		OptionButton.Size = UDim2.new(1, 0, 0, 28)
+		OptionButton.BackgroundColor3 = self.Theme.Surface
+		OptionButton.Text = OptionTitle
+		OptionButton.TextColor3 = self.Theme.Text
+		OptionButton.FontFace = self.Fonts.Small
+		OptionButton.TextSize = 11
+		OptionButton.TextXAlignment = Enum.TextXAlignment.Left
+		OptionButton.Parent = OptionsFrame
+		Padding(OptionButton, 10, 8, 0, 0)
+		Corner(OptionButton, 4)
+		OptionButton.MouseButton1Click:Connect(function()
+			UpdateValue(OptionValue)
+			OptionsFrame.Visible = false
+			ApplyIcon(Chevron, "chevron-down")
+		end)
+	end
+
+	ValueLabel.Text = Selected == nil and "Select..." or tostring(Selected)
+	DropdownButton.MouseButton1Click:Connect(function()
+		OptionsFrame.Visible = not OptionsFrame.Visible
+		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
+	end)
+
+	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
+	return {
+		SetValue = function(_, Value)
+			UpdateValue(Value)
+		end,
+		Value = Selected,
+	}
+end
+
+-- Multi-selection dropdown
+function Wolf:AddMultiDropdown(Config)
+	Config = Config or {}
+	local Title = Config.Title or "Select multiple"
+	local IconName = Config.Icon or Config.icon
+	local Options = Config.Options or Config.Values or {}
+	local Callback = Config.Callback or function() end
+	local Selected = {}
+	for _, Value in ipairs(Config.Default or {}) do
+		Selected[Value] = true
+	end
+
+	local DropdownFrame = Instance.new("Frame")
+	DropdownFrame.Name = "MultiDropdown"
+	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
+	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DropdownFrame.BackgroundColor3 = self.Theme.Card
+	DropdownFrame.Parent = ElementParent(self)
+	Corner(DropdownFrame, 6)
+	Stroke(DropdownFrame, self.Theme.Border)
+
+	local DropdownLayout = Instance.new("UIListLayout")
+	DropdownLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	DropdownLayout.Padding = UDim.new(0, 0)
+	DropdownLayout.Parent = DropdownFrame
+
+	local DropdownButton = Instance.new("TextButton")
+	DropdownButton.Size = UDim2.new(1, 0, 0, 40)
+	DropdownButton.BackgroundTransparency = 1
+	DropdownButton.Text = ""
+	DropdownButton.AutoButtonColor = false
+	DropdownButton.Parent = DropdownFrame
+
+	local Label = Instance.new("TextLabel")
+	Label.Position = UDim2.fromOffset(12, 0)
+	Label.Size = UDim2.new(0.45, -12, 1, 0)
+	Label.BackgroundTransparency = 1
+	Label.FontFace = self.Fonts.Body
+	Label.Text = Title
+	Label.TextColor3 = self.Theme.Text
+	Label.TextSize = 12
+	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.Parent = DropdownButton
+	if IconName then
+		Label.Position = UDim2.fromOffset(36, 0)
+		Label.Size = UDim2.new(0.45, -36, 1, 0)
+		CreateIcon(DropdownButton, IconName, UDim2.fromOffset(12, 12), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	end
+
+	local ValueLabel = Instance.new("TextLabel")
+	ValueLabel.Position = UDim2.new(0.45, 0, 0, 0)
+	ValueLabel.Size = UDim2.new(0.55, -36, 1, 0)
+	ValueLabel.BackgroundTransparency = 1
+	ValueLabel.FontFace = self.Fonts.Small
+	ValueLabel.TextColor3 = self.Theme.SubText
+	ValueLabel.TextSize = 11
+	ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
+	ValueLabel.TextTruncate = Enum.TextTruncate.AtEnd
+	ValueLabel.Parent = DropdownButton
+
+	local Chevron = CreateIcon(
+		DropdownButton,
+		"chevron-down",
+		UDim2.new(1, -26, 0.5, 0),
+		UDim2.fromOffset(16, 16),
+		self.Theme.SubText,
+		2
+	)
+	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+
+	local OptionsFrame = Instance.new("Frame")
+	OptionsFrame.Name = "Options"
+	OptionsFrame.Size = UDim2.new(1, 0, 0, 0)
+	OptionsFrame.AutomaticSize = Enum.AutomaticSize.Y
+	OptionsFrame.BackgroundTransparency = 1
+	OptionsFrame.Visible = false
+	OptionsFrame.Parent = DropdownFrame
+	Padding(OptionsFrame, 8, 8, 0, 8)
+
+	local OptionsLayout = Instance.new("UIListLayout")
+	OptionsLayout.Padding = UDim.new(0, 4)
+	OptionsLayout.Parent = OptionsFrame
+
+	local function OptionData(Option)
+		if typeof(Option) == "table" then
+			return tostring(Option.Title or Option.Name or Option.Value), Option.Value or Option.Title or Option.Name
+		end
+		return tostring(Option), Option
+	end
+
+	local function UpdateValueLabel()
+		local Values = {}
+		for _, Option in ipairs(Options) do
+			local OptionTitle, OptionValue = OptionData(Option)
+			if Selected[OptionValue] then
+				table.insert(Values, OptionTitle)
+			end
+		end
+		ValueLabel.Text = #Values == 0 and "None" or table.concat(Values, ", ")
+	end
+
+	for _, Option in ipairs(Options) do
+		local OptionTitle, OptionValue = OptionData(Option)
+		local OptionButton = Instance.new("TextButton")
+		OptionButton.Size = UDim2.new(1, 0, 0, 28)
+		OptionButton.BackgroundColor3 = Selected[OptionValue] and self.Theme.Accent or self.Theme.Surface
+		OptionButton.Text = OptionTitle
+		OptionButton.TextColor3 = self.Theme.Text
+		OptionButton.FontFace = self.Fonts.Small
+		OptionButton.TextSize = 11
+		OptionButton.TextXAlignment = Enum.TextXAlignment.Left
+		OptionButton.Parent = OptionsFrame
+		Padding(OptionButton, 10, 8, 0, 0)
+		Corner(OptionButton, 4)
+		OptionButton.MouseButton1Click:Connect(function()
+			Selected[OptionValue] = not Selected[OptionValue]
+			OptionButton.BackgroundColor3 = Selected[OptionValue] and self.Theme.Accent or self.Theme.Surface
+			UpdateValueLabel()
+			Callback(Selected)
+		end)
+	end
+
+	UpdateValueLabel()
+	DropdownButton.MouseButton1Click:Connect(function()
+		OptionsFrame.Visible = not OptionsFrame.Visible
+		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
+	end)
+
+	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
+	return {
+		SetValue = function(_, Values)
+			Selected = {}
+			for _, Value in ipairs(Values or {}) do
+				Selected[Value] = true
+			end
+			UpdateValueLabel()
+			Callback(Selected)
+		end,
+		Value = Selected,
+	}
 end
 
 return Wolf
