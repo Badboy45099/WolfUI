@@ -180,6 +180,10 @@ function Wolf:CreateWindow(Config)
 	self.ActiveTab = nil
 	self.ShortcutHolder = nil
 	self.ShortcutCount = 0
+	self.ShortcutButtons = {}
+	self.ShortcutChevrons = {}
+	self.ShortcutTrigger = nil
+	self.ShortcutsVisible = false
 	self.OpenDropdowns = {}
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -2111,9 +2115,7 @@ function Wolf:AddShortcut(Config)
 	local ShortcutHeight = Config.Height or 34
 	local Button = Instance.new("TextButton")
 	Button.Name = IsToggleShortcut and "S2Btn" or Side .. "Shortcut"
-	if not IsToggleShortcut then
-		self.ShortcutCount = self.ShortcutCount + 1
-	end
+	self.ShortcutCount = self.ShortcutCount + 1
 	Button.Size = UDim2.fromOffset(ShortcutWidth, ShortcutHeight)
 	Button.AnchorPoint = Vector2.new(1, 0)
 	Button.Position = UDim2.new(1, 0, 0, (self.ShortcutCount - 1) * 42)
@@ -2129,10 +2131,9 @@ function Wolf:AddShortcut(Config)
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
 	Button.Parent = self.Gui
-	if IsToggleShortcut then
-		Button.Visible = false
-		Button.AnchorPoint = Vector2.new(0, 0)
-	end
+	Button.Visible = false
+	Button.AnchorPoint = Vector2.new(0, 0)
+	table.insert(self.ShortcutButtons, Button)
 	Corner(Button, 6)
 	Stroke(Button, self.Theme.Border, 0.35)
 
@@ -2170,30 +2171,10 @@ function Wolf:AddShortcut(Config)
 		ShortcutLabel.Parent = Button
 	end
 
-	local TriggerButton
 	local ChevronButton
 	local Chevron
 	if IsToggleShortcut then
-		TriggerButton = Instance.new("ImageButton")
-		TriggerButton.Name = "S2Trigger"
-		TriggerButton.Size = UDim2.fromOffset(26, 26)
-		TriggerButton.BackgroundColor3 = self.Theme.Card
-		TriggerButton.BackgroundTransparency = 0.1
-		TriggerButton.BorderSizePixel = 0
-		TriggerButton.AutoButtonColor = false
-		TriggerButton.ZIndex = 104
-		TriggerButton.Parent = self.Gui
-		Corner(TriggerButton, 6)
-		Stroke(TriggerButton, self.Theme.Border, 0.25)
-		local TriggerIcon = CreateIcon(
-			TriggerButton,
-			"plug-zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(16, 16),
-			self.Theme.Accent,
-			105
-		)
-		TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+		ChevronButton = Instance.new("ImageButton")
 
 		ChevronButton = Instance.new("ImageButton")
 		ChevronButton.Name = "S2Chevron"
@@ -2216,6 +2197,7 @@ function Wolf:AddShortcut(Config)
 			105
 		)
 		Chevron.AnchorPoint = Vector2.new(0.5, 0.5)
+		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
 	local ShortcutOffset = Vector2.new(0, 0)
@@ -2239,26 +2221,25 @@ function Wolf:AddShortcut(Config)
 		end
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
-		local TotalWidth = Button.AbsoluteSize.X + ChevronButton.AbsoluteSize.X + 4
+		local TotalWidth = Button.AbsoluteSize.X + (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
 		if UseTargetPosition then
-			local TriggerPosition =
-				ClampShortcutPosition(ElementPosition + Vector2.new(ElementSize.X + 6, 0), TriggerButton.AbsoluteSize)
 			local ShortcutPosition = ClampShortcutPosition(
-				ElementPosition + Vector2.new(ElementSize.X + TriggerButton.AbsoluteSize.X + 10, 0),
+				ElementPosition + Vector2.new(ElementSize.X + 10, 0),
 				Vector2.new(TotalWidth, Button.AbsoluteSize.Y)
 			)
-			TriggerButton.Position = UDim2.fromOffset(TriggerPosition.X, TriggerPosition.Y)
 			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
-			ChevronButton.Position =
-				UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+			if ChevronButton then
+				ChevronButton.Position =
+					UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+			end
 		else
-			local TriggerPosition = ClampShortcutPosition(TriggerButton.AbsolutePosition, TriggerButton.AbsoluteSize)
 			local ShortcutPosition =
 				ClampShortcutPosition(Button.AbsolutePosition, Vector2.new(TotalWidth, Button.AbsoluteSize.Y))
-			TriggerButton.Position = UDim2.fromOffset(TriggerPosition.X, TriggerPosition.Y)
 			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
-			ChevronButton.Position =
-				UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+			if ChevronButton then
+				ChevronButton.Position =
+					UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+			end
 		end
 	end
 
@@ -2341,19 +2322,6 @@ function Wolf:AddShortcut(Config)
 		end
 	end
 
-	local function ToggleShortcutVisibility()
-		if not Element then
-			return
-		end
-		local ShowShortcut = not Button.Visible
-		Button.Visible = ShowShortcut
-		ChevronButton.Visible = ShowShortcut
-		if not ShowShortcut and Element.Popup then
-			Element.Popup.Visible = false
-			table.clear(self.OpenDropdowns)
-		end
-	end
-
 	local function ToggleSelectionFrame()
 		if not Element or not Element.Popup then
 			return
@@ -2383,11 +2351,99 @@ function Wolf:AddShortcut(Config)
 			ActivateShortcut()
 		end
 	end)
-	if TriggerButton then
-		TriggerButton.MouseButton1Click:Connect(ToggleShortcutVisibility)
-	end
 	if ChevronButton then
 		ChevronButton.MouseButton1Click:Connect(ToggleSelectionFrame)
+	end
+
+	if not self.ShortcutTrigger then
+		local TriggerButton = Instance.new("ImageButton")
+		TriggerButton.Name = "ShortcutTrigger"
+		TriggerButton.Size = UDim2.fromOffset(30, 30)
+		TriggerButton.Position = UDim2.fromOffset(18, 18)
+		TriggerButton.BackgroundColor3 = self.Theme.Card
+		TriggerButton.BackgroundTransparency = 0.1
+		TriggerButton.BorderSizePixel = 0
+		TriggerButton.AutoButtonColor = false
+		TriggerButton.ZIndex = 110
+		TriggerButton.Parent = self.Gui
+		Corner(TriggerButton, 6)
+		Stroke(TriggerButton, self.Theme.Border, 0.2)
+		local TriggerIcon = CreateIcon(
+			TriggerButton,
+			"plug-zap",
+			UDim2.fromScale(0.5, 0.5),
+			UDim2.fromOffset(18, 18),
+			self.Theme.Accent,
+			111
+		)
+		TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+		self.ShortcutTrigger = TriggerButton
+
+		local TriggerDragging = false
+		local TriggerMoved = false
+		local TriggerStartInput
+		local TriggerStartPosition
+		TriggerButton.InputBegan:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseButton1
+				or Input.UserInputType == Enum.UserInputType.Touch
+			then
+				TriggerDragging = true
+				TriggerMoved = false
+				TriggerStartInput = Input.Position
+				TriggerStartPosition = TriggerButton.Position
+			end
+		end)
+		UserInputService.InputChanged:Connect(function(Input)
+			if
+				TriggerDragging
+				and (
+					Input.UserInputType == Enum.UserInputType.MouseMovement
+					or Input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				local Delta = Input.Position - TriggerStartInput
+				TriggerMoved = TriggerMoved or Delta.Magnitude > 6
+				local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
+					or Vector2.new(1280, 720)
+				local Position = Vector2.new(
+					math.clamp(
+						TriggerStartPosition.X.Offset + Delta.X,
+						8,
+						math.max(8, Viewport.X - TriggerButton.AbsoluteSize.X - 8)
+					),
+					math.clamp(
+						TriggerStartPosition.Y.Offset + Delta.Y,
+						8,
+						math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8)
+					)
+				)
+				TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
+			end
+		end)
+		UserInputService.InputEnded:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseButton1
+				or Input.UserInputType == Enum.UserInputType.Touch
+			then
+				TriggerDragging = false
+			end
+		end)
+		TriggerButton.MouseButton1Click:Connect(function()
+			if TriggerMoved then
+				return
+			end
+			self.ShortcutsVisible = not self.ShortcutsVisible
+			for _, ShortcutButton in ipairs(self.ShortcutButtons) do
+				ShortcutButton.Visible = self.ShortcutsVisible
+			end
+			for _, ChevronControl in ipairs(self.ShortcutChevrons) do
+				ChevronControl.Visible = self.ShortcutsVisible
+			end
+			if not self.ShortcutsVisible then
+				self._CloseDropdowns()
+			end
+		end)
 	end
 
 	return Button
@@ -2460,6 +2516,23 @@ function Wolf:AddDropdown(Config)
 		2
 	)
 	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+
+	local SelectionFrame = Instance.new("Frame")
+	SelectionFrame.Name = "DropdownSelection"
+	SelectionFrame.Position = UDim2.new(0.45, 4, 0.5, -16)
+	SelectionFrame.Size = UDim2.new(0.55, -12, 0, 32)
+	SelectionFrame.BackgroundColor3 = self.Theme.Surface
+	SelectionFrame.BackgroundTransparency = 0.15
+	SelectionFrame.BorderSizePixel = 0
+	SelectionFrame.ZIndex = 2
+	SelectionFrame.Parent = DropdownButton
+	Corner(SelectionFrame, 4)
+	Stroke(SelectionFrame, self.Theme.Border, 0.2)
+	ValueLabel.Parent = SelectionFrame
+	ValueLabel.Position = UDim2.fromOffset(8, 0)
+	ValueLabel.Size = UDim2.new(1, -34, 1, 0)
+	Chevron.Parent = SelectionFrame
+	Chevron.Position = UDim2.new(1, -26, 0.5, 0)
 
 	local OptionsFrame = Instance.new("ScrollingFrame")
 	OptionsFrame.Name = "DropdownSelectionFrame"
@@ -2665,7 +2738,25 @@ function Wolf:AddMultiDropdown(Config)
 		self.Theme.SubText,
 		2
 	)
+
 	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+
+	local SelectionFrame = Instance.new("Frame")
+	SelectionFrame.Name = "DropdownSelection"
+	SelectionFrame.Position = UDim2.new(0.45, 4, 0.5, -16)
+	SelectionFrame.Size = UDim2.new(0.55, -12, 0, 32)
+	SelectionFrame.BackgroundColor3 = self.Theme.Surface
+	SelectionFrame.BackgroundTransparency = 0.15
+	SelectionFrame.BorderSizePixel = 0
+	SelectionFrame.ZIndex = 2
+	SelectionFrame.Parent = DropdownButton
+	Corner(SelectionFrame, 4)
+	Stroke(SelectionFrame, self.Theme.Border, 0.2)
+	ValueLabel.Parent = SelectionFrame
+	ValueLabel.Position = UDim2.fromOffset(8, 0)
+	ValueLabel.Size = UDim2.new(1, -34, 1, 0)
+	Chevron.Parent = SelectionFrame
+	Chevron.Position = UDim2.new(1, -26, 0.5, 0)
 
 	local OptionsFrame = Instance.new("ScrollingFrame")
 	OptionsFrame.Name = "DropdownSelectionFrame"
