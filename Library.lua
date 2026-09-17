@@ -208,11 +208,14 @@ function Wolf:CreateWindow(Config)
 	WolfUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	WolfUI.Parent = ParentContainer
 
+	local IsMobile = UserInputService.TouchEnabled
+	local DeviceWindowSize = IsMobile and UDim2.fromOffset(380, 520) or UDim2.fromOffset(720, 460)
+
 	local MainFrame = Instance.new("Frame")
 	MainFrame.Name = "MainFrame"
 	MainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 	MainFrame.Position = UDim2.fromScale(0.5, 0.5)
-	MainFrame.Size = UDim2.fromOffset(720, 460)
+	MainFrame.Size = DeviceWindowSize
 	MainFrame.BackgroundColor3 = self.Theme.Background
 	MainFrame.BackgroundTransparency = 0.05
 	MainFrame.BorderSizePixel = 0
@@ -528,7 +531,7 @@ function Wolf:CreateWindow(Config)
 	Corner(ToggleButton, 8)
 
 	local uiVisible = true
-	local TargetWindowSize = UDim2.fromOffset(720, 460)
+	local TargetWindowSize = DeviceWindowSize
 	local TargetWindowPosition = MainFrame.Position
 	local ToggleDragging = false
 	local ToggleMoved = false
@@ -641,10 +644,10 @@ function Wolf:CreateWindow(Config)
 	-- Maximum allowed window dimensions
 	local MaxSize = Vector2.new(1000, 700)
 
-	local SidebarWidth = 190
+	local SidebarWidth = IsMobile and 110 or 190
 	local SidebarMinWidth = 110
 	local SidebarMaxWidth = 300
-	local SidebarRatio = SidebarWidth / 720
+	local SidebarRatio = SidebarWidth / (IsMobile and 380 or 720)
 
 	local function UpdateSidebarLayout()
 		Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
@@ -656,6 +659,7 @@ function Wolf:CreateWindow(Config)
 		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
 	end
+	UpdateSidebarLayout()
 
 	local function CloseDropdowns()
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
@@ -2088,7 +2092,8 @@ function Wolf:AddShortcut(Config)
 	Button.TextColor3 = self.Theme.Text
 	Button.FontFace = self.Fonts.Button
 	Button.TextSize = 11
-	Button.TextXAlignment = Config.Icon and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
+	Button.TextXAlignment = Enum.TextXAlignment.Center
+	Button.TextTransparency = 1
 	Button.ZIndex = 101
 	Button.Parent = self.ShortcutHolder
 	self.ShortcutHolder.Size = UDim2.fromOffset(120, math.max(100, self.ShortcutCount * 42))
@@ -2101,12 +2106,32 @@ function Wolf:AddShortcut(Config)
 		if ShortcutText == "" then
 			ShortcutIcon.Position = UDim2.fromScale(0.5, 0.5)
 			ShortcutIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-			Button.TextXAlignment = Enum.TextXAlignment.Center
 		else
-			Button.Text = ShortcutText
-			Button.TextXAlignment = Enum.TextXAlignment.Left
-			Padding(Button, 30, 8, 0, 0)
+			local ShortcutLabel = Instance.new("TextLabel")
+			ShortcutLabel.BackgroundTransparency = 1
+			ShortcutLabel.Position = UDim2.fromOffset(30, 0)
+			ShortcutLabel.Size = UDim2.new(1, -38, 1, 0)
+			ShortcutLabel.FontFace = self.Fonts.Button
+			ShortcutLabel.Text = ShortcutText
+			ShortcutLabel.TextColor3 = self.Theme.Text
+			ShortcutLabel.TextSize = 11
+			ShortcutLabel.TextXAlignment = Enum.TextXAlignment.Left
+			ShortcutLabel.TextTruncate = Enum.TextTruncate.AtEnd
+			ShortcutLabel.ZIndex = 103
+			ShortcutLabel.Parent = Button
 		end
+	else
+		local ShortcutLabel = Instance.new("TextLabel")
+		ShortcutLabel.BackgroundTransparency = 1
+		ShortcutLabel.Size = UDim2.fromScale(1, 1)
+		ShortcutLabel.FontFace = self.Fonts.Button
+		ShortcutLabel.Text = ShortcutText
+		ShortcutLabel.TextColor3 = self.Theme.Text
+		ShortcutLabel.TextSize = 11
+		ShortcutLabel.TextXAlignment = Enum.TextXAlignment.Center
+		ShortcutLabel.TextTruncate = Enum.TextTruncate.AtEnd
+		ShortcutLabel.ZIndex = 103
+		ShortcutLabel.Parent = Button
 	end
 	local ChevronButton
 	local Chevron
@@ -2196,11 +2221,24 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		local Open = false
-		if Element.Popup and Element.Toggle then
-			Element:Toggle()
-			Open = Element.Popup.Visible
-		elseif Element.Popup then
-			Element.Popup.Visible = not Element.Popup.Visible
+		if Element.Popup then
+			if Element.Popup.Visible then
+				Element.Popup.Visible = false
+				table.clear(self.OpenDropdowns)
+			else
+				if self._CloseDropdowns then
+					self._CloseDropdowns()
+				end
+				Element.Popup.Visible = true
+				table.insert(self.OpenDropdowns, {
+					Frame = Element.Popup,
+					Anchor = ChevronButton,
+					Chevron = Chevron,
+				})
+				if self._UpdateDropdownPositions then
+					self._UpdateDropdownPositions()
+				end
+			end
 			Open = Element.Popup.Visible
 		elseif Element.Toggle then
 			Element:Toggle()
