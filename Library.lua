@@ -301,10 +301,12 @@ function Wolf:CreateWindow(Config)
 	Username.Text = "@" .. LocalPlayer.Name
 	Username.Parent = ProfileCard
 
-	local DeviceIcon = Instance.new("ImageLabel")
+	local DeviceIcon = Instance.new("ImageButton")
 	DeviceIcon.Position = UDim2.new(1, -40, 0, 80)
 	DeviceIcon.Size = UDim2.fromOffset(24, 24)
 	DeviceIcon.BackgroundTransparency = 1
+	DeviceIcon.AutoButtonColor = false
+	DeviceIcon.Active = true
 	ApplyIcon(DeviceIcon, UserInputService.TouchEnabled and "smartphone" or "monitor")
 	DeviceIcon.ImageColor3 = self.Theme.Accent
 	DeviceIcon.Parent = ProfileCard
@@ -533,6 +535,29 @@ function Wolf:CreateWindow(Config)
 	local uiVisible = true
 	local TargetWindowSize = DeviceWindowSize
 	local TargetWindowPosition = MainFrame.Position
+	local function ComfortableWindowSize()
+		local ViewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		local Width
+		local Height
+		if UserInputService.TouchEnabled then
+			Width = math.min(380, math.max(300, ViewportSize.X - 24))
+			Height = math.min(560, math.max(360, ViewportSize.Y - 80))
+		else
+			Width = math.min(800, math.max(560, ViewportSize.X - 80))
+			Height = math.min(560, math.max(380, ViewportSize.Y - 100))
+		end
+		return UDim2.fromOffset(Width, Height)
+	end
+
+	local function FitWindowToDevice()
+		TargetWindowSize = ComfortableWindowSize()
+		MainFrame.Size = TargetWindowSize
+		MainFrame.Position = UDim2.fromScale(0.5, 0.5)
+	end
+
+	DeviceIcon.MouseButton1Click:Connect(function()
+		FitWindowToDevice()
+	end)
 	local ToggleDragging = false
 	local ToggleMoved = false
 	local ToggleStartInputPosition
@@ -660,6 +685,7 @@ function Wolf:CreateWindow(Config)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
 	end
 	UpdateSidebarLayout()
+	FitWindowToDevice()
 
 	local function CloseDropdowns()
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
@@ -707,7 +733,7 @@ function Wolf:CreateWindow(Config)
 		local WindowSize = MainFrame.AbsoluteSize
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
 			local Anchor = Dropdown.Anchor
-			if Dropdown.Frame.Visible and Anchor and Anchor.Parent then
+			if Dropdown.Frame.Visible and Dropdown.Frame.Parent == self.Gui and Anchor and Anchor.Parent then
 				local AnchorPosition = Anchor.AbsolutePosition
 				local AnchorSize = Anchor.AbsoluteSize
 				local FrameSize = Dropdown.Frame.AbsoluteSize
@@ -2078,8 +2104,9 @@ function Wolf:AddShortcut(Config)
 	local Button = Instance.new("TextButton")
 	Button.Name = Side .. "Shortcut"
 	self.ShortcutCount = self.ShortcutCount + 1
-	local ShortcutText = Config.Text or Config.Title or ""
-	local ShortcutWidth = Config.Width or (ShortcutText == "" and (Config.Icon and 34 or 86) or 86)
+	local ShortcutText = Config.Text or Config.text or Config.Title or ""
+	local ShortcutIconName = Config.Icon or Config.icon or (IsToggleShortcut and "plug-zap")
+	local ShortcutWidth = Config.Width or (ShortcutText == "" and (ShortcutIconName and 34 or 86) or 86)
 	local ChevronWidth = IsToggleShortcut and 20 or 0
 	Button.Size = UDim2.fromOffset(ShortcutWidth, Config.Height or 34)
 	Button.AnchorPoint = Vector2.new(1, 0)
@@ -2088,21 +2115,24 @@ function Wolf:AddShortcut(Config)
 	Button.BackgroundTransparency = 0.15
 	Button.BorderSizePixel = 0
 	Button.AutoButtonColor = false
-	Button.Text = ShortcutText
+	Button.Text = ""
 	Button.TextColor3 = self.Theme.Text
 	Button.FontFace = self.Fonts.Button
 	Button.TextSize = 11
 	Button.TextXAlignment = Enum.TextXAlignment.Center
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
-	Button.Parent = self.ShortcutHolder
+	Button.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
+	if IsToggleShortcut then
+		Button.AnchorPoint = Vector2.new(0, 0)
+	end
 	self.ShortcutHolder.Size = UDim2.fromOffset(120, math.max(100, self.ShortcutCount * 42))
 	Corner(Button, 6)
 	Stroke(Button, self.Theme.Border, 0.35)
 
-	if Config.Icon then
+	if ShortcutIconName then
 		local ShortcutIcon =
-			CreateIcon(Button, Config.Icon, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
+			CreateIcon(Button, ShortcutIconName, UDim2.fromOffset(8, 9), UDim2.fromOffset(16, 16), self.Theme.Text, 102)
 		if ShortcutText == "" then
 			ShortcutIcon.Position = UDim2.fromScale(0.5, 0.5)
 			ShortcutIcon.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -2145,7 +2175,10 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.BackgroundTransparency = 1
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 101
-		ChevronButton.Parent = self.ShortcutHolder
+		ChevronButton.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
+		if IsToggleShortcut then
+			ChevronButton.AnchorPoint = Vector2.new(0, 0)
+		end
 		Corner(ChevronButton, 6)
 		Stroke(ChevronButton, self.Theme.Border, 1)
 		Chevron = CreateIcon(
@@ -2159,7 +2192,35 @@ function Wolf:AddShortcut(Config)
 		Chevron.AnchorPoint = Vector2.new(0.5, 0.5)
 	end
 
+	local ShortcutOffset = Vector2.new(0, 0)
+	local function UpdateShortcutPosition()
+		if not IsToggleShortcut or not Element or not Element.Frame or not Element.Frame.Parent then
+			return
+		end
+		local ElementPosition = Element.Frame.AbsolutePosition
+		local ElementSize = Element.Frame.AbsoluteSize
+		local ViewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		local TotalWidth = Button.AbsoluteSize.X + (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
+		local X = math.clamp(
+			ElementPosition.X + ElementSize.X + 6 + ShortcutOffset.X,
+			8,
+			math.max(8, ViewportSize.X - TotalWidth - 8)
+		)
+		local Y =
+			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, ViewportSize.Y - Button.AbsoluteSize.Y - 8))
+		Button.Position = UDim2.fromOffset(X, Y)
+		if ChevronButton then
+			ChevronButton.Position = UDim2.fromOffset(X + Button.AbsoluteSize.X + 4, Y)
+		end
+	end
+
+	if IsToggleShortcut then
+		UpdateShortcutPosition()
+		RunService.RenderStepped:Connect(UpdateShortcutPosition)
+	end
+
 	local Dragging = false
+	local DragMoved = false
 	local DragStart
 	local StartPosition
 	Button.InputBegan:Connect(function(Input)
@@ -2168,6 +2229,7 @@ function Wolf:AddShortcut(Config)
 			or Input.UserInputType == Enum.UserInputType.Touch
 		then
 			Dragging = true
+			DragMoved = false
 			DragStart = Input.Position
 			StartPosition = Button.Position
 		end
@@ -2181,6 +2243,15 @@ function Wolf:AddShortcut(Config)
 			)
 		then
 			local Delta = Input.Position - DragStart
+			DragMoved = DragMoved or Delta.Magnitude > 6
+			if not DragMoved then
+				return
+			end
+			if IsToggleShortcut then
+				ShortcutOffset = Delta
+				UpdateShortcutPosition()
+				return
+			end
 			Button.Position = UDim2.new(
 				StartPosition.X.Scale,
 				StartPosition.X.Offset + Delta.X,
@@ -2203,6 +2274,11 @@ function Wolf:AddShortcut(Config)
 			or Input.UserInputType == Enum.UserInputType.Touch
 		then
 			Dragging = false
+			if DragMoved then
+				task.delay(0.05, function()
+					DragMoved = false
+				end)
+			end
 		end
 	end)
 
@@ -2232,7 +2308,7 @@ function Wolf:AddShortcut(Config)
 				Element.Popup.Visible = true
 				table.insert(self.OpenDropdowns, {
 					Frame = Element.Popup,
-					Anchor = ChevronButton,
+					Anchor = Element.Frame or ChevronButton,
 					Chevron = Chevron,
 				})
 				if self._UpdateDropdownPositions then
@@ -2248,7 +2324,11 @@ function Wolf:AddShortcut(Config)
 		end
 	end
 
-	Button.MouseButton1Click:Connect(ActivateShortcut)
+	Button.MouseButton1Click:Connect(function()
+		if not DragMoved then
+			ActivateShortcut()
+		end
+	end)
 	if ChevronButton then
 		ChevronButton.MouseButton1Click:Connect(ToggleShortcutVisibility)
 	end
@@ -2336,7 +2416,7 @@ function Wolf:AddDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = self.Library.Gui
+	OptionsFrame.Parent = DropdownFrame
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -2415,10 +2495,6 @@ function Wolf:AddDropdown(Config)
 			self._CloseDropdowns()
 		end
 		OptionsFrame.Visible = not WasVisible
-		OptionsFrame.Position = UDim2.fromOffset(
-			DropdownButton.AbsolutePosition.X,
-			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
-		)
 		if OptionsFrame.Visible then
 			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
 			self._UpdateDropdownPositions()
@@ -2545,7 +2621,7 @@ function Wolf:AddMultiDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = self.Library.Gui
+	OptionsFrame.Parent = DropdownFrame
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -2625,10 +2701,6 @@ function Wolf:AddMultiDropdown(Config)
 			self._CloseDropdowns()
 		end
 		OptionsFrame.Visible = not WasVisible
-		OptionsFrame.Position = UDim2.fromOffset(
-			DropdownButton.AbsolutePosition.X,
-			DropdownButton.AbsolutePosition.Y + DropdownButton.AbsoluteSize.Y + 4
-		)
 		if OptionsFrame.Visible then
 			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
 			self._UpdateDropdownPositions()
