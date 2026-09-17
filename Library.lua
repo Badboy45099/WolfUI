@@ -2093,12 +2093,12 @@ function Wolf:AddShortcut(Config)
 	if not self.ShortcutHolder then
 		local Holder = Instance.new("Frame")
 		Holder.Name = "Shortcuts"
-		Holder.AnchorPoint = Vector2.new(1, 0.5)
-		Holder.Position = UDim2.new(1, -18, 0.5, 0)
-		Holder.Size = UDim2.fromOffset(96, 100)
+		Holder.Position = UDim2.fromScale(0, 0)
+		Holder.Size = UDim2.fromScale(1, 1)
 		Holder.BackgroundTransparency = 1
 		Holder.ZIndex = 100
-		Holder.Parent = self.MainFrame
+		Holder.ClipsDescendants = false
+		Holder.Parent = self.Gui
 
 		self.ShortcutHolder = Holder
 	end
@@ -2128,13 +2128,10 @@ function Wolf:AddShortcut(Config)
 	Button.TextXAlignment = Enum.TextXAlignment.Center
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
-	Button.Parent = IsToggleShortcut and self.MainFrame or self.ShortcutHolder
+	Button.Parent = self.Gui
 	if IsToggleShortcut then
 		Button.Visible = false
 		Button.AnchorPoint = Vector2.new(0, 0)
-	end
-	if not IsToggleShortcut then
-		self.ShortcutHolder.Size = UDim2.fromOffset(120, math.max(100, self.ShortcutCount * 42))
 	end
 	Corner(Button, 6)
 	Stroke(Button, self.Theme.Border, 0.35)
@@ -2185,7 +2182,7 @@ function Wolf:AddShortcut(Config)
 		TriggerButton.BorderSizePixel = 0
 		TriggerButton.AutoButtonColor = false
 		TriggerButton.ZIndex = 104
-		TriggerButton.Parent = self.MainFrame
+		TriggerButton.Parent = self.Gui
 		Corner(TriggerButton, 6)
 		Stroke(TriggerButton, self.Theme.Border, 0.25)
 		local TriggerIcon = CreateIcon(
@@ -2207,7 +2204,7 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 104
 		ChevronButton.Visible = false
-		ChevronButton.Parent = self.MainFrame
+		ChevronButton.Parent = self.Gui
 		Corner(ChevronButton, 6)
 		Stroke(ChevronButton, self.Theme.Border, 0.25)
 		Chevron = CreateIcon(
@@ -2223,38 +2220,62 @@ function Wolf:AddShortcut(Config)
 
 	local ShortcutOffset = Vector2.new(0, 0)
 	local DragStartOffset = Vector2.new(0, 0)
-	local function UpdateShortcutPosition()
-		if not IsToggleShortcut or not Element or not Element.Frame or not Element.Frame.Parent then
+	local DragStartPosition = Vector2.new(0, 0)
+	local function ClampShortcutPosition(Position, Size)
+		local WindowSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		return Vector2.new(
+			math.clamp(Position.X, 8, math.max(8, WindowSize.X - Size.X - 8)),
+			math.clamp(Position.Y, 8, math.max(8, WindowSize.Y - Size.Y - 8))
+		)
+	end
+
+	local function UpdateShortcutPosition(UseTargetPosition)
+		if not IsToggleShortcut then
 			return
 		end
-		local WindowPosition = self.MainFrame.AbsolutePosition
-		local WindowSize = self.MainFrame.AbsoluteSize
-		local ElementPosition = Element.Frame.AbsolutePosition - WindowPosition
+		local WindowSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		if not Element or not Element.Frame or not Element.Frame.Parent then
+			return
+		end
+		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
 		local TotalWidth = Button.AbsoluteSize.X + ChevronButton.AbsoluteSize.X + 4
-		local TriggerX = math.clamp(
-			ElementPosition.X + ElementSize.X + 6,
-			8,
-			math.max(8, WindowSize.X - TriggerButton.AbsoluteSize.X - 8)
-		)
-		local TriggerY = math.clamp(ElementPosition.Y, 8, math.max(8, WindowSize.Y - TriggerButton.AbsoluteSize.Y - 8))
-		local X = math.clamp(
-			ElementPosition.X + ElementSize.X + TriggerButton.AbsoluteSize.X + 10 + ShortcutOffset.X,
-			8,
-			math.max(8, WindowSize.X - TotalWidth - 8)
-		)
-		local Y =
-			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, WindowSize.Y - Button.AbsoluteSize.Y - 8))
-		TriggerButton.Position = UDim2.fromOffset(TriggerX, TriggerY)
-		Button.Position = UDim2.fromOffset(X, Y)
-		ChevronButton.Position = UDim2.fromOffset(X + Button.AbsoluteSize.X + 4, Y)
+		if UseTargetPosition then
+			local TriggerPosition =
+				ClampShortcutPosition(ElementPosition + Vector2.new(ElementSize.X + 6, 0), TriggerButton.AbsoluteSize)
+			local ShortcutPosition = ClampShortcutPosition(
+				ElementPosition + Vector2.new(ElementSize.X + TriggerButton.AbsoluteSize.X + 10, 0),
+				Vector2.new(TotalWidth, Button.AbsoluteSize.Y)
+			)
+			TriggerButton.Position = UDim2.fromOffset(TriggerPosition.X, TriggerPosition.Y)
+			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
+			ChevronButton.Position =
+				UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+		else
+			local TriggerPosition = ClampShortcutPosition(TriggerButton.AbsolutePosition, TriggerButton.AbsoluteSize)
+			local ShortcutPosition =
+				ClampShortcutPosition(Button.AbsolutePosition, Vector2.new(TotalWidth, Button.AbsoluteSize.Y))
+			TriggerButton.Position = UDim2.fromOffset(TriggerPosition.X, TriggerPosition.Y)
+			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
+			ChevronButton.Position =
+				UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
+		end
 	end
 
 	if IsToggleShortcut then
-		task.defer(UpdateShortcutPosition)
-		RunService.RenderStepped:Connect(UpdateShortcutPosition)
+		task.defer(function()
+			UpdateShortcutPosition(true)
+		end)
 	else
-		UpdateShortcutPosition()
+		Button.Position = UDim2.fromOffset(
+			math.max(
+				8,
+				(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X or 1280)
+					- Button.AbsoluteSize.X
+					- 18
+			),
+			8 + (self.ShortcutCount - 1) * 42
+		)
 	end
 
 	local Dragging = false
@@ -2271,6 +2292,7 @@ function Wolf:AddShortcut(Config)
 			DragStart = Input.Position
 			DragStartOffset = ShortcutOffset
 			StartPosition = Button.Position
+			DragStartPosition = Button.AbsolutePosition
 		end
 	end)
 	UserInputService.InputChanged:Connect(function(Input)
@@ -2288,15 +2310,16 @@ function Wolf:AddShortcut(Config)
 			end
 			if IsToggleShortcut then
 				ShortcutOffset = DragStartOffset + Delta
-				UpdateShortcutPosition()
+				local Position = ClampShortcutPosition(
+					DragStartPosition + Delta,
+					Vector2.new(Button.AbsoluteSize.X + ChevronButton.AbsoluteSize.X + 4, Button.AbsoluteSize.Y)
+				)
+				Button.Position = UDim2.fromOffset(Position.X, Position.Y)
+				ChevronButton.Position = UDim2.fromOffset(Position.X + Button.AbsoluteSize.X + 4, Position.Y)
 				return
 			end
-			Button.Position = UDim2.new(
-				StartPosition.X.Scale,
-				StartPosition.X.Offset + Delta.X,
-				StartPosition.Y.Scale,
-				StartPosition.Y.Offset + Delta.Y
-			)
+			local Position = ClampShortcutPosition(DragStartPosition + Delta, Button.AbsoluteSize)
+			Button.Position = UDim2.fromOffset(Position.X, Position.Y)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(Input)
