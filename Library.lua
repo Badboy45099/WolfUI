@@ -822,9 +822,8 @@ function Wolf:CreateWindow(Config)
 			local Delta = input.Position - resizeStartPos
 
 			-- Calculate new pixel sizes within constraints
-			local NewWidth = startSize.X
+			local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
 			local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
-			SidebarWidth = math.clamp(NewWidth * SidebarRatio, SidebarMinWidth, SidebarMaxWidth)
 
 			MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
 			TargetWindowSize = MainFrame.Size
@@ -2113,7 +2112,7 @@ function Wolf:AddShortcut(Config)
 	local ShortcutWidth = Config.Width or DefaultShortcutWidth
 	local ShortcutHeight = Config.Height or 34
 	local Button = Instance.new("TextButton")
-	Button.Name = IsToggleShortcut and "S2Btn" or Side .. "Shortcut"
+	Button.Name = IsToggleShortcut and "S2Btn" or "S1Btn"
 	self.ShortcutCount = self.ShortcutCount + 1
 	Button.Size = UDim2.fromOffset(ShortcutWidth, ShortcutHeight)
 	Button.AnchorPoint = Vector2.new(1, 0)
