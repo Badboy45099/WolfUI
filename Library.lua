@@ -182,8 +182,7 @@ function Wolf:CreateWindow(Config)
 	self.ShortcutCount = 0
 	self.ShortcutButtons = {}
 	self.ShortcutChevrons = {}
-	self.ShortcutTrigger = nil
-	self.ShortcutsVisible = false
+	self.ShortcutTriggers = {}
 	self.OpenDropdowns = {}
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -823,7 +822,7 @@ function Wolf:CreateWindow(Config)
 			local Delta = input.Position - resizeStartPos
 
 			-- Calculate new pixel sizes within constraints
-			local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
+			local NewWidth = startSize.X
 			local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
 			SidebarWidth = math.clamp(NewWidth * SidebarRatio, SidebarMinWidth, SidebarMaxWidth)
 
@@ -980,12 +979,12 @@ function Wolf:AddTab(Config)
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
-	Padding(TabButton, TabIcon and 25 or 6, 8, 0, 0)
-	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(2, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
+	Padding(TabButton, TabIcon and 21 or 4, 6, 0, 0)
+	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(0, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
 	local TabText = Instance.new("TextLabel")
 	TabText.BackgroundTransparency = 1
-	TabText.Position = UDim2.fromOffset(TabIcon and 22 or 6, 0)
-	TabText.Size = UDim2.new(1, TabIcon and -39 or -20, 1, 0)
+	TabText.Position = UDim2.fromOffset(TabIcon and 18 or 4, 0)
+	TabText.Size = UDim2.new(1, TabIcon and -35 or -16, 1, 0)
 	TabText.FontFace = self.Fonts.Body
 	TabText.Text = TabTitle
 	TabText.TextSize = 12
@@ -2175,8 +2174,6 @@ function Wolf:AddShortcut(Config)
 	local Chevron
 	if IsToggleShortcut then
 		ChevronButton = Instance.new("ImageButton")
-
-		ChevronButton = Instance.new("ImageButton")
 		ChevronButton.Name = "S2Chevron"
 		ChevronButton.Size = UDim2.fromOffset(22, ShortcutHeight)
 		ChevronButton.BackgroundColor3 = self.Theme.Card
@@ -2200,6 +2197,28 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
+	local TriggerButton = Instance.new("ImageButton")
+	TriggerButton.Name = Side .. "Trigger"
+	TriggerButton.Size = UDim2.fromOffset(26, 26)
+	TriggerButton.BackgroundColor3 = self.Theme.Card
+	TriggerButton.BackgroundTransparency = 0.1
+	TriggerButton.BorderSizePixel = 0
+	TriggerButton.AutoButtonColor = false
+	TriggerButton.ZIndex = 110
+	TriggerButton.Parent = self.Gui
+	Corner(TriggerButton, 6)
+	Stroke(TriggerButton, self.Theme.Border, 0.2)
+	local TriggerIcon = CreateIcon(
+		TriggerButton,
+		"plug-zap",
+		UDim2.fromScale(0.5, 0.5),
+		UDim2.fromOffset(16, 16),
+		self.Theme.Accent,
+		111
+	)
+	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	table.insert(self.ShortcutTriggers, TriggerButton)
+
 	local ShortcutOffset = Vector2.new(0, 0)
 	local DragStartOffset = Vector2.new(0, 0)
 	local DragStartPosition = Vector2.new(0, 0)
@@ -2212,10 +2231,6 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local function UpdateShortcutPosition(UseTargetPosition)
-		if not IsToggleShortcut then
-			return
-		end
-		local WindowSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		if not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
@@ -2258,6 +2273,26 @@ function Wolf:AddShortcut(Config)
 			8 + (self.ShortcutCount - 1) * 42
 		)
 	end
+
+	local function UpdateTriggerPosition()
+		if not Element or not Element.Frame or not Element.Frame.Parent then
+			return
+		end
+		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		local ElementPosition = Element.Frame.AbsolutePosition
+		local ElementSize = Element.Frame.AbsoluteSize
+		local Position = Vector2.new(
+			math.clamp(
+				ElementPosition.X + ElementSize.X + 6,
+				8,
+				math.max(8, Viewport.X - TriggerButton.AbsoluteSize.X - 8)
+			),
+			math.clamp(ElementPosition.Y, 8, math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8))
+		)
+		TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
+	end
+	UpdateTriggerPosition()
+	RunService.RenderStepped:Connect(UpdateTriggerPosition)
 
 	local Dragging = false
 	local DragMoved = false
@@ -2355,96 +2390,20 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.MouseButton1Click:Connect(ToggleSelectionFrame)
 	end
 
-	if not self.ShortcutTrigger then
-		local TriggerButton = Instance.new("ImageButton")
-		TriggerButton.Name = "ShortcutTrigger"
-		TriggerButton.Size = UDim2.fromOffset(30, 30)
-		TriggerButton.Position = UDim2.fromOffset(18, 18)
-		TriggerButton.BackgroundColor3 = self.Theme.Card
-		TriggerButton.BackgroundTransparency = 0.1
-		TriggerButton.BorderSizePixel = 0
-		TriggerButton.AutoButtonColor = false
-		TriggerButton.ZIndex = 110
-		TriggerButton.Parent = self.Gui
-		Corner(TriggerButton, 6)
-		Stroke(TriggerButton, self.Theme.Border, 0.2)
-		local TriggerIcon = CreateIcon(
-			TriggerButton,
-			"plug-zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(18, 18),
-			self.Theme.Accent,
-			111
-		)
-		TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
-		self.ShortcutTrigger = TriggerButton
-
-		local TriggerDragging = false
-		local TriggerMoved = false
-		local TriggerStartInput
-		local TriggerStartPosition
-		TriggerButton.InputBegan:Connect(function(Input)
-			if
-				Input.UserInputType == Enum.UserInputType.MouseButton1
-				or Input.UserInputType == Enum.UserInputType.Touch
-			then
-				TriggerDragging = true
-				TriggerMoved = false
-				TriggerStartInput = Input.Position
-				TriggerStartPosition = TriggerButton.Position
-			end
-		end)
-		UserInputService.InputChanged:Connect(function(Input)
-			if
-				TriggerDragging
-				and (
-					Input.UserInputType == Enum.UserInputType.MouseMovement
-					or Input.UserInputType == Enum.UserInputType.Touch
-				)
-			then
-				local Delta = Input.Position - TriggerStartInput
-				TriggerMoved = TriggerMoved or Delta.Magnitude > 6
-				local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize
-					or Vector2.new(1280, 720)
-				local Position = Vector2.new(
-					math.clamp(
-						TriggerStartPosition.X.Offset + Delta.X,
-						8,
-						math.max(8, Viewport.X - TriggerButton.AbsoluteSize.X - 8)
-					),
-					math.clamp(
-						TriggerStartPosition.Y.Offset + Delta.Y,
-						8,
-						math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8)
-					)
-				)
-				TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
-			end
-		end)
-		UserInputService.InputEnded:Connect(function(Input)
-			if
-				Input.UserInputType == Enum.UserInputType.MouseButton1
-				or Input.UserInputType == Enum.UserInputType.Touch
-			then
-				TriggerDragging = false
-			end
-		end)
-		TriggerButton.MouseButton1Click:Connect(function()
-			if TriggerMoved then
-				return
-			end
-			self.ShortcutsVisible = not self.ShortcutsVisible
-			for _, ShortcutButton in ipairs(self.ShortcutButtons) do
-				ShortcutButton.Visible = self.ShortcutsVisible
-			end
-			for _, ChevronControl in ipairs(self.ShortcutChevrons) do
-				ChevronControl.Visible = self.ShortcutsVisible
-			end
-			if not self.ShortcutsVisible then
-				self._CloseDropdowns()
-			end
-		end)
-	end
+	TriggerButton.MouseButton1Click:Connect(function()
+		local ShowShortcut = not Button.Visible
+		if ShowShortcut and not IsToggleShortcut then
+			UpdateShortcutPosition(true)
+		end
+		Button.Visible = ShowShortcut
+		if ChevronButton then
+			ChevronButton.Visible = ShowShortcut
+		end
+		if not ShowShortcut and Element and Element.Popup then
+			Element.Popup.Visible = false
+			table.clear(self.OpenDropdowns)
+		end
+	end)
 
 	return Button
 end
