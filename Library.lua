@@ -2089,6 +2089,9 @@ function Wolf:AddShortcut(Config)
 	local IsToggleShortcut = Side == "S2"
 	local Element = Config.Element or Config.Target
 	local Callback = Config.Callback
+	if not Element and not Callback then
+		return nil
+	end
 
 	if not self.ShortcutHolder then
 		local Holder = Instance.new("Frame")
@@ -2098,7 +2101,7 @@ function Wolf:AddShortcut(Config)
 		Holder.Size = UDim2.fromOffset(96, 100)
 		Holder.BackgroundTransparency = 1
 		Holder.ZIndex = 100
-		Holder.Parent = self.MainFrame
+		Holder.Parent = self.Gui
 
 		self.ShortcutHolder = Holder
 	end
@@ -2107,7 +2110,7 @@ function Wolf:AddShortcut(Config)
 	Button.Name = Side .. "Shortcut"
 	self.ShortcutCount = self.ShortcutCount + 1
 	local ShortcutText = Config.Text or Config.text or Config.Title or ""
-	local ShortcutIconName = Config.Icon or Config.icon or (IsToggleShortcut and "plug-zap")
+	local ShortcutIconName = IsToggleShortcut and "plug-zap" or (Config.Icon or Config.icon)
 	if IsToggleShortcut and ShortcutText == "" and Element then
 		ShortcutText = Element.Title or Element.Name or ""
 	end
@@ -2129,7 +2132,7 @@ function Wolf:AddShortcut(Config)
 	Button.TextXAlignment = Enum.TextXAlignment.Center
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
-	Button.Parent = IsToggleShortcut and self.MainFrame or self.ShortcutHolder
+	Button.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
 	if IsToggleShortcut then
 		Button.AnchorPoint = Vector2.new(0, 0)
 	end
@@ -2182,7 +2185,7 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.BackgroundTransparency = 1
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 101
-		ChevronButton.Parent = IsToggleShortcut and self.MainFrame or self.ShortcutHolder
+		ChevronButton.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
 		if IsToggleShortcut then
 			ChevronButton.AnchorPoint = Vector2.new(0, 0)
 		end
@@ -2205,18 +2208,18 @@ function Wolf:AddShortcut(Config)
 		if not IsToggleShortcut or not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
-		local WindowPosition = self.MainFrame.AbsolutePosition
-		local WindowSize = self.MainFrame.AbsoluteSize
-		local ElementPosition = Element.Frame.AbsolutePosition - WindowPosition
+		local Camera = workspace.CurrentCamera
+		local ViewportSize = Camera and Camera.ViewportSize or Vector2.new(1280, 720)
+		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
 		local TotalWidth = Button.AbsoluteSize.X + (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
 		local X = math.clamp(
 			ElementPosition.X + ElementSize.X + 6 + ShortcutOffset.X,
 			8,
-			math.max(8, WindowSize.X - TotalWidth - 8)
+			math.max(8, ViewportSize.X - TotalWidth - 8)
 		)
 		local Y =
-			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, WindowSize.Y - Button.AbsoluteSize.Y - 8))
+			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, ViewportSize.Y - Button.AbsoluteSize.Y - 8))
 		Button.Position = UDim2.fromOffset(X, Y)
 		if ChevronButton then
 			ChevronButton.Position = UDim2.fromOffset(X + Button.AbsoluteSize.X + 4, Y)
@@ -2225,7 +2228,6 @@ function Wolf:AddShortcut(Config)
 
 	if IsToggleShortcut then
 		UpdateShortcutPosition()
-		RunService.RenderStepped:Connect(UpdateShortcutPosition)
 	end
 
 	local Dragging = false
