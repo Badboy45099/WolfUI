@@ -1375,6 +1375,7 @@ function Wolf:AddToggle(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
 	return {
+		Title = Title,
 		Toggle = function()
 			State = not State
 			Update()
@@ -2039,6 +2040,7 @@ function Wolf:AddColorPicker(Config)
 	local PickerObject = {
 		Frame = PickerFrame,
 		Popup = Popup,
+		Title = Title,
 		SetValue = function(_, Value, Alpha)
 			if typeof(Value) == "Color3" then
 				H, S, V = Value:ToHSV()
@@ -2096,7 +2098,7 @@ function Wolf:AddShortcut(Config)
 		Holder.Size = UDim2.fromOffset(96, 100)
 		Holder.BackgroundTransparency = 1
 		Holder.ZIndex = 100
-		Holder.Parent = self.Gui
+		Holder.Parent = self.MainFrame
 
 		self.ShortcutHolder = Holder
 	end
@@ -2106,7 +2108,12 @@ function Wolf:AddShortcut(Config)
 	self.ShortcutCount = self.ShortcutCount + 1
 	local ShortcutText = Config.Text or Config.text or Config.Title or ""
 	local ShortcutIconName = Config.Icon or Config.icon or (IsToggleShortcut and "plug-zap")
-	local ShortcutWidth = Config.Width or (ShortcutText == "" and (ShortcutIconName and 34 or 86) or 86)
+	if IsToggleShortcut and ShortcutText == "" and Element then
+		ShortcutText = Element.Title or Element.Name or ""
+	end
+	local DefaultShortcutWidth = ShortcutText == "" and (ShortcutIconName and 34 or 86)
+		or (IsToggleShortcut and math.max(110, string.len(ShortcutText) * 7 + 42) or 86)
+	local ShortcutWidth = Config.Width or DefaultShortcutWidth
 	local ChevronWidth = IsToggleShortcut and 20 or 0
 	Button.Size = UDim2.fromOffset(ShortcutWidth, Config.Height or 34)
 	Button.AnchorPoint = Vector2.new(1, 0)
@@ -2122,7 +2129,7 @@ function Wolf:AddShortcut(Config)
 	Button.TextXAlignment = Enum.TextXAlignment.Center
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
-	Button.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
+	Button.Parent = IsToggleShortcut and self.MainFrame or self.ShortcutHolder
 	if IsToggleShortcut then
 		Button.AnchorPoint = Vector2.new(0, 0)
 	end
@@ -2175,7 +2182,7 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.BackgroundTransparency = 1
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 101
-		ChevronButton.Parent = IsToggleShortcut and self.Gui or self.ShortcutHolder
+		ChevronButton.Parent = IsToggleShortcut and self.MainFrame or self.ShortcutHolder
 		if IsToggleShortcut then
 			ChevronButton.AnchorPoint = Vector2.new(0, 0)
 		end
@@ -2193,21 +2200,23 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local ShortcutOffset = Vector2.new(0, 0)
+	local DragStartOffset = Vector2.new(0, 0)
 	local function UpdateShortcutPosition()
 		if not IsToggleShortcut or not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
-		local ElementPosition = Element.Frame.AbsolutePosition
+		local WindowPosition = self.MainFrame.AbsolutePosition
+		local WindowSize = self.MainFrame.AbsoluteSize
+		local ElementPosition = Element.Frame.AbsolutePosition - WindowPosition
 		local ElementSize = Element.Frame.AbsoluteSize
-		local ViewportSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local TotalWidth = Button.AbsoluteSize.X + (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
 		local X = math.clamp(
 			ElementPosition.X + ElementSize.X + 6 + ShortcutOffset.X,
 			8,
-			math.max(8, ViewportSize.X - TotalWidth - 8)
+			math.max(8, WindowSize.X - TotalWidth - 8)
 		)
 		local Y =
-			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, ViewportSize.Y - Button.AbsoluteSize.Y - 8))
+			math.clamp(ElementPosition.Y + ShortcutOffset.Y, 8, math.max(8, WindowSize.Y - Button.AbsoluteSize.Y - 8))
 		Button.Position = UDim2.fromOffset(X, Y)
 		if ChevronButton then
 			ChevronButton.Position = UDim2.fromOffset(X + Button.AbsoluteSize.X + 4, Y)
@@ -2231,6 +2240,7 @@ function Wolf:AddShortcut(Config)
 			Dragging = true
 			DragMoved = false
 			DragStart = Input.Position
+			DragStartOffset = ShortcutOffset
 			StartPosition = Button.Position
 		end
 	end)
@@ -2248,7 +2258,7 @@ function Wolf:AddShortcut(Config)
 				return
 			end
 			if IsToggleShortcut then
-				ShortcutOffset = Delta
+				ShortcutOffset = DragStartOffset + Delta
 				UpdateShortcutPosition()
 				return
 			end
@@ -2274,11 +2284,6 @@ function Wolf:AddShortcut(Config)
 			or Input.UserInputType == Enum.UserInputType.Touch
 		then
 			Dragging = false
-			if DragMoved then
-				task.delay(0.05, function()
-					DragMoved = false
-				end)
-			end
 		end
 	end)
 
@@ -2416,7 +2421,7 @@ function Wolf:AddDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = DropdownFrame
+	OptionsFrame.Parent = self.Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -2506,6 +2511,7 @@ function Wolf:AddDropdown(Config)
 	local DropdownObject = {
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
+		Title = Title,
 		SetValue = function(_, Value)
 			UpdateValue(Value)
 		end,
@@ -2621,7 +2627,7 @@ function Wolf:AddMultiDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = DropdownFrame
+	OptionsFrame.Parent = self.Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Border)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -2712,6 +2718,7 @@ function Wolf:AddMultiDropdown(Config)
 	local DropdownObject = {
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
+		Title = Title,
 		SetValue = function(_, Values)
 			Selected = {}
 			for _, Value in ipairs(Values or {}) do
