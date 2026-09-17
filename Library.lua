@@ -2121,6 +2121,8 @@ function Wolf:AddShortcut(Config)
 	Button.BackgroundTransparency = 0.15
 	Button.BorderSizePixel = 0
 	Button.AutoButtonColor = false
+	Button.Active = true
+	Button.Selectable = true
 	Button.Text = ""
 	Button.TextColor3 = self.Theme.Text
 	Button.FontFace = self.Fonts.Button
@@ -2309,6 +2311,12 @@ function Wolf:AddShortcut(Config)
 			StartPosition = Button.Position
 			DragStartPosition = Button.AbsolutePosition
 		end
+	end)
+	Button.MouseButton1Down:Connect(function()
+		Dragging = true
+		DragMoved = false
+		DragStart = UserInputService:GetMouseLocation()
+		DragStartPosition = Button.AbsolutePosition
 	end)
 	UserInputService.InputChanged:Connect(function(Input)
 		if
