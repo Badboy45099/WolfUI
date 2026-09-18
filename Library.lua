@@ -580,9 +580,6 @@ function Wolf:CreateWindow(Config)
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
 		self._UIVisible = Visible
-		if self.ShortcutHolder then
-			self.ShortcutHolder.Visible = Visible
-		end
 		local ToggleCenter = ToggleCenterPosition()
 		if Visible then
 			TargetWindowPosition = TargetWindowPosition or MainFrame.Position
@@ -1388,6 +1385,7 @@ function Wolf:AddToggle(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
 	return {
+		Frame = ToggleFrame,
 		Title = Title,
 		Toggle = function()
 			State = not State
@@ -2219,6 +2217,7 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
+	local TriggerParent = Element.Frame:FindFirstChildWhichIsA("TextButton") or Element.Frame
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2227,7 +2226,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.ZIndex = 110
-	TriggerButton.Parent = self.ShortcutHolder
+	TriggerButton.Parent = TriggerParent
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2302,21 +2301,9 @@ function Wolf:AddShortcut(Config)
 		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
-		local TriggerOffsetX = IsToggleShortcut and 32 or 0
-		local TriggerOffsetY = (SideIndex - 1) * 32 + (IsToggleShortcut and 16 or 0)
-		local Position = Vector2.new(
-			math.clamp(
-				ElementPosition.X + ElementSize.X + 6 + TriggerOffsetX,
-				8,
-				math.max(8, Viewport.X - TriggerButton.AbsoluteSize.X - 8)
-			),
-			math.clamp(
-				ElementPosition.Y + TriggerOffsetY,
-				8,
-				math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8)
-			)
-		)
-		TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
+		local TriggerOffsetY = (SideIndex - 1) * 30
+		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
+		TriggerButton.Position = UDim2.new(1, -6, 0, 18 + TriggerOffsetY)
 	end
 	UpdateTriggerPosition()
 	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
