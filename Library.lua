@@ -2306,6 +2306,7 @@ function Wolf:AddShortcut(Config)
 	local DragMoved = false
 	local DragStart
 	local DragStartPosition
+	local DragInput
 	local function BeginShortcutDrag(Input)
 		if
 			Input.UserInputType == Enum.UserInputType.MouseButton1
@@ -2313,20 +2314,38 @@ function Wolf:AddShortcut(Config)
 		then
 			Dragging = true
 			DragMoved = false
+			DragInput = nil
 			DragStart = Vector2.new(Input.Position.X, Input.Position.Y)
 			DragStartOffset = ShortcutOffset
 			DragStartPosition = Button.AbsolutePosition
 		end
 	end
 	Button.InputBegan:Connect(BeginShortcutDrag)
+	Button.InputChanged:Connect(function(Input)
+		if
+			Input.UserInputType == Enum.UserInputType.MouseMovement
+			or Input.UserInputType == Enum.UserInputType.Touch
+		then
+			DragInput = Input
+		end
+	end)
 	if ChevronButton then
 		ChevronButton.InputBegan:Connect(BeginShortcutDrag)
+		ChevronButton.InputChanged:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseMovement
+				or Input.UserInputType == Enum.UserInputType.Touch
+			then
+				DragInput = Input
+			end
+		end)
 	end
 	table.insert(
 		self._ShortcutConnections,
 		UserInputService.InputChanged:Connect(function(Input)
 			if
 				Dragging
+				and Input == DragInput
 				and (
 					Input.UserInputType == Enum.UserInputType.MouseMovement
 					or Input.UserInputType == Enum.UserInputType.Touch
@@ -2361,6 +2380,7 @@ function Wolf:AddShortcut(Config)
 				or Input.UserInputType == Enum.UserInputType.Touch
 			then
 				Dragging = false
+				DragInput = nil
 			end
 		end)
 	)
