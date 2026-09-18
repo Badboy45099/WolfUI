@@ -2303,23 +2303,13 @@ function Wolf:AddShortcut(Config)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
-		local ReservedWidth = 36
-		local ReservedNames = {
-			Indicator = true,
-			Box = true,
-			DropdownSelection = true,
-			ColorSwatch = true,
-			ValueLabel = true,
-		}
-		for _, Descendant in ipairs(Element.Frame:GetDescendants()) do
-			local IsNestedDropdownValue = Descendant.Name == "ValueLabel"
-				and Descendant.Parent
-				and Descendant.Parent.Name == "DropdownSelection"
-			if Descendant:IsA("GuiObject") and ReservedNames[Descendant.Name] and not IsNestedDropdownValue then
-				local Position = Descendant.Position
-				Descendant.Position =
-					UDim2.new(Position.X.Scale, Position.X.Offset - ReservedWidth, Position.Y.Scale, Position.Y.Offset)
-			end
+		local Control = Element.Frame:FindFirstChild("Indicator", true)
+			or Element.Frame:FindFirstChild("Box", true)
+			or Element.Frame:FindFirstChild("DropdownSelection", true)
+			or Element.Frame:FindFirstChild("ColorSwatch", true)
+		if Control and Control:IsA("GuiObject") then
+			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
+			Control.Position = UDim2.new(1, -42, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
 	end
 	ReserveTriggerSpace()
@@ -2385,8 +2375,8 @@ function Wolf:AddShortcut(Config)
 		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
-		local TriggerOffsetX = IsToggleShortcut and 36 or 0
-		local TriggerOffsetY = (SideIndex - 1) * 30
+		local TriggerOffsetX = 0
+		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
 	end
