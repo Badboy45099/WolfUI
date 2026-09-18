@@ -541,6 +541,7 @@ function Wolf:CreateWindow(Config)
 	Corner(ToggleButton, 8)
 
 	local uiVisible = true
+	self._UIVisible = true
 	local TargetWindowSize = DeviceWindowSize
 	local TargetWindowPosition = MainFrame.Position
 	local function ComfortableWindowSize()
@@ -577,6 +578,10 @@ function Wolf:CreateWindow(Config)
 
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
+		self._UIVisible = Visible
+		if self.ShortcutHolder then
+			self.ShortcutHolder.Visible = Visible
+		end
 		local ToggleCenter = ToggleCenterPosition()
 		if Visible then
 			TargetWindowPosition = TargetWindowPosition or MainFrame.Position
@@ -2108,6 +2113,7 @@ function Wolf:AddShortcut(Config)
 		Holder.BackgroundTransparency = 1
 		Holder.ZIndex = 100
 		Holder.ClipsDescendants = false
+		Holder.Visible = self._UIVisible ~= false
 		Holder.Parent = self.Gui
 
 		self.ShortcutHolder = Holder
@@ -2289,13 +2295,19 @@ function Wolf:AddShortcut(Config)
 		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
+		local TriggerOffsetX = IsToggleShortcut and 32 or 0
+		local TriggerOffsetY = IsToggleShortcut and 30 or 0
 		local Position = Vector2.new(
 			math.clamp(
-				ElementPosition.X + ElementSize.X + 6,
+				ElementPosition.X + ElementSize.X + 6 + TriggerOffsetX,
 				8,
 				math.max(8, Viewport.X - TriggerButton.AbsoluteSize.X - 8)
 			),
-			math.clamp(ElementPosition.Y, 8, math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8))
+			math.clamp(
+				ElementPosition.Y + TriggerOffsetY,
+				8,
+				math.max(8, Viewport.Y - TriggerButton.AbsoluteSize.Y - 8)
+			)
 		)
 		TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
 	end
