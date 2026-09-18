@@ -2313,7 +2313,7 @@ function Wolf:AddShortcut(Config)
 		then
 			Dragging = true
 			DragMoved = false
-			DragStart = Input.Position
+			DragStart = Vector2.new(Input.Position.X, Input.Position.Y)
 			DragStartOffset = ShortcutOffset
 			DragStartPosition = Button.AbsolutePosition
 		end
@@ -2332,7 +2332,8 @@ function Wolf:AddShortcut(Config)
 					or Input.UserInputType == Enum.UserInputType.Touch
 				)
 			then
-				local Delta = Input.Position - DragStart
+				local PointerPosition = Vector2.new(Input.Position.X, Input.Position.Y)
+				local Delta = PointerPosition - DragStart
 				DragMoved = DragMoved or Delta.Magnitude > 6
 				if not DragMoved then
 					return
