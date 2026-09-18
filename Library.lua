@@ -171,6 +171,9 @@ local function ElementParent(Tab, Config)
 		return Tab.Page
 	end
 	if RequestedSection then
+		if typeof(RequestedSection) == "table" and RequestedSection.Content then
+			return RequestedSection.Content
+		end
 		if typeof(RequestedSection) == "Instance" then
 			if RequestedSection.Name == "SectionContent" then
 				return RequestedSection
@@ -190,7 +193,7 @@ local function ElementParent(Tab, Config)
 			end
 		end
 	end
-	return Tab.CurrentSectionContent or Tab.Page
+	return Tab.Page
 end
 
 ---------------------------------------------------------------------
@@ -1272,10 +1275,41 @@ function Wolf:AddSection(Title)
 		ApplyIcon(Chevron, Collapsed and "chevron-down" or "chevron-up")
 	end)
 
-	self.CurrentSectionContent = SectionContent
-
 	table.insert(self.Library.Elements, { Text = SectionTitle, Frame = SectionFrame })
-	return SectionFrame
+	local Section = {
+		Library = self,
+		Frame = SectionFrame,
+		Content = SectionContent,
+		Title = tostring(SectionTitle),
+	}
+	local function SectionConfig(Config)
+		if typeof(Config) == "table" then
+			local RoutedConfig = table.clone(Config)
+			RoutedConfig.Section = Section
+			return RoutedConfig
+		end
+		return { Title = Config, Section = Section }
+	end
+	local RoutedMethods = {
+		"AddButton",
+		"AddToggle",
+		"AddSlider",
+		"AddTextbox",
+		"AddRGBColorPickerLegacy",
+		"AddColorPicker",
+		"AddDropdown",
+		"AddMultiDropdown",
+	}
+	for _, MethodName in ipairs(RoutedMethods) do
+		Section[MethodName] = function(_, Config)
+			return self[MethodName](self, SectionConfig(Config))
+		end
+	end
+	Section.AddToggleLegacy = function(_, Idx, Config)
+		return self:AddToggleLegacy(Idx, SectionConfig(Config))
+	end
+	self[tostring(SectionTitle)] = Section
+	return Section
 end
 
 -- Button Component
@@ -2242,8 +2276,8 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
-	local TriggerParent = Element.Frame:FindFirstChild("ColorSwatch") and Element.Frame
-		or Element.Frame:FindFirstChildWhichIsA("TextButton")
+	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
+	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
 		or Element.Frame
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
@@ -2252,6 +2286,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BackgroundTransparency = 0.1
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
+	TriggerButton.Active = true
 	TriggerButton.ZIndex = 110
 	TriggerButton.Parent = TriggerParent
 	Corner(TriggerButton, 6)
@@ -2268,7 +2303,7 @@ function Wolf:AddShortcut(Config)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
-		local ReservedWidth = TriggerButton.AbsoluteSize.X + 10
+		local ReservedWidth = 36
 		local ReservedNames = {
 			Indicator = true,
 			Box = true,
@@ -2350,9 +2385,10 @@ function Wolf:AddShortcut(Config)
 		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
+		local TriggerOffsetX = IsToggleShortcut and 36 or 0
 		local TriggerOffsetY = (SideIndex - 1) * 30
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6, 0, 18 + TriggerOffsetY)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
 	end
 	UpdateTriggerPosition()
 	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
