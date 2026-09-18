@@ -183,6 +183,11 @@ function Wolf:CreateWindow(Config)
 	self.ShortcutButtons = {}
 	self.ShortcutChevrons = {}
 	self.ShortcutTriggers = {}
+	self._ShortcutConnections = self._ShortcutConnections or {}
+	for _, Connection in ipairs(self._ShortcutConnections) do
+		Connection:Disconnect()
+	end
+	table.clear(self._ShortcutConnections)
 	self.OpenDropdowns = {}
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -2091,6 +2096,9 @@ function Wolf:AddShortcut(Config)
 	local IsToggleShortcut = Side == "S2"
 	local Element = Config.Element or Config.Target
 	local Callback = Config.Callback
+	if not Element or not Element.Frame then
+		return nil
+	end
 
 	if not self.ShortcutHolder then
 		local Holder = Instance.new("Frame")
@@ -2130,7 +2138,7 @@ function Wolf:AddShortcut(Config)
 	Button.TextXAlignment = Enum.TextXAlignment.Center
 	Button.TextTransparency = 1
 	Button.ZIndex = 101
-	Button.Parent = self.Gui
+	Button.Parent = self.ShortcutHolder
 	Button.Visible = false
 	Button.AnchorPoint = Vector2.new(0, 0)
 	table.insert(self.ShortcutButtons, Button)
@@ -2183,7 +2191,7 @@ function Wolf:AddShortcut(Config)
 		ChevronButton.AutoButtonColor = false
 		ChevronButton.ZIndex = 104
 		ChevronButton.Visible = false
-		ChevronButton.Parent = self.Gui
+		ChevronButton.Parent = self.ShortcutHolder
 		Corner(ChevronButton, 6)
 		Stroke(ChevronButton, self.Theme.Border, 0.25)
 		Chevron = CreateIcon(
@@ -2206,7 +2214,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.ZIndex = 110
-	TriggerButton.Parent = self.Gui
+	TriggerButton.Parent = self.ShortcutHolder
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2222,7 +2230,6 @@ function Wolf:AddShortcut(Config)
 
 	local ShortcutOffset = Vector2.new(0, 0)
 	local DragStartOffset = Vector2.new(0, 0)
-	local DragStartPosition = Vector2.new(0, 0)
 	local function ClampShortcutPosition(Position, Size)
 		local WindowSize = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
 		return Vector2.new(
@@ -2293,13 +2300,13 @@ function Wolf:AddShortcut(Config)
 		TriggerButton.Position = UDim2.fromOffset(Position.X, Position.Y)
 	end
 	UpdateTriggerPosition()
-	RunService.RenderStepped:Connect(UpdateTriggerPosition)
+	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
 
 	local Dragging = false
 	local DragMoved = false
 	local DragStart
-	local StartPosition
-	Button.InputBegan:Connect(function(Input)
+	local DragStartPosition
+	local function BeginShortcutDrag(Input)
 		if
 			Input.UserInputType == Enum.UserInputType.MouseButton1
 			or Input.UserInputType == Enum.UserInputType.Touch
@@ -2308,51 +2315,54 @@ function Wolf:AddShortcut(Config)
 			DragMoved = false
 			DragStart = Input.Position
 			DragStartOffset = ShortcutOffset
-			StartPosition = Button.Position
 			DragStartPosition = Button.AbsolutePosition
 		end
-	end)
-	Button.MouseButton1Down:Connect(function()
-		Dragging = true
-		DragMoved = false
-		DragStart = UserInputService:GetMouseLocation()
-		DragStartPosition = Button.AbsolutePosition
-	end)
-	UserInputService.InputChanged:Connect(function(Input)
-		if
-			Dragging
-			and (
-				Input.UserInputType == Enum.UserInputType.MouseMovement
-				or Input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			local Delta = Input.Position - DragStart
-			DragMoved = DragMoved or Delta.Magnitude > 6
-			if not DragMoved then
-				return
-			end
-			if IsToggleShortcut then
-				ShortcutOffset = DragStartOffset + Delta
-				local Position = ClampShortcutPosition(
-					DragStartPosition + Delta,
-					Vector2.new(Button.AbsoluteSize.X + ChevronButton.AbsoluteSize.X + 4, Button.AbsoluteSize.Y)
+	end
+	Button.InputBegan:Connect(BeginShortcutDrag)
+	if ChevronButton then
+		ChevronButton.InputBegan:Connect(BeginShortcutDrag)
+	end
+	table.insert(
+		self._ShortcutConnections,
+		UserInputService.InputChanged:Connect(function(Input)
+			if
+				Dragging
+				and (
+					Input.UserInputType == Enum.UserInputType.MouseMovement
+					or Input.UserInputType == Enum.UserInputType.Touch
 				)
+			then
+				local Delta = Input.Position - DragStart
+				DragMoved = DragMoved or Delta.Magnitude > 6
+				if not DragMoved then
+					return
+				end
+				if IsToggleShortcut then
+					ShortcutOffset = DragStartOffset + Delta
+					local Position = ClampShortcutPosition(
+						DragStartPosition + Delta,
+						Vector2.new(Button.AbsoluteSize.X + ChevronButton.AbsoluteSize.X + 4, Button.AbsoluteSize.Y)
+					)
+					Button.Position = UDim2.fromOffset(Position.X, Position.Y)
+					ChevronButton.Position = UDim2.fromOffset(Position.X + Button.AbsoluteSize.X + 4, Position.Y)
+					return
+				end
+				local Position = ClampShortcutPosition(DragStartPosition + Delta, Button.AbsoluteSize)
 				Button.Position = UDim2.fromOffset(Position.X, Position.Y)
-				ChevronButton.Position = UDim2.fromOffset(Position.X + Button.AbsoluteSize.X + 4, Position.Y)
-				return
 			end
-			local Position = ClampShortcutPosition(DragStartPosition + Delta, Button.AbsoluteSize)
-			Button.Position = UDim2.fromOffset(Position.X, Position.Y)
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(Input)
-		if
-			Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch
-		then
-			Dragging = false
-		end
-	end)
+		end)
+	)
+	table.insert(
+		self._ShortcutConnections,
+		UserInputService.InputEnded:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseButton1
+				or Input.UserInputType == Enum.UserInputType.Touch
+			then
+				Dragging = false
+			end
+		end)
+	)
 
 	local function ActivateShortcut()
 		if Element and Element.Activate then
@@ -2394,7 +2404,11 @@ function Wolf:AddShortcut(Config)
 		end
 	end)
 	if ChevronButton then
-		ChevronButton.MouseButton1Click:Connect(ToggleSelectionFrame)
+		ChevronButton.MouseButton1Click:Connect(function()
+			if not DragMoved then
+				ToggleSelectionFrame()
+			end
+		end)
 	end
 
 	TriggerButton.MouseButton1Click:Connect(function()
