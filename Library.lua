@@ -165,7 +165,31 @@ local function Padding(Object, L, R, T, B)
 	return P
 end
 
-local function ElementParent(Tab)
+local function ElementParent(Tab, Config)
+	local RequestedSection = typeof(Config) == "table" and Config.Section
+	if RequestedSection == false then
+		return Tab.Page
+	end
+	if RequestedSection then
+		if typeof(RequestedSection) == "Instance" then
+			if RequestedSection.Name == "SectionContent" then
+				return RequestedSection
+			end
+			local Content = RequestedSection:FindFirstChild("SectionContent")
+			if Content then
+				return Content
+			end
+		elseif typeof(RequestedSection) == "string" then
+			for _, Candidate in ipairs(Tab.Page:GetChildren()) do
+				if Candidate:IsA("GuiObject") and Candidate:GetAttribute("WolfSectionTitle") == RequestedSection then
+					local Content = Candidate:FindFirstChild("SectionContent")
+					if Content then
+						return Content
+					end
+				end
+			end
+		end
+	end
 	return Tab.CurrentSectionContent or Tab.Page
 end
 
@@ -1054,7 +1078,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
-	ToggleFrame.Parent = ElementParent(self)
+	ToggleFrame.Parent = ElementParent(self, Config)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1137,7 +1161,7 @@ function Wolf:AddButtonLegacy(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
-	ButtonFrame.Parent = ElementParent(self)
+	ButtonFrame.Parent = ElementParent(self, Config)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1179,6 +1203,7 @@ function Wolf:AddSection(Title)
 	local IconName = SectionConfig.Icon or SectionConfig.icon
 	local Collapsed = SectionConfig.Collapsed == true
 	local SectionFrame = Instance.new("Frame")
+	SectionFrame:SetAttribute("WolfSectionTitle", tostring(SectionTitle))
 	SectionFrame.Size = UDim2.new(1, 0, 0, 24)
 	SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
 	SectionFrame.BackgroundColor3 = self.Theme.Card
@@ -1263,7 +1288,7 @@ function Wolf:AddButton(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
-	ButtonFrame.Parent = ElementParent(self)
+	ButtonFrame.Parent = ElementParent(self, Config)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1315,7 +1340,7 @@ function Wolf:AddToggle(Config)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
-	ToggleFrame.Parent = ElementParent(self)
+	ToggleFrame.Parent = ElementParent(self, Config)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1413,7 +1438,7 @@ function Wolf:AddSlider(Config)
 	local SliderFrame = Instance.new("Frame")
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
 	SliderFrame.BackgroundColor3 = self.Theme.Card
-	SliderFrame.Parent = ElementParent(self)
+	SliderFrame.Parent = ElementParent(self, Config)
 	Corner(SliderFrame, 6)
 	Stroke(SliderFrame, self.Theme.Border)
 
@@ -1513,7 +1538,7 @@ function Wolf:AddTextbox(Config)
 	local InputFrame = Instance.new("Frame")
 	InputFrame.Size = UDim2.new(1, 0, 0, 36)
 	InputFrame.BackgroundColor3 = self.Theme.Card
-	InputFrame.Parent = ElementParent(self)
+	InputFrame.Parent = ElementParent(self, Config)
 	Corner(InputFrame, 6)
 	Stroke(InputFrame, self.Theme.Border)
 
@@ -1569,7 +1594,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	PickerFrame.Name = "ColorPicker"
 	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
 	PickerFrame.BackgroundColor3 = self.Theme.Card
-	PickerFrame.Parent = ElementParent(self)
+	PickerFrame.Parent = ElementParent(self, Config)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -1696,7 +1721,7 @@ function Wolf:AddColorPicker(Config)
 	PickerFrame.Name = "ColorPicker"
 	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
 	PickerFrame.BackgroundColor3 = self.Theme.Card
-	PickerFrame.Parent = ElementParent(self)
+	PickerFrame.Parent = ElementParent(self, Config)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -2217,7 +2242,9 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
-	local TriggerParent = Element.Frame:FindFirstChildWhichIsA("TextButton") or Element.Frame
+	local TriggerParent = Element.Frame:FindFirstChild("ColorSwatch") and Element.Frame
+		or Element.Frame:FindFirstChildWhichIsA("TextButton")
+		or Element.Frame
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2492,7 +2519,7 @@ function Wolf:AddDropdown(Config)
 	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
-	DropdownFrame.Parent = ElementParent(self)
+	DropdownFrame.Parent = ElementParent(self, Config)
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
@@ -2716,7 +2743,7 @@ function Wolf:AddMultiDropdown(Config)
 	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
-	DropdownFrame.Parent = ElementParent(self)
+	DropdownFrame.Parent = ElementParent(self, Config)
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
