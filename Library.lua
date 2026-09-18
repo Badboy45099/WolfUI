@@ -2240,6 +2240,28 @@ function Wolf:AddShortcut(Config)
 	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
+	local function ReserveTriggerSpace()
+		local ReservedWidth = TriggerButton.AbsoluteSize.X + 10
+		local ReservedNames = {
+			Indicator = true,
+			Box = true,
+			DropdownSelection = true,
+			ColorSwatch = true,
+			ValueLabel = true,
+		}
+		for _, Descendant in ipairs(Element.Frame:GetDescendants()) do
+			local IsNestedDropdownValue = Descendant.Name == "ValueLabel"
+				and Descendant.Parent
+				and Descendant.Parent.Name == "DropdownSelection"
+			if Descendant:IsA("GuiObject") and ReservedNames[Descendant.Name] and not IsNestedDropdownValue then
+				local Position = Descendant.Position
+				Descendant.Position =
+					UDim2.new(Position.X.Scale, Position.X.Offset - ReservedWidth, Position.Y.Scale, Position.Y.Offset)
+			end
+		end
+	end
+	ReserveTriggerSpace()
+
 	local ShortcutOffset = Vector2.new(0, 0)
 	local DragStartOffset = Vector2.new(0, 0)
 	local function ClampShortcutPosition(Position, Size)
