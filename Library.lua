@@ -183,6 +183,7 @@ function Wolf:CreateWindow(Config)
 	self.ShortcutButtons = {}
 	self.ShortcutChevrons = {}
 	self.ShortcutTriggers = {}
+	self.ShortcutSideCounts = { S1 = 0, S2 = 0 }
 	self._ShortcutConnections = self._ShortcutConnections or {}
 	for _, Connection in ipairs(self._ShortcutConnections) do
 		Connection:Disconnect()
@@ -2099,6 +2100,12 @@ function Wolf:AddShortcut(Config)
 	Config = Config or {}
 	local Side = tostring(Config.Side or Config.Type or "S1"):upper()
 	local IsToggleShortcut = Side == "S2"
+	if Side ~= "S1" and Side ~= "S2" then
+		Side = "S1"
+		IsToggleShortcut = false
+	end
+	self.ShortcutSideCounts[Side] = (self.ShortcutSideCounts[Side] or 0) + 1
+	local SideIndex = self.ShortcutSideCounts[Side]
 	local Element = Config.Element or Config.Target
 	local Callback = Config.Callback
 	if not Element or not Element.Frame then
@@ -2296,7 +2303,7 @@ function Wolf:AddShortcut(Config)
 		local ElementPosition = Element.Frame.AbsolutePosition
 		local ElementSize = Element.Frame.AbsoluteSize
 		local TriggerOffsetX = IsToggleShortcut and 32 or 0
-		local TriggerOffsetY = IsToggleShortcut and 30 or 0
+		local TriggerOffsetY = (SideIndex - 1) * 32 + (IsToggleShortcut and 16 or 0)
 		local Position = Vector2.new(
 			math.clamp(
 				ElementPosition.X + ElementSize.X + 6 + TriggerOffsetX,
