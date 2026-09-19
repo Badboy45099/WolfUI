@@ -775,12 +775,24 @@ function Wolf:CreateWindow(Config)
 				local AnchorPosition = Anchor.AbsolutePosition
 				local AnchorSize = Anchor.AbsoluteSize
 				local FrameSize = Dropdown.Frame.AbsoluteSize
-				local X = AnchorPosition.X + AnchorSize.X - FrameSize.X
-				local Y = AnchorPosition.Y + AnchorSize.Y + 4
+				local X
+				local Y
+				if Dropdown.SideAnchor then
+					local RightX = AnchorPosition.X + AnchorSize.X + 4
+					local LeftX = AnchorPosition.X - FrameSize.X - 4
+					X = RightX + FrameSize.X <= WindowPosition.X + WindowSize.X - 4 and RightX or LeftX
+					Y = AnchorPosition.Y + (AnchorSize.Y - FrameSize.Y) / 2
+				else
+					X = AnchorPosition.X + AnchorSize.X - FrameSize.X
+					Y = AnchorPosition.Y + AnchorSize.Y + 4
+				end
 				local MinX = WindowPosition.X + 4
 				local MaxX = WindowPosition.X + WindowSize.X - FrameSize.X - 4
+				local MinY = WindowPosition.Y + 4
+				local MaxY = WindowPosition.Y + WindowSize.Y - FrameSize.Y - 4
 
 				X = math.clamp(X, MinX, math.max(MinX, MaxX))
+				Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
 				Dropdown.Frame.Position = UDim2.fromOffset(X, Y)
 			end
 		end
@@ -2507,7 +2519,8 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Visible = true
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
-				Anchor = Element.Frame,
+				Anchor = ChevronButton,
+				SideAnchor = true,
 				Chevron = Chevron,
 				ClosedIcon = "chevron-right",
 			})
@@ -2724,7 +2737,7 @@ function Wolf:AddDropdown(Config)
 		end
 		OptionsFrame.Visible = not WasVisible
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
 			self._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
@@ -2746,7 +2759,7 @@ function Wolf:AddDropdown(Config)
 	function DropdownObject:Open()
 		self.Library._CloseDropdowns()
 		OptionsFrame.Visible = true
-		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
 		self.Library._UpdateDropdownPositions()
 		ApplyIcon(Chevron, "chevron-up")
 	end
@@ -2949,7 +2962,7 @@ function Wolf:AddMultiDropdown(Config)
 		end
 		OptionsFrame.Visible = not WasVisible
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
 			self._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
@@ -2976,7 +2989,7 @@ function Wolf:AddMultiDropdown(Config)
 	function DropdownObject:Open()
 		self.Library._CloseDropdowns()
 		OptionsFrame.Visible = true
-		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = DropdownButton })
+		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
 		self.Library._UpdateDropdownPositions()
 		ApplyIcon(Chevron, "chevron-up")
 	end
