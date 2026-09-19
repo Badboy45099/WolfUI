@@ -1148,6 +1148,10 @@ function Wolf:AddToggleLegacy(Idx, Config)
 		State = Val
 		Update()
 	end
+	function ToggleObj:SetShortcutHooked(Hooked)
+		Indicator.Position = Hooked and UDim2.new(1, -42, 0.5, 0) or UDim2.new(1, -10, 0.5, 0)
+		Label.Size = Hooked and UDim2.new(1, -94, 1, 0) or UDim2.new(1, -60, 1, 0)
+	end
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
 	return ToggleObj
@@ -1457,6 +1461,10 @@ function Wolf:AddToggle(Config)
 		SetValue = function(_, Val)
 			State = Val
 			Update()
+		end,
+		SetShortcutHooked = function(_, Hooked)
+			Indicator.Position = Hooked and UDim2.new(1, -42, 0.5, 0) or UDim2.new(1, -10, 0.5, 0)
+			Label.Size = Hooked and UDim2.new(1, -94, 1, 0) or UDim2.new(1, -60, 1, 0)
 		end,
 	}
 end
@@ -2168,6 +2176,9 @@ function Wolf:AddShortcut(Config)
 	local Callback = Config.Callback
 	if not Element or not Element.Frame then
 		return nil
+	end
+	if Element.SetShortcutHooked then
+		Element:SetShortcutHooked(true)
 	end
 
 	if not self.ShortcutHolder then
