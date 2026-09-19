@@ -626,9 +626,6 @@ function Wolf:CreateWindow(Config)
 		else
 			TargetWindowPosition = MainFrame.Position
 			TargetWindowSize = MainFrame.Size
-			if self._CloseDropdowns then
-				self._CloseDropdowns()
-			end
 			Tween(MainFrame, {
 				Position = UDim2.fromOffset(ToggleCenter.X, ToggleCenter.Y),
 				Size = UDim2.fromOffset(0, 0),
@@ -2332,12 +2329,14 @@ function Wolf:AddShortcut(Config)
 			HookClone.Visible = false
 			HookClone.ZIndex = 150
 			HookClone.Parent = self.ShortcutGui
-			Element.Popup.Parent = self.ShortcutGui
 			for _, Descendant in ipairs(HookClone:GetDescendants()) do
 				if Descendant:IsA("GuiObject") then
 					Descendant.ZIndex = 151
 				end
 			end
+		end
+		if Element.Popup then
+			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
 	local TriggerButton = Instance.new("ImageButton")
