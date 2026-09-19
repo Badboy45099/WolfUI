@@ -2292,6 +2292,15 @@ function Wolf:AddShortcut(Config)
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
 		or Element.Frame
+	local HookSlot = Instance.new("Frame")
+	HookSlot.Name = Side .. "HookSlot"
+	HookSlot.AnchorPoint = Vector2.new(1, 0.5)
+	HookSlot.Position = UDim2.new(1, -4, 0.5, 0)
+	HookSlot.Size = UDim2.fromOffset(32, 32)
+	HookSlot.BackgroundTransparency = 1
+	HookSlot.BorderSizePixel = 0
+	HookSlot.ZIndex = 109
+	HookSlot.Parent = TriggerParent
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2301,7 +2310,9 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 110
-	TriggerButton.Parent = TriggerParent
+	TriggerButton.AnchorPoint = Vector2.new(0.5, 0.5)
+	TriggerButton.Position = UDim2.fromScale(0.5, 0.5)
+	TriggerButton.Parent = HookSlot
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2390,8 +2401,8 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		local ParentSize = TriggerParent.AbsoluteSize
-		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.fromOffset(ParentSize.X - 6, ParentSize.Y * 0.5)
+		HookSlot.Position = UDim2.fromOffset(ParentSize.X - 4, ParentSize.Y * 0.5)
+		TriggerButton.Position = UDim2.fromScale(0.5, 0.5)
 		TriggerButton.Visible = true
 	end
 	UpdateTriggerPosition()
