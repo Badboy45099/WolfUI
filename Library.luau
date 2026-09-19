@@ -2303,6 +2303,21 @@ function Wolf:AddShortcut(Config)
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
 		or Element.Frame
+	local HookClone
+	local CloneSource
+	if IsToggleShortcut then
+		CloneSource = DropdownSelection or Element.Frame:FindFirstChild("ColorSwatch", true) or Element.Frame
+		HookClone = CloneSource:Clone()
+		HookClone.Name = "S2HookedSelection"
+		HookClone.Visible = false
+		HookClone.ZIndex = 150
+		HookClone.Parent = self.Gui
+		for _, Descendant in ipairs(HookClone:GetDescendants()) do
+			if Descendant:IsA("GuiObject") then
+				Descendant.ZIndex = 151
+			end
+		end
+	end
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2407,6 +2422,19 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
+		if HookClone and ChevronButton.Visible then
+			local ChevronPosition = ChevronButton.AbsolutePosition
+			local ChevronSize = ChevronButton.AbsoluteSize
+			HookClone.Size = UDim2.fromOffset(CloneSource.AbsoluteSize.X, CloneSource.AbsoluteSize.Y)
+			local CloneSize = HookClone.AbsoluteSize
+			HookClone.Position = UDim2.fromOffset(
+				ChevronPosition.X - CloneSize.X - 4,
+				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
+			)
+			HookClone.Visible = true
+		elseif HookClone then
+			HookClone.Visible = false
+		end
 	end
 	UpdateTriggerPosition()
 	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
@@ -2510,6 +2538,9 @@ function Wolf:AddShortcut(Config)
 		end
 		if Element.Popup.Visible then
 			Element.Popup.Visible = false
+			if HookClone then
+				HookClone.Visible = false
+			end
 			table.clear(self.OpenDropdowns)
 			ApplyIcon(Chevron, "chevron-right")
 		else
@@ -2517,6 +2548,9 @@ function Wolf:AddShortcut(Config)
 				self._CloseDropdowns()
 			end
 			Element.Popup.Visible = true
+			if HookClone then
+				HookClone.Visible = true
+			end
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
 				Anchor = ChevronButton,
@@ -2553,6 +2587,9 @@ function Wolf:AddShortcut(Config)
 		end
 		if not ShowShortcut and Element and Element.Popup then
 			Element.Popup.Visible = false
+			if HookClone then
+				HookClone.Visible = false
+			end
 			table.clear(self.OpenDropdowns)
 		end
 	end)
@@ -2630,8 +2667,9 @@ function Wolf:AddDropdown(Config)
 
 	local SelectionFrame = Instance.new("Frame")
 	SelectionFrame.Name = "DropdownSelection"
-	SelectionFrame.Position = UDim2.new(0.45, 4, 0.5, -16)
-	SelectionFrame.Size = UDim2.new(0.55, -12, 0, 32)
+	SelectionFrame.AnchorPoint = Vector2.new(1, 0.5)
+	SelectionFrame.Position = UDim2.new(1, -10, 0.5, 0)
+	SelectionFrame.Size = UDim2.new(0.45, 0, 0, 30)
 	SelectionFrame.BackgroundColor3 = self.Theme.Surface
 	SelectionFrame.BackgroundTransparency = 0.15
 	SelectionFrame.BorderSizePixel = 0
@@ -2854,8 +2892,9 @@ function Wolf:AddMultiDropdown(Config)
 
 	local SelectionFrame = Instance.new("Frame")
 	SelectionFrame.Name = "DropdownSelection"
-	SelectionFrame.Position = UDim2.new(0.45, 4, 0.5, -16)
-	SelectionFrame.Size = UDim2.new(0.55, -12, 0, 32)
+	SelectionFrame.AnchorPoint = Vector2.new(1, 0.5)
+	SelectionFrame.Position = UDim2.new(1, -10, 0.5, 0)
+	SelectionFrame.Size = UDim2.new(0.45, 0, 0, 30)
 	SelectionFrame.BackgroundColor3 = self.Theme.Surface
 	SelectionFrame.BackgroundTransparency = 0.15
 	SelectionFrame.BorderSizePixel = 0
