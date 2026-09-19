@@ -610,6 +610,12 @@ function Wolf:CreateWindow(Config)
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
 		self._UIVisible = Visible
+		if self.ShortcutGui then
+			self.ShortcutGui.Enabled = true
+		end
+		if self.ShortcutHolder then
+			self.ShortcutHolder.Visible = true
+		end
 		local ToggleCenter = ToggleCenterPosition()
 		if Visible then
 			TargetWindowPosition = TargetWindowPosition or MainFrame.Position
@@ -2321,7 +2327,6 @@ function Wolf:AddShortcut(Config)
 	local HookClone
 	local CloneSource
 	if IsToggleShortcut then
-		-- Only dropdowns get a detached selection control. Color pickers use their popup directly.
 		if DropdownSelection then
 			CloneSource = DropdownSelection
 			HookClone = CloneSource:Clone()
@@ -2334,6 +2339,10 @@ function Wolf:AddShortcut(Config)
 					Descendant.ZIndex = 151
 				end
 			end
+		elseif Element.Popup then
+			CloneSource = Element.Popup
+			HookClone = Element.Popup
+			HookClone.ZIndex = 150
 		end
 		if Element.Popup then
 			Element.Popup.Parent = self.ShortcutGui
@@ -2449,10 +2458,17 @@ function Wolf:AddShortcut(Config)
 			HookClone.Size = UDim2.fromOffset(CloneSource.AbsoluteSize.X, CloneSource.AbsoluteSize.Y)
 			local CloneSize = HookClone.AbsoluteSize
 			HookClone.Position = UDim2.fromOffset(
-				ChevronPosition.X - CloneSize.X - 4,
+				ChevronPosition.X + ChevronSize.X + 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
 			HookClone.Visible = Button.Visible and ChevronButton.Visible
+			if DropdownSelection then
+				local SourceValue = CloneSource:FindFirstChildWhichIsA("TextLabel", true)
+				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
+				if SourceValue and CloneValue then
+					CloneValue.Text = SourceValue.Text
+				end
+			end
 		elseif HookClone then
 			HookClone.Visible = false
 		end
@@ -2583,7 +2599,7 @@ function Wolf:AddShortcut(Config)
 			ApplyIcon(Chevron, "chevron-left")
 		end
 	end
-	if HookClone then
+	if HookClone and DropdownSelection then
 		local SelectionButton = Instance.new("TextButton")
 		SelectionButton.Name = "S2SelectionButton"
 		SelectionButton.Size = UDim2.fromScale(1, 1)
