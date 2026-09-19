@@ -237,6 +237,9 @@ function Wolf:CreateWindow(Config)
 	if ParentContainer:FindFirstChild("WolfUIToggle") then
 		ParentContainer.WolfUIToggle:Destroy()
 	end
+	if ParentContainer:FindFirstChild("WolfUIShortcuts") then
+		ParentContainer.WolfUIShortcuts:Destroy()
+	end
 
 	local WolfUI = Instance.new("ScreenGui")
 	WolfUI.Name = "WolfUI"
@@ -771,7 +774,12 @@ function Wolf:CreateWindow(Config)
 		local WindowSize = MainFrame.AbsoluteSize
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
 			local Anchor = Dropdown.Anchor
-			if Dropdown.Frame.Visible and Dropdown.Frame.Parent == self.Gui and Anchor and Anchor.Parent then
+			if
+				Dropdown.Frame.Visible
+				and (Dropdown.Frame.Parent == self.Gui or Dropdown.Frame.Parent == self.ShortcutGui)
+				and Anchor
+				and Anchor.Parent
+			then
 				local AnchorPosition = Anchor.AbsolutePosition
 				local AnchorSize = Anchor.AbsoluteSize
 				local FrameSize = Dropdown.Frame.AbsoluteSize
@@ -2194,6 +2202,13 @@ function Wolf:AddShortcut(Config)
 	end
 
 	if not self.ShortcutHolder then
+		local ShortcutGui = Instance.new("ScreenGui")
+		ShortcutGui.Name = "WolfUIShortcuts"
+		ShortcutGui.ResetOnSpawn = false
+		ShortcutGui.DisplayOrder = 101
+		ShortcutGui.Parent = self.Gui.Parent
+		self.ShortcutGui = ShortcutGui
+
 		local Holder = Instance.new("Frame")
 		Holder.Name = "Shortcuts"
 		Holder.Position = UDim2.fromScale(0, 0)
@@ -2202,7 +2217,7 @@ function Wolf:AddShortcut(Config)
 		Holder.ZIndex = 100
 		Holder.ClipsDescendants = false
 		Holder.Visible = self._UIVisible ~= false
-		Holder.Parent = self.Gui
+		Holder.Parent = ShortcutGui
 
 		self.ShortcutHolder = Holder
 	end
@@ -2313,7 +2328,8 @@ function Wolf:AddShortcut(Config)
 			HookClone.Name = "S2HookedSelection"
 			HookClone.Visible = false
 			HookClone.ZIndex = 150
-			HookClone.Parent = self.Gui
+			HookClone.Parent = self.ShortcutGui
+			Element.Popup.Parent = self.ShortcutGui
 			for _, Descendant in ipairs(HookClone:GetDescendants()) do
 				if Descendant:IsA("GuiObject") then
 					Descendant.ZIndex = 151
@@ -2431,7 +2447,7 @@ function Wolf:AddShortcut(Config)
 			HookClone.Size = UDim2.fromOffset(CloneSource.AbsoluteSize.X, CloneSource.AbsoluteSize.Y)
 			local CloneSize = HookClone.AbsoluteSize
 			HookClone.Position = UDim2.fromOffset(
-				ChevronPosition.X + ChevronSize.X + 4,
+				ChevronPosition.X - CloneSize.X - 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
 			HookClone.Visible = true
