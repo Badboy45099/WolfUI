@@ -1127,6 +1127,8 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	local ClickBtn = Instance.new("TextButton")
 	ClickBtn.Size = UDim2.new(1, 0, 1, 0)
 	ClickBtn.BackgroundTransparency = 1
+	ClickBtn.Active = true
+	ClickBtn.ZIndex = 1
 	ClickBtn.Text = ""
 	ClickBtn.Parent = ToggleFrame
 
@@ -1426,6 +1428,8 @@ function Wolf:AddToggle(Config)
 	local ClickBtn = Instance.new("TextButton")
 	ClickBtn.Size = UDim2.new(1, 0, 1, 0)
 	ClickBtn.BackgroundTransparency = 1
+	ClickBtn.Active = true
+	ClickBtn.ZIndex = 1
 	ClickBtn.Text = ""
 	ClickBtn.Parent = ToggleFrame
 
@@ -2299,6 +2303,8 @@ function Wolf:AddShortcut(Config)
 	HookSlot.Size = UDim2.fromOffset(32, 32)
 	HookSlot.BackgroundTransparency = 1
 	HookSlot.BorderSizePixel = 0
+	HookSlot.Active = false
+	HookSlot.ClipsDescendants = false
 	HookSlot.ZIndex = 109
 	HookSlot.Parent = TriggerParent
 	local TriggerButton = Instance.new("ImageButton")
@@ -2309,6 +2315,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
+	TriggerButton.Selectable = false
 	TriggerButton.ZIndex = 110
 	TriggerButton.AnchorPoint = Vector2.new(0.5, 0.5)
 	TriggerButton.Position = UDim2.fromScale(0.5, 0.5)
