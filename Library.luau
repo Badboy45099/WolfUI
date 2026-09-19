@@ -770,8 +770,6 @@ function Wolf:CreateWindow(Config)
 	end)
 
 	local function UpdateDropdownPositions()
-		local WindowPosition = MainFrame.AbsolutePosition
-		local WindowSize = MainFrame.AbsoluteSize
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
 			local Anchor = Dropdown.Anchor
 			if
@@ -780,6 +778,11 @@ function Wolf:CreateWindow(Config)
 				and Anchor
 				and Anchor.Parent
 			then
+				local IsDetached = Dropdown.Frame.Parent == self.ShortcutGui
+				local WindowPosition = IsDetached and Vector2.zero or MainFrame.AbsolutePosition
+				local WindowSize = IsDetached
+						and (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720))
+					or MainFrame.AbsoluteSize
 				local AnchorPosition = Anchor.AbsolutePosition
 				local AnchorSize = Anchor.AbsoluteSize
 				local FrameSize = Dropdown.Frame.AbsoluteSize
@@ -2441,7 +2444,7 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
-		if HookClone and ChevronButton.Visible then
+		if HookClone and Button.Visible and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
 			HookClone.Size = UDim2.fromOffset(CloneSource.AbsoluteSize.X, CloneSource.AbsoluteSize.Y)
@@ -2450,7 +2453,7 @@ function Wolf:AddShortcut(Config)
 				ChevronPosition.X - CloneSize.X - 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
-			HookClone.Visible = true
+			HookClone.Visible = Button.Visible and ChevronButton.Visible
 		elseif HookClone then
 			HookClone.Visible = false
 		end
@@ -2568,7 +2571,7 @@ function Wolf:AddShortcut(Config)
 			end
 			Element.Popup.Visible = true
 			if HookClone then
-				HookClone.Visible = true
+				HookClone.Visible = Button.Visible and ChevronButton.Visible
 			end
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
@@ -2608,7 +2611,7 @@ function Wolf:AddShortcut(Config)
 
 	TriggerButton.MouseButton1Click:Connect(function()
 		local ShowShortcut = not Button.Visible
-		if ShowShortcut and not IsToggleShortcut then
+		if ShowShortcut then
 			UpdateShortcutPosition(true)
 		end
 		Button.Visible = ShowShortcut
