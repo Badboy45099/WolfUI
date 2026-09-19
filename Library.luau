@@ -2306,15 +2306,18 @@ function Wolf:AddShortcut(Config)
 	local HookClone
 	local CloneSource
 	if IsToggleShortcut then
-		CloneSource = DropdownSelection or Element.Frame:FindFirstChild("ColorSwatch", true) or Element.Frame
-		HookClone = CloneSource:Clone()
-		HookClone.Name = "S2HookedSelection"
-		HookClone.Visible = false
-		HookClone.ZIndex = 150
-		HookClone.Parent = self.Gui
-		for _, Descendant in ipairs(HookClone:GetDescendants()) do
-			if Descendant:IsA("GuiObject") then
-				Descendant.ZIndex = 151
+		-- Only dropdowns get a detached selection control. Color pickers use their popup directly.
+		if DropdownSelection then
+			CloneSource = DropdownSelection
+			HookClone = CloneSource:Clone()
+			HookClone.Name = "S2HookedSelection"
+			HookClone.Visible = false
+			HookClone.ZIndex = 150
+			HookClone.Parent = self.Gui
+			for _, Descendant in ipairs(HookClone:GetDescendants()) do
+				if Descendant:IsA("GuiObject") then
+					Descendant.ZIndex = 151
+				end
 			end
 		end
 	end
@@ -2428,7 +2431,7 @@ function Wolf:AddShortcut(Config)
 			HookClone.Size = UDim2.fromOffset(CloneSource.AbsoluteSize.X, CloneSource.AbsoluteSize.Y)
 			local CloneSize = HookClone.AbsoluteSize
 			HookClone.Position = UDim2.fromOffset(
-				ChevronPosition.X - CloneSize.X - 4,
+				ChevronPosition.X + ChevronSize.X + 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
 			HookClone.Visible = true
@@ -2553,7 +2556,7 @@ function Wolf:AddShortcut(Config)
 			end
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
-				Anchor = ChevronButton,
+				Anchor = HookClone or ChevronButton,
 				SideAnchor = true,
 				Chevron = Chevron,
 				ClosedIcon = "chevron-right",
@@ -2562,13 +2565,24 @@ function Wolf:AddShortcut(Config)
 			ApplyIcon(Chevron, "chevron-left")
 		end
 	end
+	if HookClone then
+		local SelectionButton = Instance.new("TextButton")
+		SelectionButton.Name = "S2SelectionButton"
+		SelectionButton.Size = UDim2.fromScale(1, 1)
+		SelectionButton.BackgroundTransparency = 1
+		SelectionButton.Text = ""
+		SelectionButton.AutoButtonColor = false
+		SelectionButton.ZIndex = 152
+		SelectionButton.Parent = HookClone
+		SelectionButton.MouseButton1Click:Connect(ToggleSelectionFrame)
+	end
 
 	Button.MouseButton1Click:Connect(function()
 		if not DragMoved then
 			ActivateShortcut()
 		end
 	end)
-	if ChevronButton then
+	if ChevronButton and not HookClone then
 		ChevronButton.MouseButton1Click:Connect(function()
 			if not DragMoved then
 				ToggleSelectionFrame()
