@@ -2306,7 +2306,7 @@ function Wolf:AddShortcut(Config)
 	HookSlot.Active = false
 	HookSlot.ClipsDescendants = false
 	HookSlot.ZIndex = 109
-	HookSlot.Parent = TriggerParent
+	HookSlot.Parent = self.Gui
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2407,8 +2407,9 @@ function Wolf:AddShortcut(Config)
 		if not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
+		local ParentPosition = TriggerParent.AbsolutePosition
 		local ParentSize = TriggerParent.AbsoluteSize
-		HookSlot.Position = UDim2.fromOffset(ParentSize.X - 4, ParentSize.Y * 0.5)
+		HookSlot.Position = UDim2.fromOffset(ParentPosition.X + ParentSize.X - 4, ParentPosition.Y + ParentSize.Y * 0.5)
 		TriggerButton.Position = UDim2.fromScale(0.5, 0.5)
 		TriggerButton.Visible = true
 	end
