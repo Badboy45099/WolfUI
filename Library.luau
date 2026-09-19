@@ -2338,55 +2338,7 @@ function Wolf:AddShortcut(Config)
 	)
 	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 	table.insert(self.ShortcutTriggers, TriggerButton)
-	local HookedPanel = IsToggleShortcut and (Element.Popup or Element.Frame) or nil
-	local PanelRestore
-	local PanelWasVisible
-	local function RestoreHookedPanel()
-		if PanelRestore then
-			local Restore = PanelRestore
-			PanelRestore = nil
-			Restore()
-		end
-	end
-	local function OpenHookedPanel()
-		if not HookedPanel then
-			return false
-		end
-		if HookedPanel == Element.Frame then
-			local OriginalParent = HookedPanel.Parent
-			local OriginalPosition = HookedPanel.Position
-			local OriginalSize = HookedPanel.Size
-			local OriginalAnchorPoint = HookedPanel.AnchorPoint
-			local OriginalZIndex = HookedPanel.ZIndex
-			PanelWasVisible = HookedPanel.Visible
-			PanelRestore = function()
-				if HookedPanel.Parent then
-					HookedPanel.Parent = OriginalParent
-				end
-				HookedPanel.Position = OriginalPosition
-				HookedPanel.Size = OriginalSize
-				HookedPanel.AnchorPoint = OriginalAnchorPoint
-				HookedPanel.ZIndex = OriginalZIndex
-				HookedPanel.Visible = PanelWasVisible
-			end
-			HookedPanel.AnchorPoint = Vector2.new(0, 0)
-			HookedPanel.Size = UDim2.fromOffset(HookedPanel.AbsoluteSize.X, HookedPanel.AbsoluteSize.Y)
-			HookedPanel.Parent = self.Gui
-			HookedPanel.ZIndex = 50
-		end
-		HookedPanel.Visible = true
-		table.insert(self.OpenDropdowns, {
-			Frame = HookedPanel,
-			Anchor = ChevronButton,
-			SideAnchor = true,
-			Chevron = Chevron,
-			ClosedIcon = "chevron-right",
-			Restore = RestoreHookedPanel,
-		})
-		self._UpdateDropdownPositions()
-		ApplyIcon(Chevron, "chevron-left")
-		return true
-	end
+	local HookedPanel = IsToggleShortcut and Element.Popup or nil
 
 	local function ReserveTriggerSpace()
 		local Control = Element.Frame:FindFirstChild("Indicator", true)
@@ -2570,14 +2522,22 @@ function Wolf:AddShortcut(Config)
 		end
 		if HookedPanel.Visible and #self.OpenDropdowns > 0 then
 			HookedPanel.Visible = false
-			RestoreHookedPanel()
 			table.clear(self.OpenDropdowns)
 			ApplyIcon(Chevron, "chevron-right")
 		else
 			if self._CloseDropdowns then
 				self._CloseDropdowns()
 			end
-			OpenHookedPanel()
+			HookedPanel.Visible = true
+			table.insert(self.OpenDropdowns, {
+				Frame = HookedPanel,
+				Anchor = ChevronButton,
+				SideAnchor = true,
+				Chevron = Chevron,
+				ClosedIcon = "chevron-right",
+			})
+			self._UpdateDropdownPositions()
+			ApplyIcon(Chevron, "chevron-left")
 		end
 	end
 
@@ -2605,7 +2565,6 @@ function Wolf:AddShortcut(Config)
 		end
 		if not ShowShortcut and HookedPanel then
 			HookedPanel.Visible = false
-			RestoreHookedPanel()
 			table.clear(self.OpenDropdowns)
 		end
 	end)
