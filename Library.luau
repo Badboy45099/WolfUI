@@ -1379,6 +1379,7 @@ function Wolf:AddToggle(Config)
 	Stroke(ToggleFrame, self.Theme.Border)
 
 	local Label = Instance.new("TextLabel")
+	Label.Name = "ToggleLabel"
 	Label.Position = UDim2.new(0, 12, 0, 0)
 	Label.Size = UDim2.new(1, -60, 1, 0)
 	Label.BackgroundTransparency = 1
@@ -2310,6 +2311,10 @@ function Wolf:AddShortcut(Config)
 		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42, Control.Position.Y.Scale, Control.Position.Y.Offset)
+		end
+		local ToggleLabel = Element.Frame:FindFirstChild("ToggleLabel", true)
+		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
+			ToggleLabel.Size = UDim2.new(1, -94, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
 		end
 	end
 	ReserveTriggerSpace()
