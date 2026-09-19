@@ -775,12 +775,24 @@ function Wolf:CreateWindow(Config)
 				local AnchorPosition = Anchor.AbsolutePosition
 				local AnchorSize = Anchor.AbsoluteSize
 				local FrameSize = Dropdown.Frame.AbsoluteSize
-				local X = AnchorPosition.X + AnchorSize.X - FrameSize.X
-				local Y = AnchorPosition.Y + AnchorSize.Y + 4
+				local X
+				local Y
+				if Dropdown.SideAnchor then
+					local RightX = AnchorPosition.X + AnchorSize.X + 4
+					local LeftX = AnchorPosition.X - FrameSize.X - 4
+					X = RightX + FrameSize.X <= WindowPosition.X + WindowSize.X - 4 and RightX or LeftX
+					Y = AnchorPosition.Y + (AnchorSize.Y - FrameSize.Y) / 2
+				else
+					X = AnchorPosition.X + AnchorSize.X - FrameSize.X
+					Y = AnchorPosition.Y + AnchorSize.Y + 4
+				end
 				local MinX = WindowPosition.X + 4
 				local MaxX = WindowPosition.X + WindowSize.X - FrameSize.X - 4
+				local MinY = WindowPosition.Y + 4
+				local MaxY = WindowPosition.Y + WindowSize.Y - FrameSize.Y - 4
 
 				X = math.clamp(X, MinX, math.max(MinX, MaxX))
+				Y = math.clamp(Y, MinY, math.max(MinY, MaxY))
 				Dropdown.Frame.Position = UDim2.fromOffset(X, Y)
 			end
 		end
@@ -2377,13 +2389,10 @@ function Wolf:AddShortcut(Config)
 		if not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
-		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
-		local ElementPosition = Element.Frame.AbsolutePosition
-		local ElementSize = Element.Frame.AbsoluteSize
-		local TriggerOffsetX = 0
-		local TriggerOffsetY = 0
+		local ParentSize = TriggerParent.AbsoluteSize
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
+		TriggerButton.Position = UDim2.fromOffset(ParentSize.X - 6, ParentSize.Y * 0.5)
+		TriggerButton.Visible = true
 	end
 	UpdateTriggerPosition()
 	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
@@ -2496,7 +2505,8 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Visible = true
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
-				Anchor = Element.Frame,
+				Anchor = ChevronButton,
+				SideAnchor = true,
 				Chevron = Chevron,
 				ClosedIcon = "chevron-right",
 			})
