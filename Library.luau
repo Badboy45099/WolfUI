@@ -1653,6 +1653,7 @@ end
 -- Color picker component
 function Wolf:AddRGBColorPickerLegacy(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Color"
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
@@ -1697,7 +1698,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Popup.BackgroundColor3 = self.Theme.Surface
 	Popup.Visible = false
 	Popup.ZIndex = 50
-	Popup.Parent = self.Library.Gui
+	Popup.Parent = Library.Gui
 	Corner(Popup, 6)
 	Stroke(Popup, self.Theme.Border)
 	Padding(Popup, 10, 10, 10, 10)
@@ -1747,22 +1748,22 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 
 	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
-			table.insert(self.OpenDropdowns, {
+			table.insert(Library.OpenDropdowns, {
 				Frame = Popup,
 				Chevron = PickerFrame:FindFirstChild("Icon"),
 				ClosedIcon = IconName,
 				Anchor = ColorPickerButton,
 			})
-			self._UpdateDropdownPositions()
+			Library._UpdateDropdownPositions()
 		end
 	end)
 
-	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
+	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
 	return {
 		SetValue = function(_, Value)
 			if typeof(Value) == "Color3" then
@@ -1779,6 +1780,7 @@ end
 
 function Wolf:AddColorPicker(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Color"
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
@@ -1825,7 +1827,7 @@ function Wolf:AddColorPicker(Config)
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 50
-	Popup.Parent = self.Library.Gui
+	Popup.Parent = Library.Gui
 
 	local MainContainer = Instance.new("Frame")
 	MainContainer.Size = UDim2.fromOffset(260, 220)
@@ -2122,13 +2124,13 @@ function Wolf:AddColorPicker(Config)
 
 	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
-			table.insert(self.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
-			self._UpdateDropdownPositions()
+			table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
+			Library._UpdateDropdownPositions()
 		end
 	end)
 
@@ -2136,12 +2138,11 @@ function Wolf:AddColorPicker(Config)
 		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
-		table.clear(self.OpenDropdowns)
+		table.clear(Library.OpenDropdowns)
 	end)
 
 	UpdateUI(false)
-	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
-	local Library = self
+	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
 	local PickerObject = {
 		Frame = PickerFrame,
 		Popup = Popup,
