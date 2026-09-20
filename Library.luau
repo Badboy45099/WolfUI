@@ -2368,15 +2368,6 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
-	local TriggerContainer = Instance.new("Frame")
-	TriggerContainer.Name = "TriggerContainer"
-	TriggerContainer.Size = UDim2.new(0, 100, 1, 0)
-	TriggerContainer.AnchorPoint = Vector2.new(1, 0)
-	TriggerContainer.Position = UDim2.new(1, 0, 0, 0)
-	TriggerContainer.BackgroundTransparency = 1
-	TriggerContainer.BorderSizePixel = 0
-	TriggerContainer.Parent = ActionElement.Frame
-
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2386,7 +2377,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = TriggerContainer
+	TriggerButton.Parent = ActionElement.Frame
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2481,7 +2472,7 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetX = TriggerSlot * 32
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, 0)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
