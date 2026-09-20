@@ -2033,6 +2033,7 @@ function Wolf:AddColorPicker(Config)
 	PipetteButton.BackgroundColor3 = self.Theme.Card
 	PipetteButton.BackgroundTransparency = 0.3
 	PipetteButton.AutoButtonColor = false
+	PipetteButton.Active = true
 	PipetteButton.ZIndex = 54
 	PipetteButton.Parent = Footer
 	Corner(PipetteButton, 6)
@@ -2202,7 +2203,21 @@ function Wolf:AddShortcut(Config)
 	local ActionElement = Config.Element1 or Config.Element or Config.Target
 	local Element = Config.Element2 or ActionElement
 	local Callback = Config.Callback
-	if not ActionElement or not ActionElement.Frame or not Element or not Element.Frame then
+	local function NormalizeElement(Value)
+		if not Value then
+			return nil
+		end
+		if typeof(Value) == "table" and Value.Frame then
+			return Value
+		end
+		if typeof(Value) == "Instance" and Value:IsA("GuiObject") then
+			return { Frame = Value }
+		end
+		return nil
+	end
+	ActionElement = NormalizeElement(ActionElement)
+	Element = NormalizeElement(Element)
+	if not ActionElement or not Element then
 		return nil
 	end
 	if ActionElement.SetShortcutHooked then
@@ -2327,11 +2342,8 @@ function Wolf:AddShortcut(Config)
 	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
 	local ColorPickerPopup = ColorPickerControl and Element.Popup
 	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
-	local HookSource = DropdownSelection and DropdownSelection
-		or ColorPickerPopup
-		or TextBoxControl and TextBoxControl
+	local HookSource = DropdownSelection and DropdownSelection or ColorPickerPopup or TextBoxControl and TextBoxControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
-	local TriggerParent = ActionElement.Frame
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
@@ -2349,7 +2361,7 @@ function Wolf:AddShortcut(Config)
 			end
 			for _, Descendant in ipairs(HookClone:GetDescendants()) do
 				if Descendant:IsA("GuiObject") then
-					Descendant.ZIndex = 151
+					Descendant.ZIndex = IsColorPickerHook and 151 or 151
 				end
 			end
 		end
@@ -2366,7 +2378,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 110
-	TriggerButton.Parent = TriggerParent
+	TriggerButton.Parent = self.ShortcutHolder
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2381,18 +2393,7 @@ function Wolf:AddShortcut(Config)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
-		local Control = ActionElement.Frame:FindFirstChild("Indicator", true)
-			or ActionElement.Frame:FindFirstChild("Box", true)
-			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
-			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
-		if Control and Control:IsA("GuiObject") then
-			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
-			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
-		end
-		local ToggleLabel = ActionElement.Frame:FindFirstChild("ToggleLabel", true)
-		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
-			ToggleLabel.Size = UDim2.new(1, -94 - TriggerSlot * 32, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
-		end
+		return
 	end
 	ReserveTriggerSpace()
 
@@ -2459,9 +2460,11 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		local TriggerOffsetX = TriggerSlot * 32
-		local TriggerOffsetY = 0
-		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
+		local RowPosition = ActionElement.Frame.AbsolutePosition
+		local RowSize = ActionElement.Frame.AbsoluteSize
+		TriggerButton.AnchorPoint = Vector2.new(0, 0.5)
+		TriggerButton.Position =
+			UDim2.fromOffset(RowPosition.X + RowSize.X + 8 + TriggerOffsetX, RowPosition.Y + RowSize.Y / 2)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
