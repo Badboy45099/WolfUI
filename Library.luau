@@ -1697,7 +1697,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Popup.Size = UDim2.fromOffset(220, 122)
 	Popup.BackgroundColor3 = self.Theme.Surface
 	Popup.Visible = false
-	Popup.ZIndex = 50
+	Popup.ZIndex = 150
 	Popup.Parent = Library.Gui
 	Corner(Popup, 6)
 	Stroke(Popup, self.Theme.Border)
@@ -1826,7 +1826,7 @@ function Wolf:AddColorPicker(Config)
 	Popup.BackgroundTransparency = 1
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
-	Popup.ZIndex = 50
+	Popup.ZIndex = 150
 	Popup.Parent = Library.Gui
 
 	local MainContainer = Instance.new("Frame")
@@ -1836,7 +1836,7 @@ function Wolf:AddColorPicker(Config)
 	MainContainer.BorderSizePixel = 0
 	MainContainer.Active = true
 	MainContainer.ClipsDescendants = false
-	MainContainer.ZIndex = 50
+	MainContainer.ZIndex = 150
 	MainContainer.Parent = Popup
 	Corner(MainContainer, 12)
 	Stroke(MainContainer, self.Theme.Text, 0.85)
@@ -2588,6 +2588,14 @@ function Wolf:AddShortcut(Config)
 			ActionElement:Activate()
 		elseif ActionElement and ActionElement.Toggle then
 			ActionElement:Toggle()
+		elseif ActionElement and ActionElement.Frame then
+			local ActionButton = ActionElement.Frame:FindFirstChildWhichIsA("GuiButton", true)
+			local ActionTextBox = ActionElement.Frame:FindFirstChildWhichIsA("TextBox", true)
+			if ActionButton then
+				ActionButton:Activate()
+			elseif ActionTextBox then
+				ActionTextBox:CaptureFocus()
+			end
 		elseif HookSource and HookSource:IsA("TextBox") then
 			HookSource:CaptureFocus()
 		elseif Callback then
@@ -2623,6 +2631,9 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		HookExpanded = not HookExpanded
+		if IsColorPickerHook then
+			Element.Popup.Visible = HookExpanded
+		end
 		if not HookExpanded and Element.Popup then
 			Element.Popup.Visible = false
 			table.clear(self.OpenDropdowns)
