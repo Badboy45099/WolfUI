@@ -2329,10 +2329,13 @@ function Wolf:AddShortcut(Config)
 	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
 		or Element.Frame
 	local HookClone
+	local HookExpanded = false
+	local HookSize = Vector2.new(0, 0)
 	if IsToggleShortcut then
 		if HookSource then
 			HookClone = HookSource:Clone()
 			HookClone.Name = "S2HookedSelection"
+			HookClone.AnchorPoint = Vector2.zero
 			HookClone.Visible = false
 			HookClone.ZIndex = 150
 			HookClone.Parent = self.ShortcutGui
@@ -2400,9 +2403,12 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		local ElementPosition = Element.Frame.AbsolutePosition
+		if HookSource and HookSource.AbsoluteSize.X > 0 and HookSource.AbsoluteSize.Y > 0 then
+			HookSize = HookSource.AbsoluteSize
+		end
 		local TotalWidth = Button.AbsoluteSize.X
 			+ (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
-			+ (HookClone and HookSource.AbsoluteSize.X + 4 or 0)
+			+ (HookClone and HookSize.X + 4 or 0)
 		if UseTargetPosition then
 			local ShortcutPosition = ClampShortcutPosition(
 				ElementPosition - Vector2.new(TotalWidth + 10, 0),
@@ -2448,16 +2454,19 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
-		if HookClone and Button.Visible and ChevronButton.Visible then
+		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
-			HookClone.Size = UDim2.fromOffset(HookSource.AbsoluteSize.X, HookSource.AbsoluteSize.Y)
+			if HookSize.X == 0 or HookSize.Y == 0 then
+				HookSize = HookClone.AbsoluteSize
+			end
+			HookClone.Size = UDim2.fromOffset(HookSize.X, HookSize.Y)
 			local CloneSize = HookClone.AbsoluteSize
 			HookClone.Position = UDim2.fromOffset(
 				ChevronPosition.X + ChevronSize.X + 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
-			HookClone.Visible = Button.Visible and ChevronButton.Visible
+			HookClone.Visible = HookExpanded
 			if DropdownSelection then
 				local SourceValue = HookSource:FindFirstChildWhichIsA("TextLabel", true)
 				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
@@ -2466,6 +2475,11 @@ function Wolf:AddShortcut(Config)
 				end
 			elseif HookSource:IsA("GuiButton") then
 				HookClone.BackgroundColor3 = HookSource.BackgroundColor3
+				local SourceKnob = HookSource:FindFirstChildWhichIsA("GuiObject", true)
+				local CloneKnob = HookClone:FindFirstChildWhichIsA("GuiObject", true)
+				if SourceKnob and CloneKnob then
+					CloneKnob.Position = SourceKnob.Position
+				end
 			elseif HookSource:IsA("TextBox") then
 				HookClone.Text = HookSource.Text
 			end
@@ -2536,7 +2550,7 @@ function Wolf:AddShortcut(Config)
 					local GroupWidth = Button.AbsoluteSize.X
 						+ ChevronButton.AbsoluteSize.X
 						+ 4
-						+ (HookClone and HookSource.AbsoluteSize.X + 4 or 0)
+						+ (HookClone and HookSize.X + 4 or 0)
 					local Position =
 						ClampShortcutPosition(DragStartPosition + Delta, Vector2.new(GroupWidth, Button.AbsoluteSize.Y))
 					Button.Position = UDim2.fromOffset(Position.X, Position.Y)
@@ -2579,19 +2593,13 @@ function Wolf:AddShortcut(Config)
 		end
 		if Element.Popup.Visible then
 			Element.Popup.Visible = false
-			if HookClone then
-				HookClone.Visible = false
-			end
 			table.clear(self.OpenDropdowns)
-			ApplyIcon(Chevron, "chevron-right")
+			ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
 		else
 			if self._CloseDropdowns then
 				self._CloseDropdowns()
 			end
 			Element.Popup.Visible = true
-			if HookClone then
-				HookClone.Visible = Button.Visible and ChevronButton.Visible
-			end
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
 				Anchor = HookClone or ChevronButton,
@@ -2600,8 +2608,19 @@ function Wolf:AddShortcut(Config)
 				ClosedIcon = "chevron-right",
 			})
 			self._UpdateDropdownPositions()
-			ApplyIcon(Chevron, "chevron-left")
+			ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
 		end
+	end
+	local function ToggleHookClone()
+		if not HookClone or not ChevronButton then
+			return
+		end
+		HookExpanded = not HookExpanded
+		if not HookExpanded and Element.Popup then
+			Element.Popup.Visible = false
+			table.clear(self.OpenDropdowns)
+		end
+		ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
 	end
 	if HookClone then
 		local SelectionButton = Instance.new("TextButton")
@@ -2632,6 +2651,12 @@ function Wolf:AddShortcut(Config)
 				ToggleSelectionFrame()
 			end
 		end)
+	elseif ChevronButton then
+		ChevronButton.MouseButton1Click:Connect(function()
+			if not DragMoved then
+				ToggleHookClone()
+			end
+		end)
 	end
 
 	TriggerButton.MouseButton1Click:Connect(function()
@@ -2643,11 +2668,14 @@ function Wolf:AddShortcut(Config)
 		if ChevronButton then
 			ChevronButton.Visible = ShowShortcut
 		end
+		if not ShowShortcut then
+			HookExpanded = false
+			if ChevronButton then
+				ApplyIcon(Chevron, "chevron-right")
+			end
+		end
 		if not ShowShortcut and Element and Element.Popup then
 			Element.Popup.Visible = false
-			if HookClone then
-				HookClone.Visible = false
-			end
 			table.clear(self.OpenDropdowns)
 		end
 	end)
