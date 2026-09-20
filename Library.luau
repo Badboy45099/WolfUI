@@ -2205,8 +2205,8 @@ function Wolf:AddShortcut(Config)
 	if not ActionElement or not ActionElement.Frame or not Element or not Element.Frame then
 		return nil
 	end
-	if Element.SetShortcutHooked then
-		Element:SetShortcutHooked(true)
+	if ActionElement.SetShortcutHooked then
+		ActionElement:SetShortcutHooked(true)
 	end
 
 	if not self.ShortcutHolder then
@@ -2325,10 +2325,12 @@ function Wolf:AddShortcut(Config)
 
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
+	local ColorPickerPopup = ColorPickerControl and Element.Popup
 	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
 	local HookSource = DropdownSelection and DropdownSelection
-		or ColorPickerControl and Element.Frame
+		or ColorPickerPopup
 		or TextBoxControl and TextBoxControl
+	local IsColorPickerHook = HookSource == ColorPickerPopup
 	local TriggerParent = ActionElement.Frame
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
@@ -2337,12 +2339,14 @@ function Wolf:AddShortcut(Config)
 	local HookSize = Vector2.new(0, 0)
 	if IsToggleShortcut then
 		if HookSource then
-			HookClone = HookSource:Clone()
+			HookClone = IsColorPickerHook and HookSource or HookSource:Clone()
 			HookClone.Name = "S2HookedSelection"
 			HookClone.AnchorPoint = Vector2.zero
 			HookClone.Visible = false
 			HookClone.ZIndex = 150
-			HookClone.Parent = self.ShortcutGui
+			if not IsColorPickerHook then
+				HookClone.Parent = self.ShortcutGui
+			end
 			for _, Descendant in ipairs(HookClone:GetDescendants()) do
 				if Descendant:IsA("GuiObject") then
 					Descendant.ZIndex = 151
@@ -2457,7 +2461,7 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetX = TriggerSlot * 32
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
@@ -2476,12 +2480,6 @@ function Wolf:AddShortcut(Config)
 				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
 				if SourceValue and CloneValue then
 					CloneValue.Text = SourceValue.Text
-				end
-			elseif ColorPickerControl and HookSource == Element.Frame then
-				local SourcePicker = Element.Frame:FindFirstChild("ColorPickerButton", true)
-				local ClonePicker = HookClone:FindFirstChild("ColorPickerButton", true)
-				if SourcePicker and ClonePicker then
-					ClonePicker.BackgroundColor3 = SourcePicker.BackgroundColor3
 				end
 			elseif HookSource:IsA("GuiButton") then
 				HookClone.BackgroundColor3 = HookSource.BackgroundColor3
@@ -2631,7 +2629,7 @@ function Wolf:AddShortcut(Config)
 		end
 		ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
 	end
-	if HookClone then
+	if HookClone and not IsColorPickerHook then
 		local SelectionButton = Instance.new("TextButton")
 		SelectionButton.Name = "S2SelectionButton"
 		SelectionButton.Size = UDim2.fromScale(1, 1)
