@@ -2385,8 +2385,8 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
-	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = self.ShortcutGui
+	TriggerButton.ZIndex = 110
+	TriggerButton.Parent = TriggerContainer
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2476,22 +2476,12 @@ function Wolf:AddShortcut(Config)
 
 	local function UpdateTriggerPosition()
 		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
-			TriggerButton.Visible = false
 			return
 		end
-		TriggerButton.Visible = true
-		
-		-- Use absolute positioning to lock it precisely to the right side of the row
-		local FramePos = ActionElement.Frame.AbsolutePosition
-		local FrameSize = ActionElement.Frame.AbsoluteSize
 		local TriggerOffsetX = TriggerSlot * 32
-		
-		TriggerButton.AnchorPoint = Vector2.new(0, 0.5)
-		TriggerButton.Position = UDim2.fromOffset(
-			FramePos.X + FrameSize.X - 6 - TriggerOffsetX - TriggerButton.AbsoluteSize.X,
-			FramePos.Y + FrameSize.Y / 2
-		)
-
+		local TriggerOffsetY = 0
+		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
