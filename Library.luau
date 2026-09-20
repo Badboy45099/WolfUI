@@ -2330,6 +2330,8 @@ function Wolf:AddShortcut(Config)
 		or ColorPickerControl and Element.Frame
 		or TextBoxControl and TextBoxControl
 	local TriggerParent = ActionElement.Frame
+	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
+	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
 	local HookExpanded = false
 	local HookSize = Vector2.new(0, 0)
@@ -2381,11 +2383,11 @@ function Wolf:AddShortcut(Config)
 			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
 		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
-			Control.Position = UDim2.new(1, -42, Control.Position.Y.Scale, Control.Position.Y.Offset)
+			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
 		local ToggleLabel = ActionElement.Frame:FindFirstChild("ToggleLabel", true)
 		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
-			ToggleLabel.Size = UDim2.new(1, -94, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
+			ToggleLabel.Size = UDim2.new(1, -94 - TriggerSlot * 32, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
 		end
 	end
 	ReserveTriggerSpace()
@@ -2452,7 +2454,7 @@ function Wolf:AddShortcut(Config)
 		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
-		local TriggerOffsetX = 0
+		local TriggerOffsetX = TriggerSlot * 32
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
