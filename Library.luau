@@ -2385,7 +2385,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
-	TriggerButton.ZIndex = 110
+	TriggerButton.ZIndex = 155
 	TriggerButton.Parent = TriggerContainer
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
