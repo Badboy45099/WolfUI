@@ -2427,7 +2427,7 @@ function Wolf:AddShortcut(Config)
 		end
 		local TotalWidth = Button.AbsoluteSize.X
 			+ (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
-			+ (HookClone and HookSize.X + 4 or 0)
+			+ (HookClone and not IsColorPickerHook and HookSize.X + 4 or 0)
 		if UseTargetPosition then
 			local ShortcutPosition = ClampShortcutPosition(
 				ElementPosition - Vector2.new(TotalWidth + 10, 0),
@@ -2576,7 +2576,7 @@ function Wolf:AddShortcut(Config)
 					local GroupWidth = Button.AbsoluteSize.X
 						+ ChevronButton.AbsoluteSize.X
 						+ 4
-						+ (HookClone and HookSize.X + 4 or 0)
+						+ (HookClone and not IsColorPickerHook and HookSize.X + 4 or 0)
 					local Position =
 						ClampShortcutPosition(DragStartPosition + Delta, Vector2.new(GroupWidth, Button.AbsoluteSize.Y))
 					Button.Position = UDim2.fromOffset(Position.X, Position.Y)
