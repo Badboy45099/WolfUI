@@ -2392,18 +2392,7 @@ function Wolf:AddShortcut(Config)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
-		local Control = ActionElement.Frame:FindFirstChild("Indicator", true)
-			or ActionElement.Frame:FindFirstChild("Box", true)
-			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
-			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
-		if Control and Control:IsA("GuiObject") then
-			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
-			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
-		end
-		local ToggleLabel = ActionElement.Frame:FindFirstChild("ToggleLabel", true)
-		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
-			ToggleLabel.Size = UDim2.new(1, -94 - TriggerSlot * 32, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
-		end
+		return
 	end
 	ReserveTriggerSpace()
 
