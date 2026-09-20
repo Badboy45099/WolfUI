@@ -1653,6 +1653,7 @@ end
 -- Color picker component
 function Wolf:AddRGBColorPickerLegacy(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Color"
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
@@ -1697,7 +1698,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Popup.BackgroundColor3 = self.Theme.Surface
 	Popup.Visible = false
 	Popup.ZIndex = 50
-	Popup.Parent = self.Library.Gui
+	Popup.Parent = Library.Gui
 	Corner(Popup, 6)
 	Stroke(Popup, self.Theme.Border)
 	Padding(Popup, 10, 10, 10, 10)
@@ -1747,22 +1748,22 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 
 	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
-			table.insert(self.OpenDropdowns, {
+			table.insert(Library.OpenDropdowns, {
 				Frame = Popup,
 				Chevron = PickerFrame:FindFirstChild("Icon"),
 				ClosedIcon = IconName,
 				Anchor = ColorPickerButton,
 			})
-			self._UpdateDropdownPositions()
+			Library._UpdateDropdownPositions()
 		end
 	end)
 
-	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
+	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
 	return {
 		SetValue = function(_, Value)
 			if typeof(Value) == "Color3" then
@@ -1779,6 +1780,7 @@ end
 
 function Wolf:AddColorPicker(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Color"
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
@@ -1825,7 +1827,7 @@ function Wolf:AddColorPicker(Config)
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 50
-	Popup.Parent = self.Library.Gui
+	Popup.Parent = Library.Gui
 
 	local MainContainer = Instance.new("Frame")
 	MainContainer.Size = UDim2.fromOffset(260, 220)
@@ -2122,13 +2124,13 @@ function Wolf:AddColorPicker(Config)
 
 	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
-			table.insert(self.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
-			self._UpdateDropdownPositions()
+			table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
+			Library._UpdateDropdownPositions()
 		end
 	end)
 
@@ -2136,12 +2138,11 @@ function Wolf:AddColorPicker(Config)
 		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
-		table.clear(self.OpenDropdowns)
+		table.clear(Library.OpenDropdowns)
 	end)
 
 	UpdateUI(false)
-	table.insert(self.Library.Elements, { Text = Title, Frame = PickerFrame })
-	local Library = self
+	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
 	local PickerObject = {
 		Frame = PickerFrame,
 		Popup = Popup,
@@ -2198,9 +2199,10 @@ function Wolf:AddShortcut(Config)
 	end
 	self.ShortcutSideCounts[Side] = (self.ShortcutSideCounts[Side] or 0) + 1
 	local SideIndex = self.ShortcutSideCounts[Side]
-	local Element = Config.Element or Config.Target
+	local ActionElement = Config.Element1 or Config.Element or Config.Target
+	local Element = Config.Element2 or ActionElement
 	local Callback = Config.Callback
-	if not Element or not Element.Frame then
+	if not ActionElement or not ActionElement.Frame or not Element or not Element.Frame then
 		return nil
 	end
 	if Element.SetShortcutHooked then
@@ -2322,12 +2324,12 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
-	local HookSource = DropdownSelection
-		or Element.Frame:FindFirstChild("ColorPickerButton", true)
-		or Element.Frame:FindFirstChildWhichIsA("TextBox", true)
-		or Element.Frame:FindFirstChild("Indicator", true)
-	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
-		or Element.Frame
+	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
+	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
+	local HookSource = DropdownSelection and DropdownSelection
+		or ColorPickerControl and Element.Frame
+		or TextBoxControl and TextBoxControl
+	local TriggerParent = ActionElement.Frame
 	local HookClone
 	local HookExpanded = false
 	local HookSize = Vector2.new(0, 0)
@@ -2373,15 +2375,15 @@ function Wolf:AddShortcut(Config)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
-		local Control = Element.Frame:FindFirstChild("Indicator", true)
-			or Element.Frame:FindFirstChild("Box", true)
-			or Element.Frame:FindFirstChild("DropdownSelection", true)
-			or Element.Frame:FindFirstChild("ColorPickerButton", true)
+		local Control = ActionElement.Frame:FindFirstChild("Indicator", true)
+			or ActionElement.Frame:FindFirstChild("Box", true)
+			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
+			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
 		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
-		local ToggleLabel = Element.Frame:FindFirstChild("ToggleLabel", true)
+		local ToggleLabel = ActionElement.Frame:FindFirstChild("ToggleLabel", true)
 		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
 			ToggleLabel.Size = UDim2.new(1, -94, ToggleLabel.Size.Y.Scale, ToggleLabel.Size.Y.Offset)
 		end
@@ -2399,10 +2401,10 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local function UpdateShortcutPosition(UseTargetPosition)
-		if not Element or not Element.Frame or not Element.Frame.Parent then
+		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
-		local ElementPosition = Element.Frame.AbsolutePosition
+		local ElementPosition = ActionElement.Frame.AbsolutePosition
 		if HookSource and HookSource.AbsoluteSize.X > 0 and HookSource.AbsoluteSize.Y > 0 then
 			HookSize = HookSource.AbsoluteSize
 		end
@@ -2447,7 +2449,7 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local function UpdateTriggerPosition()
-		if not Element or not Element.Frame or not Element.Frame.Parent then
+		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
 		local TriggerOffsetX = 0
@@ -2472,6 +2474,12 @@ function Wolf:AddShortcut(Config)
 				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
 				if SourceValue and CloneValue then
 					CloneValue.Text = SourceValue.Text
+				end
+			elseif ColorPickerControl and HookSource == Element.Frame then
+				local SourcePicker = Element.Frame:FindFirstChild("ColorPickerButton", true)
+				local ClonePicker = HookClone:FindFirstChild("ColorPickerButton", true)
+				if SourcePicker and ClonePicker then
+					ClonePicker.BackgroundColor3 = SourcePicker.BackgroundColor3
 				end
 			elseif HookSource:IsA("GuiButton") then
 				HookClone.BackgroundColor3 = HookSource.BackgroundColor3
@@ -2576,14 +2584,14 @@ function Wolf:AddShortcut(Config)
 	)
 
 	local function ActivateShortcut()
-		if Element and Element.Activate then
-			Element:Activate()
-		elseif Element and Element.Toggle then
-			Element:Toggle()
+		if ActionElement and ActionElement.Activate then
+			ActionElement:Activate()
+		elseif ActionElement and ActionElement.Toggle then
+			ActionElement:Toggle()
 		elseif HookSource and HookSource:IsA("TextBox") then
 			HookSource:CaptureFocus()
 		elseif Callback then
-			Callback(Element)
+			Callback(ActionElement)
 		end
 	end
 
@@ -2685,6 +2693,7 @@ end
 -- Single-selection dropdown
 function Wolf:AddDropdown(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Select"
 	local IconName = Config.Icon or Config.icon
 	local Options = Config.Options or Config.Values or {}
@@ -2780,7 +2789,7 @@ function Wolf:AddDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = self.Library.Gui
+	OptionsFrame.Parent = Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Accent, 0.15)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -2847,7 +2856,7 @@ function Wolf:AddDropdown(Config)
 				end
 			end
 			OptionsFrame.Visible = false
-			table.clear(self.OpenDropdowns)
+			table.clear(Library.OpenDropdowns)
 			ApplyIcon(Chevron, "chevron-down")
 		end)
 	end
@@ -2855,18 +2864,18 @@ function Wolf:AddDropdown(Config)
 	ValueLabel.Text = Selected == nil and "Select..." or tostring(Selected)
 	DropdownButton.MouseButton1Click:Connect(function()
 		local WasVisible = OptionsFrame.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		OptionsFrame.Visible = not WasVisible
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
-			self._UpdateDropdownPositions()
+			table.insert(Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
+			Library._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
-	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
+	table.insert(Library.Elements, { Text = Title, Frame = DropdownFrame })
 	local DropdownObject = {
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
@@ -2880,15 +2889,15 @@ function Wolf:AddDropdown(Config)
 		end,
 	}
 	function DropdownObject:Open()
-		self.Library._CloseDropdowns()
+		Library._CloseDropdowns()
 		OptionsFrame.Visible = true
-		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
-		self.Library._UpdateDropdownPositions()
+		table.insert(Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
+		Library._UpdateDropdownPositions()
 		ApplyIcon(Chevron, "chevron-up")
 	end
 	function DropdownObject:Close()
 		OptionsFrame.Visible = false
-		self.Library._CloseDropdowns()
+		Library._CloseDropdowns()
 	end
 	function DropdownObject:Toggle()
 		if OptionsFrame.Visible then
@@ -2900,13 +2909,14 @@ function Wolf:AddDropdown(Config)
 	function DropdownObject:Activate()
 		self:Toggle()
 	end
-	DropdownObject.Library = self.Library
+	DropdownObject.Library = Library
 	return DropdownObject
 end
 
 -- Multi-selection dropdown
 function Wolf:AddMultiDropdown(Config)
 	Config = Config or {}
+	local Library = self.Library or self
 	local Title = Config.Title or "Select multiple"
 	local IconName = Config.Icon or Config.icon
 	local Options = Config.Options or Config.Values or {}
@@ -3005,7 +3015,7 @@ function Wolf:AddMultiDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = self.Library.Gui
+	OptionsFrame.Parent = Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Accent, 0.15)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -3081,18 +3091,18 @@ function Wolf:AddMultiDropdown(Config)
 	UpdateValueLabel()
 	DropdownButton.MouseButton1Click:Connect(function()
 		local WasVisible = OptionsFrame.Visible
-		if self._CloseDropdowns then
-			self._CloseDropdowns()
+		if Library._CloseDropdowns then
+			Library._CloseDropdowns()
 		end
 		OptionsFrame.Visible = not WasVisible
 		if OptionsFrame.Visible then
-			table.insert(self.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
-			self._UpdateDropdownPositions()
+			table.insert(Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
+			Library._UpdateDropdownPositions()
 		end
 		ApplyIcon(Chevron, OptionsFrame.Visible and "chevron-up" or "chevron-down")
 	end)
 
-	table.insert(self.Library.Elements, { Text = Title, Frame = DropdownFrame })
+	table.insert(Library.Elements, { Text = Title, Frame = DropdownFrame })
 	local DropdownObject = {
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
@@ -3111,15 +3121,15 @@ function Wolf:AddMultiDropdown(Config)
 		end,
 	}
 	function DropdownObject:Open()
-		self.Library._CloseDropdowns()
+		Library._CloseDropdowns()
 		OptionsFrame.Visible = true
-		table.insert(self.Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
-		self.Library._UpdateDropdownPositions()
+		table.insert(Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
+		Library._UpdateDropdownPositions()
 		ApplyIcon(Chevron, "chevron-up")
 	end
 	function DropdownObject:Close()
 		OptionsFrame.Visible = false
-		self.Library._CloseDropdowns()
+		Library._CloseDropdowns()
 	end
 	function DropdownObject:Toggle()
 		if OptionsFrame.Visible then
@@ -3131,7 +3141,7 @@ function Wolf:AddMultiDropdown(Config)
 	function DropdownObject:Activate()
 		self:Toggle()
 	end
-	DropdownObject.Library = self.Library
+	DropdownObject.Library = Library
 	return DropdownObject
 end
 
