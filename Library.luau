@@ -2216,7 +2216,7 @@ function Wolf:AddShortcut(Config)
 	end
 	ActionElement = NormalizeElement(ActionElement)
 	Element = NormalizeElement(Element)
-	if not ActionElement or not Element then
+	if not ActionElement or not ActionElement.Frame or not Element or not Element.Frame then
 		return nil
 	end
 	if ActionElement.SetShortcutHooked then
