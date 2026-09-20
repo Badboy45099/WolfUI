@@ -1679,17 +1679,17 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Label.Parent = PickerFrame
 	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
 
-	local Swatch = Instance.new("TextButton")
-	Swatch.Name = "ColorSwatch"
-	Swatch.AnchorPoint = Vector2.new(1, 0.5)
-	Swatch.Position = UDim2.new(1, -10, 0.5, 0)
-	Swatch.Size = UDim2.fromOffset(42, 22)
-	Swatch.BackgroundColor3 = CurrentColor
-	Swatch.Text = ""
-	Swatch.AutoButtonColor = false
-	Swatch.Parent = PickerFrame
-	Corner(Swatch, 4)
-	Stroke(Swatch, self.Theme.Border)
+	local ColorPickerButton = Instance.new("TextButton")
+	ColorPickerButton.Name = "ColorPickerButton"
+	ColorPickerButton.AnchorPoint = Vector2.new(1, 0.5)
+	ColorPickerButton.Position = UDim2.new(1, -10, 0.5, 0)
+	ColorPickerButton.Size = UDim2.fromOffset(42, 22)
+	ColorPickerButton.BackgroundColor3 = CurrentColor
+	ColorPickerButton.Text = ""
+	ColorPickerButton.AutoButtonColor = false
+	ColorPickerButton.Parent = PickerFrame
+	Corner(ColorPickerButton, 4)
+	Stroke(ColorPickerButton, self.Theme.Border)
 
 	local Popup = Instance.new("Frame")
 	Popup.Name = "ColorPickerPopup"
@@ -1721,7 +1721,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 			Input.Text = tostring(Values[Index])
 		end
 		CurrentColor = Color3.fromRGB(Values[1], Values[2], Values[3])
-		Swatch.BackgroundColor3 = CurrentColor
+		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Preview.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor)
 	end
@@ -1745,7 +1745,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		Input.FocusLost:Connect(UpdateColor)
 	end
 
-	Swatch.MouseButton1Click:Connect(function()
+	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
@@ -1756,7 +1756,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 				Frame = Popup,
 				Chevron = PickerFrame:FindFirstChild("Icon"),
 				ClosedIcon = IconName,
-				Anchor = Swatch,
+				Anchor = ColorPickerButton,
 			})
 			self._UpdateDropdownPositions()
 		end
@@ -1806,17 +1806,17 @@ function Wolf:AddColorPicker(Config)
 	Label.Parent = PickerFrame
 	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
 
-	local Swatch = Instance.new("TextButton")
-	Swatch.Name = "ColorSwatch"
-	Swatch.AnchorPoint = Vector2.new(1, 0.5)
-	Swatch.Position = UDim2.new(1, -10, 0.5, 0)
-	Swatch.Size = UDim2.fromOffset(42, 22)
-	Swatch.BackgroundColor3 = Default
-	Swatch.Text = ""
-	Swatch.AutoButtonColor = false
-	Swatch.Parent = PickerFrame
-	Corner(Swatch, 4)
-	Stroke(Swatch, self.Theme.Border)
+	local ColorPickerButton = Instance.new("TextButton")
+	ColorPickerButton.Name = "ColorPickerButton"
+	ColorPickerButton.AnchorPoint = Vector2.new(1, 0.5)
+	ColorPickerButton.Position = UDim2.new(1, -10, 0.5, 0)
+	ColorPickerButton.Size = UDim2.fromOffset(42, 22)
+	ColorPickerButton.BackgroundColor3 = Default
+	ColorPickerButton.Text = ""
+	ColorPickerButton.AutoButtonColor = false
+	ColorPickerButton.Parent = PickerFrame
+	Corner(ColorPickerButton, 4)
+	Stroke(ColorPickerButton, self.Theme.Border)
 
 	local Popup = Instance.new("Frame")
 	Popup.Name = "ColorPickerPopup"
@@ -2049,7 +2049,7 @@ function Wolf:AddColorPicker(Config)
 		SVCursor.Position = UDim2.new(S, 0, 1 - V, 0)
 		HueCursor.Position = UDim2.new(H, 0, 0.5, 0)
 		AlphaCursor.Position = UDim2.new(A, 0, 0.5, 0)
-		Swatch.BackgroundColor3 = CurrentColor
+		ColorPickerButton.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundTransparency = 1 - A
 		if not SkipText then
@@ -2120,20 +2120,20 @@ function Wolf:AddColorPicker(Config)
 		UpdateUI(false)
 	end)
 
-	Swatch.MouseButton1Click:Connect(function()
+	ColorPickerButton.MouseButton1Click:Connect(function()
 		local WasVisible = Popup.Visible
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
-			table.insert(self.OpenDropdowns, { Frame = Popup, Anchor = Swatch })
+			table.insert(self.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
 			self._UpdateDropdownPositions()
 		end
 	end)
 
 	PipetteButton.MouseButton1Click:Connect(function()
-		Swatch.BackgroundColor3 = CurrentColor
+		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
 		table.clear(self.OpenDropdowns)
@@ -2165,7 +2165,7 @@ function Wolf:AddColorPicker(Config)
 			Library._CloseDropdowns()
 		end
 		Popup.Visible = true
-		table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = Swatch })
+		table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
 		Library._UpdateDropdownPositions()
 	end
 	function PickerObject:Close()
@@ -2180,7 +2180,7 @@ function Wolf:AddColorPicker(Config)
 		end
 	end
 	function PickerObject:Activate()
-		Swatch.BackgroundColor3 = CurrentColor
+		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
 		table.clear(Library.OpenDropdowns)
@@ -2323,7 +2323,7 @@ function Wolf:AddShortcut(Config)
 
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local HookSource = DropdownSelection
-		or Element.Frame:FindFirstChild("ColorSwatch", true)
+		or Element.Frame:FindFirstChild("ColorPickerButton", true)
 		or Element.Frame:FindFirstChildWhichIsA("TextBox", true)
 		or Element.Frame:FindFirstChild("Indicator", true)
 	local TriggerParent = DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")
@@ -2376,7 +2376,7 @@ function Wolf:AddShortcut(Config)
 		local Control = Element.Frame:FindFirstChild("Indicator", true)
 			or Element.Frame:FindFirstChild("Box", true)
 			or Element.Frame:FindFirstChild("DropdownSelection", true)
-			or Element.Frame:FindFirstChild("ColorSwatch", true)
+			or Element.Frame:FindFirstChild("ColorPickerButton", true)
 		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42, Control.Position.Y.Scale, Control.Position.Y.Offset)
@@ -2603,9 +2603,8 @@ function Wolf:AddShortcut(Config)
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
 				Anchor = HookClone or ChevronButton,
-				SideAnchor = true,
 				Chevron = Chevron,
-				ClosedIcon = "chevron-right",
+				ClosedIcon = HookExpanded and "chevron-left" or "chevron-right",
 			})
 			self._UpdateDropdownPositions()
 			ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
