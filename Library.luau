@@ -2368,6 +2368,13 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
+	local TriggerContainer = Instance.new("Frame")
+	TriggerContainer.Name = "TriggerContainer"
+	TriggerContainer.Size = UDim2.new(1, 0, 1, 0)
+	TriggerContainer.BackgroundTransparency = 1
+	TriggerContainer.ZIndex = 154
+	TriggerContainer.Parent = ActionElement.Frame
+
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2377,7 +2384,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = self.ShortcutGui
+	TriggerButton.Parent = TriggerContainer
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
