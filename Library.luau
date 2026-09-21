@@ -2368,13 +2368,6 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
-	local CardPadding = ActionElement.Frame:FindFirstChildOfClass("UIPadding") 
-		or Instance.new("UIPadding")
-	CardPadding.Parent = ActionElement.Frame
-	-- Reserve space dynamically based on how many triggers exist (32 pixels per trigger slot)
-	local TotalPaddingRight = 36 + (TriggerSlot * 32)
-	CardPadding.PaddingRight = UDim.new(0, TotalPaddingRight)
-
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2476,10 +2469,15 @@ function Wolf:AddShortcut(Config)
 		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
-		local TriggerOffsetX = TriggerSlot * 32
-		local TriggerOffsetY = 0
-		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, 0)
+		local CardPos = ActionElement.Frame.AbsolutePosition
+		local CardSize = ActionElement.Frame.AbsoluteSize
+		local TriggerOffsetX = 6 + (TriggerSlot * 32)
+		
+		TriggerButton.AnchorPoint = Vector2.new(0, 0)
+		TriggerButton.Position = UDim2.fromOffset(
+			CardPos.X + CardSize.X - TriggerOffsetX - TriggerButton.AbsoluteSize.X,
+			CardPos.Y + (CardSize.Y / 2) - (TriggerButton.AbsoluteSize.Y / 2)
+		)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
