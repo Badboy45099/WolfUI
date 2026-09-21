@@ -2398,7 +2398,7 @@ function Wolf:AddShortcut(Config)
 			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
 		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
-			Control.Position = UDim2.new(0, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
+			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
 		local ToggleLabel = ActionElement.Frame:FindFirstChild("ToggleLabel", true)
 		if ToggleLabel and ToggleLabel:IsA("TextLabel") then
@@ -2472,7 +2472,7 @@ function Wolf:AddShortcut(Config)
 		local TriggerOffsetX = TriggerSlot * 32
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0, 18 + TriggerOffsetY)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, 0)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
