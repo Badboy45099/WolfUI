@@ -2377,7 +2377,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = self.ShortcutGui
+	TriggerButton.Parent = ActionElement.Frame
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2469,22 +2469,9 @@ function Wolf:AddShortcut(Config)
 		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
-		local CardPos = ActionElement.Frame.AbsolutePosition
-		local CardSize = ActionElement.Frame.AbsoluteSize
-
-		if CardSize.X <= 0 or CardSize.Y <= 0 then
-			return
-		end
-
-		local ButtonSize = 26
-		local TriggerOffsetX = 6 + (TriggerSlot * 32)
-		
-		local GuiInset = game:GetService("GuiService"):GetGuiInset()
-		TriggerButton.AnchorPoint = Vector2.new(0, 0)
-		TriggerButton.Position = UDim2.fromOffset(
-			CardPos.X + CardSize.X - TriggerOffsetX - ButtonSize,
-			CardPos.Y + (CardSize.Y / 2) - (ButtonSize / 2)
-		)
+		local TriggerOffsetX = TriggerSlot * 32
+		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
+		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, 0)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
