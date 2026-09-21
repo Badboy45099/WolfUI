@@ -2479,6 +2479,7 @@ function Wolf:AddShortcut(Config)
 		local ButtonSize = 26
 		local TriggerOffsetX = 6 + (TriggerSlot * 32)
 		
+		local GuiInset = game:GetService("GuiService"):GetGuiInset()
 		TriggerButton.AnchorPoint = Vector2.new(0, 0)
 		TriggerButton.Position = UDim2.fromOffset(
 			CardPos.X + CardSize.X - TriggerOffsetX - ButtonSize,
