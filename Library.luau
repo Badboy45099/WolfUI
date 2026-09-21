@@ -2370,7 +2370,7 @@ function Wolf:AddShortcut(Config)
 	end
 	local TriggerContainer = Instance.new("Frame")
 	TriggerContainer.Name = "TriggerContainer"
-	TriggerContainer.Size = UDim2.new(1, 0, 1, 0)
+	TriggerContainer.Size = UDim2.new(1, -36, 1, 0)
 	TriggerContainer.BackgroundTransparency = 1
 	TriggerContainer.Parent = ActionElement.Frame
 
