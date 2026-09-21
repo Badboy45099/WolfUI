@@ -2471,12 +2471,13 @@ function Wolf:AddShortcut(Config)
 		end
 		local CardPos = ActionElement.Frame.AbsolutePosition
 		local CardSize = ActionElement.Frame.AbsoluteSize
+		local ButtonSize = 26
 		local TriggerOffsetX = 6 + (TriggerSlot * 32)
 		
 		TriggerButton.AnchorPoint = Vector2.new(0, 0)
 		TriggerButton.Position = UDim2.fromOffset(
-			CardPos.X + CardSize.X - TriggerOffsetX - TriggerButton.AbsoluteSize.X,
-			CardPos.Y + (CardSize.Y / 2) - (TriggerButton.AbsoluteSize.Y / 2)
+			CardPos.X + CardSize.X - TriggerOffsetX - ButtonSize,
+			CardPos.Y + (CardSize.Y / 2) - (ButtonSize / 2)
 		)
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
