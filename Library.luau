@@ -1084,7 +1084,7 @@ function Wolf:AddTab(Config)
 			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
 		end
 		self.ActiveTab = Tab
-		self.ContentArea.CanvasPosition = Vector2.new(0, 0)
+		self.Area.CanvasPosition = Vector2.new(0, 0)
 	end
 
 	TabButton.MouseButton1Click:Connect(SelectTab)
@@ -2368,6 +2368,12 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
+	local ContentContainer = Instance.new("Frame")
+	ContentContainer.Name = "ContentContainer"
+	ContentContainer.Size = UDim2.new(1, 0, 1, 0)
+	ContentContainer.BackgroundTransparency = 1
+	ContentContainer.Parent = ActionElement.Frame
+
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
@@ -2377,7 +2383,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = self.ShortcutGui
+	TriggerButton.Parent = ContentContainer
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
