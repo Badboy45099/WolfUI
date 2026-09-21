@@ -2368,11 +2368,12 @@ function Wolf:AddShortcut(Config)
 			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
-	local TriggerContainer = Instance.new("Frame")
-	TriggerContainer.Name = "TriggerContainer"
-	TriggerContainer.Size = UDim2.new(1, -36, 1, 0)
-	TriggerContainer.BackgroundTransparency = 1
-	TriggerContainer.Parent = ActionElement.Frame
+	local CardPadding = ActionElement.Frame:FindFirstChildOfClass("UIPadding") 
+		or Instance.new("UIPadding")
+	CardPadding.Parent = ActionElement.Frame
+	-- Reserve space dynamically based on how many triggers exist (32 pixels per trigger slot)
+	local TotalPaddingRight = 36 + (TriggerSlot * 32)
+	CardPadding.PaddingRight = UDim.new(0, TotalPaddingRight)
 
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
