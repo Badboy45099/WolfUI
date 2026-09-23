@@ -2475,10 +2475,11 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local function UpdateTriggerPosition()
-		if not Element or not Element.Frame or not Element.Frame.Parent then
+		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent or not Element or not Element.Frame or not Element.Frame.Parent then
 			return
 		end
-		local TriggerOffsetX = TriggerSlot * 32
+		local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 1
+		local TriggerOffsetX = (TriggerSlot - 1) * 30
 		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
