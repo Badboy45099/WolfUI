@@ -1105,6 +1105,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	local State = Default
 
 	local ToggleFrame = Instance.new("Frame")
+	ToggleFrame.Name = "ToggleFrame"
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
@@ -2350,11 +2351,6 @@ function Wolf:AddShortcut(Config)
 		or ButtonControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
 	local TriggerParent = (Togglelabel and Togglelabel:FindFirstAncestorWhichIsA("GuiObject")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
-	if TriggerParent then
-    	print("Found a valid UI ancestor:", ancestor.Name)
-	else
-    	print("Neither ancestor condition was met.")
-	end
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
