@@ -2350,7 +2350,7 @@ function Wolf:AddShortcut(Config)
 		or TextBoxControl 
 		or ButtonControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
-	local TriggerParent = (Togglelabel and Togglelabel:FindFirstAncestorWhichIsA("GuiObject")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
+	local TriggerParent = (Togglelabel and Togglelabel:FindFirstAncestorWhichIsA("Frame")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
