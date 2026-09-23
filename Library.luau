@@ -2337,9 +2337,7 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
-	local ToggleControl = Element.Frame:FindFirstChild("Toggle", true) 
-		or Element.Frame:FindFirstChild("Indicator", true)
-		or Element.Frame:FindFirstChild("Switch", true)
+	local ToggleFrame = Element.Frame:FindFirstChild("ToggleFrame", true)
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
 	local ColorPickerPopup = ColorPickerControl and Element.Popup
@@ -2351,7 +2349,12 @@ function Wolf:AddShortcut(Config)
 		or TextBoxControl 
 		or ButtonControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
-	local TriggerParent = (ToggleControl and ToggleControl:FindFirstAncestorWhichIsA("GuiObject")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
+	local TriggerParent = (ToggleFrame and ToggleFrame:FindFirstAncestorWhichIsA("GuiObject")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
+	if TriggerParent then
+    	print("Found a valid UI ancestor:", ancestor.Name)
+	else
+    	print("Neither ancestor condition was met.")
+	end
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
