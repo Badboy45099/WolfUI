@@ -1123,6 +1123,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	Label.Parent = ToggleFrame
 
 	local Indicator = Instance.new("Frame")
+	Indicator.Name = "Indicator"
 	Indicator.AnchorPoint = Vector2.new(1, 0.5)
 	Indicator.Position = UDim2.new(1, -10, 0.5, 0)
 	Indicator.Size = UDim2.fromOffset(36, 18)
