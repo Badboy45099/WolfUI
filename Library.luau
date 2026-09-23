@@ -2401,6 +2401,7 @@ function Wolf:AddShortcut(Config)
 
 	local function ReserveTriggerSpace()
 		local Control = ActionElement.Frame:FindFirstChild("Indicator", true)
+			or ActionElement.Frame:FindFirstChild("ToggleFrame", true)
 			or ActionElement.Frame:FindFirstChild("Box", true)
 			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
 			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
