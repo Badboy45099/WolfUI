@@ -10,6 +10,8 @@ local Wolf = {
 	Locked = false,
 }
 Wolf.__index = Wolf
+local WolfComponent = {}
+WolfComponent.__index = WolfComponent
 
 ---------------------------------------------------------------------
 -- SERVICES & SETUP
@@ -163,6 +165,14 @@ local function Padding(Object, L, R, T, B)
 	P.PaddingBottom = UDim.new(0, B or 0)
 	P.Parent = Object
 	return P
+end
+
+local function AttachMetadata(Object, Kind, Title, Description, State)
+	Object:SetAttribute("WolfElementType", Kind)
+	Object:SetAttribute("WolfElementTitle", tostring(Title or Kind))
+	Object:SetAttribute("WolfElementDescription", Description or "")
+	Object:SetAttribute("WolfElementState", State or "created")
+	return Object
 end
 
 local function ElementParent(Tab, Config)
@@ -991,6 +1001,36 @@ function Wolf:CreateWindow(Config)
 	return self
 end
 
+function Wolf:Destroy()
+	if self._RenderConnection then
+		self._RenderConnection:Disconnect()
+		self._RenderConnection = nil
+	end
+	for _, Connection in ipairs(self._ShortcutConnections or {}) do
+		Connection:Disconnect()
+	end
+	table.clear(self._ShortcutConnections or {})
+	if self.Gui then
+		self.Gui:Destroy()
+		self.Gui = nil
+	end
+	if self.ShortcutGui then
+		self.ShortcutGui:Destroy()
+		self.ShortcutGui = nil
+	end
+	if self.ToggleButton and self.ToggleButton.Parent then
+		local ToggleGui = self.ToggleButton:FindFirstAncestorOfClass("ScreenGui")
+		if ToggleGui then
+			ToggleGui:Destroy()
+		end
+	end
+	table.clear(self.Tabs)
+	table.clear(self.Elements)
+	self.ShortcutHolder = nil
+	self.NotificationHolder = nil
+	self.ActiveTab = nil
+end
+
 ---------------------------------------------------------------------
 -- TAB CREATION
 ---------------------------------------------------------------------
@@ -1109,6 +1149,13 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(
+		ToggleFrame,
+		"toggle",
+		Title,
+		"Boolean toggle with an enabled or disabled state.",
+		State and "on" or "off"
+	)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1146,12 +1193,14 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	ClickBtn.Parent = ToggleFrame
 
 	local ToggleObj = {
+		Frame = ToggleFrame,
 		Value = State,
 		OnChanged = Instance.new("BindableEvent"), -- Fluent-like event listener
 	}
 
 	local function Update()
 		ToggleObj.Value = State
+		ToggleFrame:SetAttribute("WolfElementState", State and "on" or "off")
 		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
 		Callback(State)
@@ -1175,6 +1224,12 @@ function Wolf:AddToggleLegacy(Idx, Config)
 		State = Val
 		Update()
 	end
+	function ToggleObj:Destroy()
+		if self.OnChanged then
+			self.OnChanged:Destroy()
+		end
+		ToggleFrame:Destroy()
+	end
 	function ToggleObj:SetShortcutHooked(Hooked)
 		Indicator.Position = Hooked and UDim2.new(1, -42, 0.5, 0) or UDim2.new(1, -10, 0.5, 0)
 		Label.Size = Hooked and UDim2.new(1, -94, 1, 0) or UDim2.new(1, -60, 1, 0)
@@ -1196,6 +1251,7 @@ function Wolf:AddButtonLegacy(Config)
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
 	ButtonFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1242,6 +1298,13 @@ function Wolf:AddSection(Title)
 	SectionFrame.AutomaticSize = Enum.AutomaticSize.Y
 	SectionFrame.BackgroundColor3 = self.Theme.Card
 	SectionFrame.Parent = self.Page
+	AttachMetadata(
+		SectionFrame,
+		"section",
+		SectionTitle,
+		"Collapsible container for child elements.",
+		Collapsed and "collapsed" or "expanded"
+	)
 	Corner(SectionFrame, 6)
 	Stroke(SectionFrame, self.Theme.Border)
 
@@ -1307,12 +1370,12 @@ function Wolf:AddSection(Title)
 	end)
 
 	table.insert(self.Library.Elements, { Text = SectionTitle, Frame = SectionFrame })
-	local Section = {
+	local Section = setmetatable({
 		Library = self,
 		Frame = SectionFrame,
 		Content = SectionContent,
 		Title = tostring(SectionTitle),
-	}
+	}, WolfComponent)
 	local function SectionConfig(Config)
 		if typeof(Config) == "table" then
 			local RoutedConfig = table.clone(Config)
@@ -1354,6 +1417,7 @@ function Wolf:AddButton(Config)
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
 	ButtonFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1406,6 +1470,13 @@ function Wolf:AddToggle(Config)
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(
+		ToggleFrame,
+		"toggle",
+		Title,
+		"Boolean toggle with an enabled or disabled state.",
+		State and "on" or "off"
+	)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1455,6 +1526,7 @@ function Wolf:AddToggle(Config)
 
 	local function Update()
 		ToggleObj.Value = State
+		ToggleFrame:SetAttribute("WolfElementState", State and "on" or "off")
 		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
 		Callback(State)
@@ -1475,7 +1547,7 @@ function Wolf:AddToggle(Config)
 	end
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
-	return {
+	local ToggleResult = setmetatable({
 		Frame = ToggleFrame,
 		Title = Title,
 		Toggle = function()
@@ -1489,11 +1561,16 @@ function Wolf:AddToggle(Config)
 			State = Val
 			Update()
 		end,
+		Destroy = function()
+			ToggleObj.OnChanged:Destroy()
+			ToggleFrame:Destroy()
+		end,
 		SetShortcutHooked = function(_, Hooked)
 			Indicator.Position = Hooked and UDim2.new(1, -42, 0.5, 0) or UDim2.new(1, -10, 0.5, 0)
 			Label.Size = Hooked and UDim2.new(1, -94, 1, 0) or UDim2.new(1, -60, 1, 0)
 		end,
-	}
+	}, WolfComponent)
+	return ToggleResult
 end
 
 -- Slider Component
@@ -1509,6 +1586,7 @@ function Wolf:AddSlider(Config)
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
 	SliderFrame.BackgroundColor3 = self.Theme.Card
 	SliderFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(SliderFrame, "slider", Title, "Numeric range control with a current value.", tostring(Default))
 	Corner(SliderFrame, 6)
 	Stroke(SliderFrame, self.Theme.Border)
 
@@ -1609,6 +1687,7 @@ function Wolf:AddTextbox(Config)
 	InputFrame.Size = UDim2.new(1, 0, 0, 36)
 	InputFrame.BackgroundColor3 = self.Theme.Card
 	InputFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(InputFrame, "textbox", Title, "Text input control.", "empty")
 	Corner(InputFrame, 6)
 	Stroke(InputFrame, self.Theme.Border)
 
@@ -1659,6 +1738,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
 	local Callback = Config.Callback or function() end
+	local AppliedColor = Default
 	local CurrentColor = Default
 
 	local PickerFrame = Instance.new("Frame")
@@ -1666,6 +1746,13 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
 	PickerFrame.BackgroundColor3 = self.Theme.Card
 	PickerFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(
+		PickerFrame,
+		"color-picker",
+		Title,
+		"Draft color editor; changes apply only through Pipette.",
+		"unapplied"
+	)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -1700,6 +1787,9 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Popup.Visible = false
 	Popup.ZIndex = 150
 	Popup.Parent = Library.Gui
+	local PopupScale = Instance.new("UIScale")
+	PopupScale.Scale = 0.92
+	PopupScale.Parent = Popup
 	Corner(Popup, 6)
 	Stroke(Popup, self.Theme.Border)
 	Padding(Popup, 10, 10, 10, 10)
@@ -1723,9 +1813,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 			Input.Text = tostring(Values[Index])
 		end
 		CurrentColor = Color3.fromRGB(Values[1], Values[2], Values[3])
-		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Preview.BackgroundColor3 = CurrentColor
-		Callback(CurrentColor)
 	end
 
 	for Index, Channel in ipairs(Channels) do
@@ -1754,6 +1842,8 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
+			PopupScale.Scale = 0.92
+			Tween(PopupScale, { Scale = 1 }, 0.18)
 			table.insert(Library.OpenDropdowns, {
 				Frame = Popup,
 				Chevron = PickerFrame:FindFirstChild("Icon"),
@@ -1764,18 +1854,46 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		end
 	end)
 
+	local ApplyButton = Instance.new("TextButton")
+	ApplyButton.Name = "PipetteApply"
+	ApplyButton.Size = UDim2.new(1, 0, 0, 26)
+	ApplyButton.Position = UDim2.new(0, 0, 1, -26)
+	ApplyButton.BackgroundColor3 = self.Theme.Accent
+	ApplyButton.Text = "Pipette / Apply"
+	ApplyButton.TextColor3 = self.Theme.Text
+	ApplyButton.FontFace = self.Fonts.Button
+	ApplyButton.TextSize = 11
+	ApplyButton.ZIndex = 52
+	ApplyButton.Parent = Popup
+	Corner(ApplyButton, 4)
+	ApplyButton.MouseButton1Click:Connect(function()
+		AppliedColor = CurrentColor
+		ColorPickerButton.BackgroundColor3 = AppliedColor
+		Callback(AppliedColor)
+		Popup.Visible = false
+		table.clear(Library.OpenDropdowns)
+	end)
+
 	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
 	return {
+		Frame = PickerFrame,
+		Popup = Popup,
 		SetValue = function(_, Value)
 			if typeof(Value) == "Color3" then
+				AppliedColor = Value
 				CurrentColor = Value
 				for Index, Channel in ipairs(Channels) do
 					Inputs[Index].Text = tostring(math.floor(ChannelValue(Value, Channel) * 255 + 0.5))
 				end
 				UpdateColor()
+				ColorPickerButton.BackgroundColor3 = AppliedColor
 			end
 		end,
-		Value = CurrentColor,
+		Value = AppliedColor,
+		Destroy = function()
+			PickerFrame:Destroy()
+			Popup:Destroy()
+		end,
 	}
 end
 
@@ -1794,6 +1912,13 @@ function Wolf:AddColorPicker(Config)
 	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
 	PickerFrame.BackgroundColor3 = self.Theme.Card
 	PickerFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(
+		PickerFrame,
+		"color-picker",
+		Title,
+		"Draft color editor; changes apply only through Pipette.",
+		"unapplied"
+	)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -2041,6 +2166,7 @@ function Wolf:AddColorPicker(Config)
 	ApplyIcon(PipetteButton, "pipette")
 	PipetteButton.ImageColor3 = self.Theme.Text
 
+	local AppliedColor = Default
 	local CurrentColor = Default
 	local function UpdateUI(SkipText)
 		CurrentColor = Color3.fromHSV(H, S, V)
@@ -2052,7 +2178,6 @@ function Wolf:AddColorPicker(Config)
 		SVCursor.Position = UDim2.new(S, 0, 1 - V, 0)
 		HueCursor.Position = UDim2.new(H, 0, 0.5, 0)
 		AlphaCursor.Position = UDim2.new(A, 0, 0.5, 0)
-		ColorPickerButton.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundColor3 = CurrentColor
 		ColorPreview.BackgroundTransparency = 1 - A
 		if not SkipText then
@@ -2130,12 +2255,15 @@ function Wolf:AddColorPicker(Config)
 		end
 		Popup.Visible = not WasVisible
 		if Popup.Visible then
+			PopupScale.Scale = 0.92
+			Tween(PopupScale, { Scale = 1 }, 0.18)
 			table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
 			Library._UpdateDropdownPositions()
 		end
 	end)
 
 	PipetteButton.MouseButton1Click:Connect(function()
+		AppliedColor = CurrentColor
 		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
@@ -2144,29 +2272,37 @@ function Wolf:AddColorPicker(Config)
 
 	UpdateUI(false)
 	table.insert(Library.Elements, { Text = Title, Frame = PickerFrame })
-	local PickerObject = {
+	local PickerObject = setmetatable({
 		Frame = PickerFrame,
 		Popup = Popup,
 		Title = Title,
 		SetValue = function(_, Value, Alpha)
 			if typeof(Value) == "Color3" then
+				AppliedColor = Value
 				H, S, V = Value:ToHSV()
 				if Alpha ~= nil then
 					A = math.clamp(Alpha, 0, 1)
 				end
 				UpdateUI(false)
+				ColorPickerButton.BackgroundColor3 = AppliedColor
 			end
 		end,
-		Value = CurrentColor,
+		Value = AppliedColor,
 		GetValue = function()
-			return CurrentColor, A
+			return AppliedColor, A
 		end,
-	}
+		Destroy = function()
+			PickerFrame:Destroy()
+			Popup:Destroy()
+		end,
+	}, WolfComponent)
 	function PickerObject:Open()
 		if Library._CloseDropdowns then
 			Library._CloseDropdowns()
 		end
 		Popup.Visible = true
+		PopupScale.Scale = 0.92
+		Tween(PopupScale, { Scale = 1 }, 0.18)
 		table.insert(Library.OpenDropdowns, { Frame = Popup, Anchor = ColorPickerButton })
 		Library._UpdateDropdownPositions()
 	end
@@ -2182,6 +2318,7 @@ function Wolf:AddColorPicker(Config)
 		end
 	end
 	function PickerObject:Activate()
+		AppliedColor = CurrentColor
 		ColorPickerButton.BackgroundColor3 = CurrentColor
 		Callback(CurrentColor, A)
 		Popup.Visible = false
@@ -2338,19 +2475,15 @@ function Wolf:AddShortcut(Config)
 		table.insert(self.ShortcutChevrons, ChevronButton)
 	end
 
-	local Togglelabel = Element.Frame:FindFirstChild("ToggleFrame", true)
+	local ToggleLabel = Element.Frame:FindFirstChild("ToggleLabel", true)
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
 	local ColorPickerPopup = ColorPickerControl and Element.Popup
 	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
 	local ButtonControl = Element.Frame:FindFirstChildWhichIsA("TextButton", true)
-	local HookSource = ToggleLabel 
-		or DropdownSelection 
-		or ColorPickerPopup 
-		or TextBoxControl 
-		or ButtonControl
+	local HookSource = ToggleLabel or DropdownSelection or ColorPickerPopup or TextBoxControl or ButtonControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
-	local TriggerParent = (Togglelabel and Togglelabel:FindFirstAncestorWhichIsA("Frame")) or (DropdownSelection and DropdownSelection:FindFirstAncestorWhichIsA("TextButton")) or ActionElement.Frame or Element.Frame
+	local TriggerParent = ActionElement.Frame
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
@@ -2475,7 +2608,14 @@ function Wolf:AddShortcut(Config)
 	end
 
 	local function UpdateTriggerPosition()
-		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent or not Element or not Element.Frame or not Element.Frame.Parent then
+		if
+			not ActionElement
+			or not ActionElement.Frame
+			or not ActionElement.Frame.Parent
+			or not Element
+			or not Element.Frame
+			or not Element.Frame.Parent
+		then
 			return
 		end
 		local TriggerOffsetX = TriggerSlot * 32
@@ -2741,6 +2881,7 @@ function Wolf:AddDropdown(Config)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(DropdownFrame, "dropdown", Title, "Single selection list.", "closed")
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
@@ -2911,7 +3052,7 @@ function Wolf:AddDropdown(Config)
 	end)
 
 	table.insert(Library.Elements, { Text = Title, Frame = DropdownFrame })
-	local DropdownObject = {
+	local DropdownObject = setmetatable({
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
 		Title = Title,
@@ -2922,7 +3063,11 @@ function Wolf:AddDropdown(Config)
 		GetValue = function()
 			return Selected
 		end,
-	}
+		Destroy = function()
+			DropdownFrame:Destroy()
+			OptionsFrame:Destroy()
+		end,
+	}, WolfComponent)
 	function DropdownObject:Open()
 		Library._CloseDropdowns()
 		OptionsFrame.Visible = true
@@ -2967,6 +3112,7 @@ function Wolf:AddMultiDropdown(Config)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(DropdownFrame, "multi-dropdown", Title, "Multiple selection list.", "closed")
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
@@ -3138,7 +3284,7 @@ function Wolf:AddMultiDropdown(Config)
 	end)
 
 	table.insert(Library.Elements, { Text = Title, Frame = DropdownFrame })
-	local DropdownObject = {
+	local DropdownObject = setmetatable({
 		Frame = DropdownFrame,
 		Popup = OptionsFrame,
 		Title = Title,
@@ -3154,7 +3300,11 @@ function Wolf:AddMultiDropdown(Config)
 		GetValue = function()
 			return Selected
 		end,
-	}
+		Destroy = function()
+			DropdownFrame:Destroy()
+			OptionsFrame:Destroy()
+		end,
+	}, WolfComponent)
 	function DropdownObject:Open()
 		Library._CloseDropdowns()
 		OptionsFrame.Visible = true
