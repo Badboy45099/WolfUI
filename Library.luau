@@ -2550,7 +2550,7 @@ function Wolf:AddShortcut(Config)
 					Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 					Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 				end
-		else
+			else
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
