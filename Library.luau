@@ -2102,7 +2102,8 @@ function Wolf:AddColorPicker(Config)
 	local Popup = Instance.new("Frame")
 	Popup.Name = "ColorPickerPopup"
 	Popup.Size = UDim2.fromOffset(260, 220)
-	Popup.BackgroundTransparency = 1
+	Popup.BackgroundColor3 = self.Theme.Background
+	Popup.BackgroundTransparency = 0
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 150
@@ -2114,7 +2115,7 @@ function Wolf:AddColorPicker(Config)
 	local MainContainer = Instance.new("Frame")
 	MainContainer.Size = UDim2.fromOffset(260, 220)
 	MainContainer.BackgroundColor3 = self.Theme.Background
-	MainContainer.BackgroundTransparency = 0.35
+	MainContainer.BackgroundTransparency = 0
 	MainContainer.BorderSizePixel = 0
 	MainContainer.Active = true
 	MainContainer.ClipsDescendants = false
@@ -2637,6 +2638,7 @@ function Wolf:AddShortcut(Config)
 	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
 	local ButtonControl = Element.Frame:FindFirstChildWhichIsA("TextButton", true)
 	local HookSource = ToggleLabel or DropdownSelection or ColorPickerControl or TextBoxControl or ButtonControl
+	local IsColorPickerHook = HookSource == ColorPickerControl
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
@@ -2655,9 +2657,6 @@ function Wolf:AddShortcut(Config)
 					Descendant.ZIndex = 151
 				end
 			end
-		end
-		if Element.Popup then
-			Element.Popup.Parent = self.ShortcutGui
 		end
 	end
 	local TriggerButton = Instance.new("ImageButton")
@@ -2836,7 +2835,7 @@ function Wolf:AddShortcut(Config)
 				ChevronPosition.X + ChevronSize.X + 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
-			HookClone.Visible = HookExpanded
+			HookClone.Visible = HookExpanded or (IsColorPickerHook and ChevronButton.Visible)
 			if DropdownSelection then
 				local SourceValue = HookSource:FindFirstChildWhichIsA("TextLabel", true)
 				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
