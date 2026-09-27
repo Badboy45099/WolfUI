@@ -198,38 +198,6 @@ local function AddVisibleDescription(Frame, Config)
 	end
 
 	Frame:SetAttribute("WolfElementDescription", Description)
-	local DescriptionCard = Instance.new("Frame")
-	DescriptionCard.Name = "WolfDescriptionFrame"
-	DescriptionCard.BackgroundColor3 = Wolf.Theme.Surface
-	DescriptionCard.BackgroundTransparency = 0.55
-	DescriptionCard.BorderSizePixel = 0
-	DescriptionCard.AutomaticSize = Enum.AutomaticSize.Y
-	DescriptionCard.Size = UDim2.new(1, 0, 0, 0)
-	DescriptionCard.LayoutOrder = NextLayoutOrder + 1
-	DescriptionCard.ZIndex = Frame.ZIndex + 1
-	DescriptionCard:SetAttribute("WolfDescriptionFor", Frame:GetAttribute("WolfElementTitle"))
-	DescriptionCard.Parent = Parent
-	Corner(DescriptionCard, 4)
-	Padding(DescriptionCard, 8, 8, 5, 5)
-
-	local DescriptionLayout = Instance.new("UIListLayout")
-	DescriptionLayout.SortOrder = Enum.SortOrder.LayoutOrder
-	DescriptionLayout.Padding = UDim.new(0, 2)
-	DescriptionLayout.Parent = DescriptionCard
-
-	local DescriptionTitle = Instance.new("TextLabel")
-	DescriptionTitle.Name = "WolfDescriptionTitle"
-	DescriptionTitle.BackgroundTransparency = 1
-	DescriptionTitle.FontFace = Wolf.Fonts.Button
-	DescriptionTitle.Text = tostring(Frame:GetAttribute("WolfElementTitle") or "Element")
-	DescriptionTitle.TextColor3 = Wolf.Theme.Text
-	DescriptionTitle.TextSize = 10
-	DescriptionTitle.TextXAlignment = Enum.TextXAlignment.Left
-	DescriptionTitle.Size = UDim2.new(1, 0, 0, 14)
-	DescriptionTitle.LayoutOrder = 1
-	DescriptionTitle.ZIndex = DescriptionCard.ZIndex + 1
-	DescriptionTitle.Parent = DescriptionCard
-
 	local DescriptionLabel = Instance.new("TextLabel")
 	DescriptionLabel.Name = "WolfDescription"
 	DescriptionLabel.BackgroundTransparency = 1
@@ -240,15 +208,63 @@ local function AddVisibleDescription(Frame, Config)
 	DescriptionLabel.TextWrapped = true
 	DescriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
 	DescriptionLabel.TextYAlignment = Enum.TextYAlignment.Top
+	DescriptionLabel.ZIndex = Frame.ZIndex + 2
+	DescriptionLabel.Parent = Frame
+
+	local Layout = Frame:FindFirstChildOfClass("UIListLayout")
+	if Layout or Frame.AutomaticSize == Enum.AutomaticSize.Y then
+		DescriptionLabel.LayoutOrder = 100000
+		DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
+		DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
+		Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 1)
+		return
+	end
+
+	local OriginalHeight = Frame.Size.Y.Offset
+	DescriptionLabel.Position = UDim2.fromOffset(12, OriginalHeight + 4)
+	DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
 	DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
-	DescriptionLabel.Size = UDim2.new(1, 0, 0, 0)
-	DescriptionLabel.LayoutOrder = 2
-	DescriptionLabel.ZIndex = DescriptionCard.ZIndex + 1
-	DescriptionLabel.Parent = DescriptionCard
-	Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 2)
+	Frame.Size = UDim2.new(Frame.Size.X.Scale, Frame.Size.X.Offset, Frame.Size.Y.Scale, OriginalHeight + 32)
+	local function KeepControlsInOriginalRow()
+		if not Frame.Parent then
+			return
+		end
+		for _, Child in ipairs(Frame:GetChildren()) do
+			if Child:IsA("GuiObject") and Child ~= DescriptionLabel then
+				local Position = Child.Position
+				local Size = Child.Size
+				if Position.Y.Scale == 0.5 then
+					Child.Position =
+						UDim2.new(Position.X.Scale, Position.X.Offset, 0, OriginalHeight / 2 + Position.Y.Offset)
+				end
+				if Size.Y.Scale == 1 then
+					Child.Size = UDim2.new(Size.X.Scale, Size.X.Offset, 0, OriginalHeight)
+				end
+			end
+		end
+	end
+	local function UpdateDescriptionHeight()
+		if not Frame.Parent then
+			return
+		end
+		local DescriptionHeight = math.max(20, DescriptionLabel.TextBounds.Y)
+		Frame.Size = UDim2.new(
+			Frame.Size.X.Scale,
+			Frame.Size.X.Offset,
+			Frame.Size.Y.Scale,
+			OriginalHeight + DescriptionHeight + 12
+		)
+	end
+	task.defer(KeepControlsInOriginalRow)
+	task.defer(UpdateDescriptionHeight)
+	DescriptionLabel:GetPropertyChangedSignal("TextBounds"):Connect(UpdateDescriptionHeight)
+	Frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		DescriptionLabel.Size = UDim2.new(1, -24, 0, DescriptionLabel.Size.Y.Offset)
+	end)
+	Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 1)
 	Frame.Destroying:Connect(function()
-		if DescriptionCard.Parent then
-			DescriptionCard:Destroy()
+		if DescriptionLabel.Parent then
+			DescriptionLabel:Destroy()
 		end
 	end)
 end
@@ -2598,8 +2614,8 @@ function Wolf:AddShortcut(Config)
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
-	TriggerButton.BackgroundColor3 = self.Theme.Card
-	TriggerButton.BackgroundTransparency = 0.1
+	TriggerButton.BackgroundColor3 = self.Theme.Accent
+	TriggerButton.BackgroundTransparency = 0
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
@@ -2607,15 +2623,10 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.Parent = self.ShortcutHolder
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
-	local TriggerIcon = CreateIcon(
-		TriggerButton,
-		"plug-zap",
-		UDim2.fromScale(0.5, 0.5),
-		UDim2.fromOffset(16, 16),
-		self.Theme.Accent,
-		111
-	)
+	local TriggerIcon =
+		CreateIcon(TriggerButton, "plug-zap", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(16, 16), self.Theme.Text, 156)
 	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
+	TriggerIcon.ImageTransparency = 0
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
@@ -2708,15 +2719,35 @@ function Wolf:AddShortcut(Config)
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		local ElementPosition = ActionElement.Frame.AbsolutePosition
 		local ElementSize = ActionElement.Frame.AbsoluteSize
-		local MainFrame = self.MainFrame
-		local MainPosition = MainFrame.AbsolutePosition
-		local MainSize = MainFrame.AbsoluteSize
-		local MinX = MainPosition.X + TriggerButton.AbsoluteSize.X + 8
-		local MaxX = math.max(MinX, MainPosition.X + MainSize.X - 8)
-		local MinY = MainPosition.Y + 52 + TriggerButton.AbsoluteSize.Y / 2
-		local MaxY = math.max(MinY, MainPosition.Y + MainSize.Y - 24 - TriggerButton.AbsoluteSize.Y / 2)
+		local ViewportPosition = self.ContentArea.AbsolutePosition
+		local ViewportSize = self.ContentArea.AbsoluteSize
+		local ViewportRight = ViewportPosition.X + ViewportSize.X
+		local ViewportBottom = ViewportPosition.Y + ViewportSize.Y
+		local MinX = ViewportPosition.X + TriggerButton.AbsoluteSize.X
+		local MaxX = math.max(MinX, ViewportRight - 4)
+		local MinY = ViewportPosition.Y + TriggerButton.AbsoluteSize.Y / 2
+		local MaxY = math.max(MinY, ViewportBottom - TriggerButton.AbsoluteSize.Y / 2)
+		local DescriptionLabel = ActionElement.Frame:FindFirstChild("WolfDescription")
+		local RowHeight = 0
+		if DescriptionLabel and DescriptionLabel.Position.Y.Offset > 0 then
+			RowHeight = DescriptionLabel.Position.Y.Offset - 4
+		else
+			for _, Child in ipairs(ActionElement.Frame:GetChildren()) do
+				if Child:IsA("GuiObject") and Child ~= DescriptionLabel and Child.LayoutOrder < 100000 then
+					RowHeight = math.max(RowHeight, Child.AbsoluteSize.Y)
+				end
+			end
+		end
+		if RowHeight == 0 then
+			RowHeight = ElementSize.Y
+		end
+		local ElementBottom = ElementPosition.Y + RowHeight
+		local IsInsideViewport = ElementBottom > ViewportPosition.Y
+			and ElementPosition.Y < ViewportBottom
+			and ElementPosition.X + ElementSize.X > ViewportPosition.X
+			and ElementPosition.X < ViewportRight
 		local TriggerX = math.clamp(ElementPosition.X + ElementSize.X - 6 - TriggerOffsetX, MinX, MaxX)
-		local TriggerY = math.clamp(ElementPosition.Y + ElementSize.Y / 2, MinY, MaxY)
+		local TriggerY = math.clamp(ElementPosition.Y + RowHeight / 2, MinY, MaxY)
 		TriggerButton.Position = UDim2.fromOffset(TriggerX, TriggerY)
 		local Ancestor = ActionElement.Frame
 		local IsVisible = true
@@ -2727,7 +2758,7 @@ function Wolf:AddShortcut(Config)
 			end
 			Ancestor = Ancestor.Parent
 		end
-		TriggerButton.Visible = IsVisible
+		TriggerButton.Visible = IsVisible and IsInsideViewport and self.MainFrame.Visible
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
