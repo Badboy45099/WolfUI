@@ -2662,7 +2662,7 @@ function Wolf:AddShortcut(Config)
 	local HookExpanded = false
 	local HookSize = Vector2.new(0, 0)
 	if IsToggleShortcut then
-		if HookSource then
+		if HookSource and not IsColorPickerHook then
 			HookClone = HookSource:Clone()
 			HookClone.Name = "S2HookedSelection"
 			HookClone.AnchorPoint = Vector2.zero
@@ -2852,7 +2852,7 @@ function Wolf:AddShortcut(Config)
 				ChevronPosition.X + ChevronSize.X + 4,
 				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
 			)
-			HookClone.Visible = HookExpanded or (IsColorPickerHook and ChevronButton.Visible)
+			HookClone.Visible = HookExpanded
 			if DropdownSelection then
 				local SourceValue = HookSource:FindFirstChildWhichIsA("TextLabel", true)
 				local CloneValue = HookClone:FindFirstChildWhichIsA("TextLabel", true)
@@ -3182,7 +3182,7 @@ function Wolf:AddDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = Library.Gui
+	OptionsFrame.Parent = Library.PopupGui or Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Accent, 0.15)
 	Padding(OptionsFrame, 8, 8, 0, 8)
@@ -3414,7 +3414,7 @@ function Wolf:AddMultiDropdown(Config)
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
-	OptionsFrame.Parent = Library.Gui
+	OptionsFrame.Parent = Library.PopupGui or Library.Gui
 	Corner(OptionsFrame, 6)
 	Stroke(OptionsFrame, self.Theme.Accent, 0.15)
 	Padding(OptionsFrame, 8, 8, 0, 8)
