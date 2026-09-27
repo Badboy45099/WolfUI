@@ -198,6 +198,38 @@ local function AddVisibleDescription(Frame, Config)
 	end
 
 	Frame:SetAttribute("WolfElementDescription", Description)
+	local DescriptionCard = Instance.new("Frame")
+	DescriptionCard.Name = "WolfDescriptionFrame"
+	DescriptionCard.BackgroundColor3 = Wolf.Theme.Surface
+	DescriptionCard.BackgroundTransparency = 0.55
+	DescriptionCard.BorderSizePixel = 0
+	DescriptionCard.AutomaticSize = Enum.AutomaticSize.Y
+	DescriptionCard.Size = UDim2.new(1, 0, 0, 0)
+	DescriptionCard.LayoutOrder = NextLayoutOrder + 1
+	DescriptionCard.ZIndex = Frame.ZIndex + 1
+	DescriptionCard:SetAttribute("WolfDescriptionFor", Frame:GetAttribute("WolfElementTitle"))
+	DescriptionCard.Parent = Parent
+	Corner(DescriptionCard, 4)
+	Padding(DescriptionCard, 8, 8, 5, 5)
+
+	local DescriptionLayout = Instance.new("UIListLayout")
+	DescriptionLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	DescriptionLayout.Padding = UDim.new(0, 2)
+	DescriptionLayout.Parent = DescriptionCard
+
+	local DescriptionTitle = Instance.new("TextLabel")
+	DescriptionTitle.Name = "WolfDescriptionTitle"
+	DescriptionTitle.BackgroundTransparency = 1
+	DescriptionTitle.FontFace = Wolf.Fonts.Button
+	DescriptionTitle.Text = tostring(Frame:GetAttribute("WolfElementTitle") or "Element")
+	DescriptionTitle.TextColor3 = Wolf.Theme.Text
+	DescriptionTitle.TextSize = 10
+	DescriptionTitle.TextXAlignment = Enum.TextXAlignment.Left
+	DescriptionTitle.Size = UDim2.new(1, 0, 0, 14)
+	DescriptionTitle.LayoutOrder = 1
+	DescriptionTitle.ZIndex = DescriptionCard.ZIndex + 1
+	DescriptionTitle.Parent = DescriptionCard
+
 	local DescriptionLabel = Instance.new("TextLabel")
 	DescriptionLabel.Name = "WolfDescription"
 	DescriptionLabel.BackgroundTransparency = 1
@@ -207,16 +239,16 @@ local function AddVisibleDescription(Frame, Config)
 	DescriptionLabel.TextSize = 10
 	DescriptionLabel.TextWrapped = true
 	DescriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
-	DescriptionLabel.TextYAlignment = Enum.TextYAlignment.Center
+	DescriptionLabel.TextYAlignment = Enum.TextYAlignment.Top
 	DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
-	DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
-	DescriptionLabel.LayoutOrder = NextLayoutOrder + 1
-	DescriptionLabel.ZIndex = Frame.ZIndex + 1
-	DescriptionLabel.Parent = Parent
+	DescriptionLabel.Size = UDim2.new(1, 0, 0, 0)
+	DescriptionLabel.LayoutOrder = 2
+	DescriptionLabel.ZIndex = DescriptionCard.ZIndex + 1
+	DescriptionLabel.Parent = DescriptionCard
 	Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 2)
 	Frame.Destroying:Connect(function()
-		if DescriptionLabel.Parent then
-			DescriptionLabel:Destroy()
+		if DescriptionCard.Parent then
+			DescriptionCard:Destroy()
 		end
 	end)
 end
@@ -2676,10 +2708,16 @@ function Wolf:AddShortcut(Config)
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
 		local ElementPosition = ActionElement.Frame.AbsolutePosition
 		local ElementSize = ActionElement.Frame.AbsoluteSize
-		TriggerButton.Position = UDim2.fromOffset(
-			ElementPosition.X + ElementSize.X - 6 - TriggerOffsetX,
-			ElementPosition.Y + ElementSize.Y / 2
-		)
+		local MainFrame = self.MainFrame
+		local MainPosition = MainFrame.AbsolutePosition
+		local MainSize = MainFrame.AbsoluteSize
+		local MinX = MainPosition.X + TriggerButton.AbsoluteSize.X + 8
+		local MaxX = math.max(MinX, MainPosition.X + MainSize.X - 8)
+		local MinY = MainPosition.Y + 52 + TriggerButton.AbsoluteSize.Y / 2
+		local MaxY = math.max(MinY, MainPosition.Y + MainSize.Y - 24 - TriggerButton.AbsoluteSize.Y / 2)
+		local TriggerX = math.clamp(ElementPosition.X + ElementSize.X - 6 - TriggerOffsetX, MinX, MaxX)
+		local TriggerY = math.clamp(ElementPosition.Y + ElementSize.Y / 2, MinY, MaxY)
+		TriggerButton.Position = UDim2.fromOffset(TriggerX, TriggerY)
 		local Ancestor = ActionElement.Frame
 		local IsVisible = true
 		while Ancestor and Ancestor ~= self.Gui do
