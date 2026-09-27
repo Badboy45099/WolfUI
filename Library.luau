@@ -348,12 +348,24 @@ function Wolf:CreateWindow(Config)
 	if ParentContainer:FindFirstChild("WolfUIShortcuts") then
 		ParentContainer.WolfUIShortcuts:Destroy()
 	end
+	if ParentContainer:FindFirstChild("WolfUIPopups") then
+		ParentContainer.WolfUIPopups:Destroy()
+	end
 
 	local WolfUI = Instance.new("ScreenGui")
 	WolfUI.Name = "WolfUI"
 	WolfUI.ResetOnSpawn = false
 	WolfUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	WolfUI.Parent = ParentContainer
+
+	local PopupGui = Instance.new("ScreenGui")
+	PopupGui.Name = "WolfUIPopups"
+	PopupGui.ResetOnSpawn = false
+	PopupGui.DisplayOrder = 102
+	PopupGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	PopupGui.IgnoreGuiInset = WolfUI.IgnoreGuiInset
+	PopupGui.Parent = ParentContainer
+	self.PopupGui = PopupGui
 
 	local IsMobile = UserInputService.TouchEnabled
 	local DeviceWindowSize = IsMobile and UDim2.fromOffset(380, 520) or UDim2.fromOffset(720, 460)
@@ -927,11 +939,11 @@ function Wolf:CreateWindow(Config)
 			local Anchor = Dropdown.Anchor
 			if
 				Dropdown.Frame.Visible
-				and (Dropdown.Frame.Parent == self.Gui or Dropdown.Frame.Parent == self.ShortcutGui)
+				and (Dropdown.Frame.Parent == self.Gui or Dropdown.Frame.Parent == self.ShortcutGui or Dropdown.Frame.Parent == self.PopupGui)
 				and Anchor
 				and Anchor.Parent
 			then
-				local IsDetached = Dropdown.Frame.Parent == self.ShortcutGui
+				local IsDetached = Dropdown.Frame.Parent == self.ShortcutGui or Dropdown.Frame.Parent == self.PopupGui
 				local WindowPosition = IsDetached and Vector2.zero or MainFrame.AbsolutePosition
 				local WindowSize = IsDetached
 						and (workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720))
@@ -1134,6 +1146,7 @@ function Wolf:CreateWindow(Config)
 	end)
 
 	self.Gui = WolfUI
+	self.PopupGui = PopupGui
 	self.MainFrame = MainFrame
 	self.ContentArea = ContentArea
 	self.TabContainer = TabContainer
@@ -1161,6 +1174,10 @@ function Wolf:Destroy()
 	if self.ShortcutGui then
 		self.ShortcutGui:Destroy()
 		self.ShortcutGui = nil
+	end
+	if self.PopupGui then
+		self.PopupGui:Destroy()
+		self.PopupGui = nil
 	end
 	if self.ToggleButton and self.ToggleButton.Parent then
 		local ToggleGui = self.ToggleButton:FindFirstAncestorOfClass("ScreenGui")
@@ -1938,7 +1955,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Popup.BackgroundColor3 = self.Theme.Surface
 	Popup.Visible = false
 	Popup.ZIndex = 150
-	Popup.Parent = Library.Gui
+	Popup.Parent = Library.PopupGui or Library.Gui
 	local PopupScale = Instance.new("UIScale")
 	PopupScale.Scale = 0.92
 	PopupScale.Parent = Popup
@@ -2107,7 +2124,7 @@ function Wolf:AddColorPicker(Config)
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 150
-	Popup.Parent = Library.Gui
+	Popup.Parent = Library.PopupGui or Library.Gui
 	local PopupScale = Instance.new("UIScale")
 	PopupScale.Scale = 0.92
 	PopupScale.Parent = Popup
