@@ -2538,19 +2538,7 @@ function Wolf:AddShortcut(Config)
 			or ActionElement.Frame:FindFirstChild("Box", true)
 			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
 			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
-		if Control and typeof(Control) == "Instance" and Control:IsA("GuiObject") then
-			if Control.Name == "DropdownSelection" then
-				local DropdownContainerBox = Control:FindFirstAncestorWhichIsA("TextButton")
-				if DropdownContainerBox then
-					Control = DropdownContainerBox
-				
-					Control.AnchorPoint = Vector2.new(1, 0.5)
-					Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, 0.5, 0)
-				else
-					Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
-					Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
-				end
-			else
+		if Control and Control:IsA("GuiObject") then
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
