@@ -320,6 +320,10 @@ function Wolf:CreateWindow(Config)
 		Connection:Disconnect()
 	end
 	table.clear(self._ShortcutConnections)
+	if self._FPSConnection then
+		self._FPSConnection:Disconnect()
+		self._FPSConnection = nil
+	end
 	self.OpenDropdowns = {}
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -457,13 +461,54 @@ function Wolf:CreateWindow(Config)
 	local DeviceLabel = Instance.new("TextLabel")
 	DeviceLabel.BackgroundTransparency = 1
 	DeviceLabel.Position = UDim2.fromOffset(12, 78)
-	DeviceLabel.Size = UDim2.new(1, -60, 0, 18)
+	DeviceLabel.Size = UDim2.fromOffset(46, 18)
 	DeviceLabel.FontFace = self.Fonts.Small
 	DeviceLabel.TextSize = 11
 	DeviceLabel.TextColor3 = self.Theme.SubText
 	DeviceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	DeviceLabel.Text = UserInputService.TouchEnabled and "MOBILE" or "PC"
 	DeviceLabel.Parent = ProfileCard
+
+	local FPSBadge = Instance.new("Frame")
+	FPSBadge.Name = "FPSBadge"
+	FPSBadge.Position = UDim2.fromOffset(66, 78)
+	FPSBadge.Size = UDim2.fromOffset(70, 22)
+	FPSBadge.BackgroundColor3 = self.Theme.Surface
+	FPSBadge.BorderSizePixel = 0
+	FPSBadge.Parent = ProfileCard
+	Corner(FPSBadge, 5)
+
+	local FPSDot = Instance.new("Frame")
+	FPSDot.AnchorPoint = Vector2.new(0, 0.5)
+	FPSDot.Position = UDim2.new(0, 7, 0.5, 0)
+	FPSDot.Size = UDim2.fromOffset(6, 6)
+	FPSDot.BackgroundColor3 = Color3.fromRGB(95, 205, 125)
+	FPSDot.BorderSizePixel = 0
+	FPSDot.Parent = FPSBadge
+	Corner(FPSDot, 10)
+
+	local FPSLabel = Instance.new("TextLabel")
+	FPSLabel.BackgroundTransparency = 1
+	FPSLabel.Position = UDim2.fromOffset(17, 0)
+	FPSLabel.Size = UDim2.new(1, -21, 1, 0)
+	FPSLabel.FontFace = self.Fonts.Small
+	FPSLabel.Text = "-- FPS"
+	FPSLabel.TextColor3 = self.Theme.Text
+	FPSLabel.TextSize = 10
+	FPSLabel.TextXAlignment = Enum.TextXAlignment.Left
+	FPSLabel.Parent = FPSBadge
+
+	local FrameCount = 0
+	local Elapsed = 0
+	self._FPSConnection = RunService.RenderStepped:Connect(function(DeltaTime)
+		FrameCount = FrameCount + 1
+		Elapsed = Elapsed + DeltaTime
+		if Elapsed >= 0.5 then
+			FPSLabel.Text = tostring(math.floor(FrameCount / Elapsed + 0.5)) .. " FPS"
+			FrameCount = 0
+			Elapsed = 0
+		end
+	end)
 
 	-- Tab Container
 	local TabContainer = Instance.new("ScrollingFrame")
@@ -1099,6 +1144,10 @@ function Wolf:Destroy()
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
 		self._RenderConnection = nil
+	end
+	if self._FPSConnection then
+		self._FPSConnection:Disconnect()
+		self._FPSConnection = nil
 	end
 	for _, Connection in ipairs(self._ShortcutConnections or {}) do
 		Connection:Disconnect()
@@ -2057,6 +2106,9 @@ function Wolf:AddColorPicker(Config)
 	Popup.Visible = false
 	Popup.ZIndex = 150
 	Popup.Parent = Library.Gui
+	local PopupScale = Instance.new("UIScale")
+	PopupScale.Scale = 0.92
+	PopupScale.Parent = Popup
 
 	local MainContainer = Instance.new("Frame")
 	MainContainer.Size = UDim2.fromOffset(260, 220)
@@ -2614,8 +2666,8 @@ function Wolf:AddShortcut(Config)
 	local TriggerButton = Instance.new("ImageButton")
 	TriggerButton.Name = Side .. "Trigger"
 	TriggerButton.Size = UDim2.fromOffset(26, 26)
-	TriggerButton.BackgroundColor3 = self.Theme.Accent
-	TriggerButton.BackgroundTransparency = 0
+	TriggerButton.BackgroundColor3 = self.Theme.Card
+	TriggerButton.BackgroundTransparency = 0.05
 	TriggerButton.BorderSizePixel = 0
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
@@ -2623,10 +2675,26 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.Parent = self.ShortcutHolder
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
-	local TriggerIcon =
-		CreateIcon(TriggerButton, "plug-zap", UDim2.fromScale(0.5, 0.5), UDim2.fromOffset(16, 16), self.Theme.Text, 156)
+	local TriggerIcon = CreateIcon(
+		TriggerButton,
+		"plug-zap",
+		UDim2.fromScale(0.5, 0.5),
+		UDim2.fromOffset(16, 16),
+		self.Theme.SubText,
+		156
+	)
 	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 	TriggerIcon.ImageTransparency = 0
+	local TriggerStroke = TriggerButton:FindFirstChildOfClass("UIStroke")
+	local function SetTriggerHighlighted(Highlighted)
+		TriggerButton.BackgroundColor3 = Highlighted and self.Theme.Accent or self.Theme.Card
+		TriggerIcon.ImageColor3 = Highlighted and self.Theme.Text or self.Theme.SubText
+		if TriggerStroke then
+			TriggerStroke.Color = Highlighted and self.Theme.Accent or self.Theme.Border
+			TriggerStroke.Transparency = Highlighted and 0 or 0.2
+		end
+	end
+	SetTriggerHighlighted(false)
 	table.insert(self.ShortcutTriggers, TriggerButton)
 
 	local function ReserveTriggerSpace()
@@ -2798,6 +2866,10 @@ function Wolf:AddShortcut(Config)
 	end
 	UpdateTriggerPosition()
 	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
+	table.insert(
+		self._ShortcutConnections,
+		self.ContentArea:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateTriggerPosition)
+	)
 
 	local Dragging = false
 	local DragMoved = false
@@ -2984,6 +3056,7 @@ function Wolf:AddShortcut(Config)
 			UpdateShortcutPosition(true)
 		end
 		Button.Visible = ShowShortcut
+		SetTriggerHighlighted(ShowShortcut)
 		if ChevronButton then
 			ChevronButton.Visible = ShowShortcut
 		end
