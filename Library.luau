@@ -175,6 +175,52 @@ local function AttachMetadata(Object, Kind, Title, Description, State)
 	return Object
 end
 
+local function AddVisibleDescription(Frame, Config)
+	local Description = typeof(Config) == "table" and Config.Description
+	local Parent = Frame.Parent
+	if not Parent then
+		return
+	end
+
+	local NextLayoutOrder = Parent:GetAttribute("WolfNextLayoutOrder")
+	if NextLayoutOrder == nil then
+		NextLayoutOrder = 0
+		for _, Child in ipairs(Parent:GetChildren()) do
+			if Child:IsA("GuiObject") and Child ~= Frame then
+				NextLayoutOrder = math.max(NextLayoutOrder, Child.LayoutOrder + 1)
+			end
+		end
+	end
+	Frame.LayoutOrder = NextLayoutOrder
+	if typeof(Description) ~= "string" or Description == "" then
+		Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 1)
+		return
+	end
+
+	Frame:SetAttribute("WolfElementDescription", Description)
+	local DescriptionLabel = Instance.new("TextLabel")
+	DescriptionLabel.Name = "WolfDescription"
+	DescriptionLabel.BackgroundTransparency = 1
+	DescriptionLabel.FontFace = Wolf.Fonts.Small
+	DescriptionLabel.Text = Description
+	DescriptionLabel.TextColor3 = Wolf.Theme.SubText
+	DescriptionLabel.TextSize = 10
+	DescriptionLabel.TextWrapped = true
+	DescriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
+	DescriptionLabel.TextYAlignment = Enum.TextYAlignment.Center
+	DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
+	DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
+	DescriptionLabel.LayoutOrder = NextLayoutOrder + 1
+	DescriptionLabel.ZIndex = Frame.ZIndex + 1
+	DescriptionLabel.Parent = Parent
+	Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 2)
+	Frame.Destroying:Connect(function()
+		if DescriptionLabel.Parent then
+			DescriptionLabel:Destroy()
+		end
+	end)
+end
+
 local function ElementParent(Tab, Config)
 	local RequestedSection = typeof(Config) == "table" and Config.Section
 	if RequestedSection == false then
@@ -1156,6 +1202,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 		"Boolean toggle with an enabled or disabled state.",
 		State and "on" or "off"
 	)
+	AddVisibleDescription(ToggleFrame, Config)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1252,6 +1299,7 @@ function Wolf:AddButtonLegacy(Config)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
 	ButtonFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
+	AddVisibleDescription(ButtonFrame, Config)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1305,6 +1353,7 @@ function Wolf:AddSection(Title)
 		"Collapsible container for child elements.",
 		Collapsed and "collapsed" or "expanded"
 	)
+	AddVisibleDescription(SectionFrame, SectionConfig)
 	Corner(SectionFrame, 6)
 	Stroke(SectionFrame, self.Theme.Border)
 
@@ -1418,6 +1467,7 @@ function Wolf:AddButton(Config)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
 	ButtonFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
+	AddVisibleDescription(ButtonFrame, Config)
 	Corner(ButtonFrame, 6)
 	Stroke(ButtonFrame, self.Theme.Border)
 
@@ -1477,6 +1527,7 @@ function Wolf:AddToggle(Config)
 		"Boolean toggle with an enabled or disabled state.",
 		State and "on" or "off"
 	)
+	AddVisibleDescription(ToggleFrame, Config)
 	Corner(ToggleFrame, 6)
 	Stroke(ToggleFrame, self.Theme.Border)
 
@@ -1587,6 +1638,7 @@ function Wolf:AddSlider(Config)
 	SliderFrame.BackgroundColor3 = self.Theme.Card
 	SliderFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(SliderFrame, "slider", Title, "Numeric range control with a current value.", tostring(Default))
+	AddVisibleDescription(SliderFrame, Config)
 	Corner(SliderFrame, 6)
 	Stroke(SliderFrame, self.Theme.Border)
 
@@ -1688,6 +1740,7 @@ function Wolf:AddTextbox(Config)
 	InputFrame.BackgroundColor3 = self.Theme.Card
 	InputFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(InputFrame, "textbox", Title, "Text input control.", "empty")
+	AddVisibleDescription(InputFrame, Config)
 	Corner(InputFrame, 6)
 	Stroke(InputFrame, self.Theme.Border)
 
@@ -1753,6 +1806,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		"Draft color editor; changes apply only through Pipette.",
 		"unapplied"
 	)
+	AddVisibleDescription(PickerFrame, Config)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -1919,6 +1973,7 @@ function Wolf:AddColorPicker(Config)
 		"Draft color editor; changes apply only through Pipette.",
 		"unapplied"
 	)
+	AddVisibleDescription(PickerFrame, Config)
 	Corner(PickerFrame, 6)
 	Stroke(PickerFrame, self.Theme.Border)
 
@@ -2483,7 +2538,6 @@ function Wolf:AddShortcut(Config)
 	local ButtonControl = Element.Frame:FindFirstChildWhichIsA("TextButton", true)
 	local HookSource = ToggleLabel or DropdownSelection or ColorPickerPopup or TextBoxControl or ButtonControl
 	local IsColorPickerHook = HookSource == ColorPickerPopup
-	local TriggerParent = ActionElement.Frame
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
@@ -2518,7 +2572,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.AutoButtonColor = false
 	TriggerButton.Active = true
 	TriggerButton.ZIndex = 155
-	TriggerButton.Parent = TriggerParent
+	TriggerButton.Parent = self.ShortcutHolder
 	Corner(TriggerButton, 6)
 	Stroke(TriggerButton, self.Theme.Border, 0.2)
 	local TriggerIcon = CreateIcon(
@@ -2619,9 +2673,23 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		local TriggerOffsetX = TriggerSlot * 32
-		local TriggerOffsetY = 0
 		TriggerButton.AnchorPoint = Vector2.new(1, 0.5)
-		TriggerButton.Position = UDim2.new(1, -6 - TriggerOffsetX, 0.5, TriggerOffsetY)
+		local ElementPosition = ActionElement.Frame.AbsolutePosition
+		local ElementSize = ActionElement.Frame.AbsoluteSize
+		TriggerButton.Position = UDim2.fromOffset(
+			ElementPosition.X + ElementSize.X - 6 - TriggerOffsetX,
+			ElementPosition.Y + ElementSize.Y / 2
+		)
+		local Ancestor = ActionElement.Frame
+		local IsVisible = true
+		while Ancestor and Ancestor ~= self.Gui do
+			if Ancestor:IsA("GuiObject") and not Ancestor.Visible then
+				IsVisible = false
+				break
+			end
+			Ancestor = Ancestor.Parent
+		end
+		TriggerButton.Visible = IsVisible
 		if HookClone and ChevronButton.Visible then
 			local ChevronPosition = ChevronButton.AbsolutePosition
 			local ChevronSize = ChevronButton.AbsoluteSize
@@ -2882,6 +2950,7 @@ function Wolf:AddDropdown(Config)
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(DropdownFrame, "dropdown", Title, "Single selection list.", "closed")
+	AddVisibleDescription(DropdownFrame, Config)
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
@@ -3113,6 +3182,7 @@ function Wolf:AddMultiDropdown(Config)
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(DropdownFrame, "multi-dropdown", Title, "Multiple selection list.", "closed")
+	AddVisibleDescription(DropdownFrame, Config)
 	Corner(DropdownFrame, 6)
 	Stroke(DropdownFrame, self.Theme.Border)
 
