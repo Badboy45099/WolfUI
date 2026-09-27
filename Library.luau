@@ -469,28 +469,29 @@ function Wolf:CreateWindow(Config)
 	DeviceLabel.Text = UserInputService.TouchEnabled and "MOBILE" or "PC"
 	DeviceLabel.Parent = ProfileCard
 
+	local ProfileDivider = Instance.new("Frame")
+	ProfileDivider.Name = "ProfileDivider"
+	ProfileDivider.Position = UDim2.fromOffset(12, 72)
+	ProfileDivider.Size = UDim2.new(1, -24, 0, 1)
+	ProfileDivider.BackgroundColor3 = self.Theme.Border
+	ProfileDivider.BorderSizePixel = 0
+	ProfileDivider.Parent = ProfileCard
+
 	local FPSBadge = Instance.new("Frame")
 	FPSBadge.Name = "FPSBadge"
 	FPSBadge.Position = UDim2.fromOffset(66, 78)
-	FPSBadge.Size = UDim2.fromOffset(70, 22)
+	FPSBadge.Size = UDim2.fromOffset(76, 22)
 	FPSBadge.BackgroundColor3 = self.Theme.Surface
 	FPSBadge.BorderSizePixel = 0
 	FPSBadge.Parent = ProfileCard
 	Corner(FPSBadge, 5)
 
-	local FPSDot = Instance.new("Frame")
-	FPSDot.AnchorPoint = Vector2.new(0, 0.5)
-	FPSDot.Position = UDim2.new(0, 7, 0.5, 0)
-	FPSDot.Size = UDim2.fromOffset(6, 6)
-	FPSDot.BackgroundColor3 = Color3.fromRGB(95, 205, 125)
-	FPSDot.BorderSizePixel = 0
-	FPSDot.Parent = FPSBadge
-	Corner(FPSDot, 10)
+	CreateIcon(FPSBadge, "gauge", UDim2.fromOffset(6, 5), UDim2.fromOffset(12, 12), Color3.fromRGB(95, 205, 125), 3)
 
 	local FPSLabel = Instance.new("TextLabel")
 	FPSLabel.BackgroundTransparency = 1
-	FPSLabel.Position = UDim2.fromOffset(17, 0)
-	FPSLabel.Size = UDim2.new(1, -21, 1, 0)
+	FPSLabel.Position = UDim2.fromOffset(22, 0)
+	FPSLabel.Size = UDim2.new(1, -26, 1, 0)
 	FPSLabel.FontFace = self.Fonts.Small
 	FPSLabel.Text = "-- FPS"
 	FPSLabel.TextColor3 = self.Theme.Text
@@ -2633,11 +2634,9 @@ function Wolf:AddShortcut(Config)
 	local ToggleLabel = Element.Frame:FindFirstChild("ToggleLabel", true)
 	local DropdownSelection = Element.Frame:FindFirstChild("DropdownSelection", true)
 	local ColorPickerControl = Element.Frame:FindFirstChild("ColorPickerButton", true)
-	local ColorPickerPopup = ColorPickerControl and Element.Popup
 	local TextBoxControl = Element.Frame:FindFirstChildWhichIsA("TextBox", true)
 	local ButtonControl = Element.Frame:FindFirstChildWhichIsA("TextButton", true)
-	local HookSource = ToggleLabel or DropdownSelection or ColorPickerPopup or TextBoxControl or ButtonControl
-	local IsColorPickerHook = HookSource == ColorPickerPopup
+	local HookSource = ToggleLabel or DropdownSelection or ColorPickerControl or TextBoxControl or ButtonControl
 	local TriggerSlot = ActionElement.Frame:GetAttribute("WolfShortcutTriggerCount") or 0
 	ActionElement.Frame:SetAttribute("WolfShortcutTriggerCount", TriggerSlot + 1)
 	local HookClone
@@ -2645,14 +2644,12 @@ function Wolf:AddShortcut(Config)
 	local HookSize = Vector2.new(0, 0)
 	if IsToggleShortcut then
 		if HookSource then
-			HookClone = IsColorPickerHook and HookSource or HookSource:Clone()
+			HookClone = HookSource:Clone()
 			HookClone.Name = "S2HookedSelection"
 			HookClone.AnchorPoint = Vector2.zero
 			HookClone.Visible = false
 			HookClone.ZIndex = 150
-			if not IsColorPickerHook then
-				HookClone.Parent = self.ShortcutGui
-			end
+			HookClone.Parent = self.ShortcutGui
 			for _, Descendant in ipairs(HookClone:GetDescendants()) do
 				if Descendant:IsA("GuiObject") then
 					Descendant.ZIndex = 151
@@ -2734,7 +2731,7 @@ function Wolf:AddShortcut(Config)
 		end
 		local TotalWidth = Button.AbsoluteSize.X
 			+ (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
-			+ (HookClone and not IsColorPickerHook and HookSize.X + 4 or 0)
+			+ (HookClone and HookSize.X + 4 or 0)
 		if UseTargetPosition then
 			local ShortcutPosition = ClampShortcutPosition(
 				ElementPosition - Vector2.new(TotalWidth + 10, 0),
@@ -2835,14 +2832,10 @@ function Wolf:AddShortcut(Config)
 			end
 			HookClone.Size = UDim2.fromOffset(HookSize.X, HookSize.Y)
 			local CloneSize = HookClone.AbsoluteSize
-			if IsColorPickerHook then
-				HookClone.Position = UDim2.fromOffset(ChevronPosition.X, ChevronPosition.Y + ChevronSize.Y + 8)
-			else
-				HookClone.Position = UDim2.fromOffset(
-					ChevronPosition.X + ChevronSize.X + 4,
-					ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
-				)
-			end
+			HookClone.Position = UDim2.fromOffset(
+				ChevronPosition.X + ChevronSize.X + 4,
+				ChevronPosition.Y + (ChevronSize.Y - CloneSize.Y) / 2
+			)
 			HookClone.Visible = HookExpanded
 			if DropdownSelection then
 				local SourceValue = HookSource:FindFirstChildWhichIsA("TextLabel", true)
@@ -2931,7 +2924,7 @@ function Wolf:AddShortcut(Config)
 					local GroupWidth = Button.AbsoluteSize.X
 						+ ChevronButton.AbsoluteSize.X
 						+ 4
-						+ (HookClone and not IsColorPickerHook and HookSize.X + 4 or 0)
+						+ (HookClone and HookSize.X + 4 or 0)
 					local Position =
 						ClampShortcutPosition(DragStartPosition + Delta, Vector2.new(GroupWidth, Button.AbsoluteSize.Y))
 					Button.Position = UDim2.fromOffset(Position.X, Position.Y)
@@ -3004,16 +2997,13 @@ function Wolf:AddShortcut(Config)
 			return
 		end
 		HookExpanded = not HookExpanded
-		if IsColorPickerHook then
-			Element.Popup.Visible = HookExpanded
-		end
 		if not HookExpanded and Element.Popup then
 			Element.Popup.Visible = false
 			table.clear(self.OpenDropdowns)
 		end
 		ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
 	end
-	if HookClone and not IsColorPickerHook then
+	if HookClone then
 		local SelectionButton = Instance.new("TextButton")
 		SelectionButton.Name = "S2SelectionButton"
 		SelectionButton.Size = UDim2.fromScale(1, 1)
