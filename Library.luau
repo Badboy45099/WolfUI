@@ -3001,6 +3001,7 @@ function Wolf:AddShortcut(Config)
 			table.insert(self.OpenDropdowns, {
 				Frame = Element.Popup,
 				Anchor = HookClone or ChevronButton,
+				SideAnchor = IsColorPickerHook,
 				Chevron = Chevron,
 				ClosedIcon = HookExpanded and "chevron-left" or "chevron-right",
 			})
