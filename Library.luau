@@ -551,13 +551,6 @@ function Wolf:CreateWindow(Config)
 	HeaderFrame.BorderSizePixel = 0
 	HeaderFrame.ZIndex = 2
 	HeaderFrame.Parent = MainFrame
-	local HeaderGradient = Instance.new("UIGradient")
-	HeaderGradient.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, self.Theme.Header),
-		ColorSequenceKeypoint.new(1, Color3.fromRGB(27, 20, 21)),
-	})
-	HeaderGradient.Rotation = 0
-	HeaderGradient.Parent = HeaderFrame
 
 	local AccentBar = Instance.new("Frame")
 	AccentBar.Size = UDim2.new(1, 0, 0, 2)
