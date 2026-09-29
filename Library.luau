@@ -1347,7 +1347,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = ToggleFrame
 
@@ -1443,7 +1443,7 @@ function Wolf:AddButtonLegacy(Config)
 	TextBtn.FontFace = self.Fonts.Body
 	TextBtn.Text = Title
 	TextBtn.TextColor3 = self.Theme.Text
-	TextBtn.TextSize = 12
+	TextBtn.TextSize = 13
 	TextBtn.Parent = ButtonFrame
 
 	TextBtn.MouseEnter:Connect(function()
@@ -1512,7 +1512,7 @@ function Wolf:AddSection(Title)
 	Label.FontFace = self.Fonts.Title
 	Label.Text = tostring(SectionTitle):upper()
 	Label.TextColor3 = self.Theme.Accent
-	Label.TextSize = 11
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = SectionHeader
 	if IconName then
@@ -1624,7 +1624,7 @@ function Wolf:AddButton(Config)
 	TextBtn.TextXAlignment = IconName and Enum.TextXAlignment.Left or Enum.TextXAlignment.Center
 	TextBtn.TextTruncate = Enum.TextTruncate.AtEnd
 	TextBtn.TextColor3 = self.Theme.Text
-	TextBtn.TextSize = 12
+	TextBtn.TextSize = 13
 	TextBtn.ZIndex = 1
 	TextBtn.Parent = ButtonFrame
 	if IconName then
@@ -1691,7 +1691,7 @@ function Wolf:AddToggle(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = ToggleFrame
 	if IconName then
@@ -1808,7 +1808,7 @@ function Wolf:AddSlider(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = SliderFrame
 	if IconName then
@@ -1917,7 +1917,7 @@ function Wolf:AddTextbox(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = InputFrame
 	if IconName then
@@ -1990,7 +1990,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = PickerFrame
 	CreateIcon(
@@ -2164,7 +2164,7 @@ function Wolf:AddColorPicker(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = PickerFrame
 	CreateIcon(
@@ -3181,7 +3181,7 @@ function Wolf:AddDropdown(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = DropdownButton
 
@@ -3420,7 +3420,7 @@ function Wolf:AddMultiDropdown(Config)
 	Label.FontFace = self.Fonts.Body
 	Label.Text = Title
 	Label.TextColor3 = self.Theme.Text
-	Label.TextSize = 12
+	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = DropdownButton
 	if IconName then
@@ -3668,7 +3668,7 @@ function Wolf:Notify(Config)
 	Title.FontFace = self.Fonts.Button
 	Title.Text = Config.Title or "Wolf UI"
 	Title.TextColor3 = self.Theme.Text
-	Title.TextSize = 12
+	Title.TextSize = 13
 	Title.TextXAlignment = Enum.TextXAlignment.Left
 	Title.ZIndex = 82
 	Title.Parent = Toast
