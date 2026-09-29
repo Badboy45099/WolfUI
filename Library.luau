@@ -967,7 +967,7 @@ function Wolf:CreateWindow(Config)
 					local RightX = AnchorPosition.X + AnchorSize.X + 4
 					local LeftX = AnchorPosition.X - FrameSize.X - 4
 					X = RightX + FrameSize.X <= WindowPosition.X + WindowSize.X - 4 and RightX or LeftX
-					Y = AnchorPosition.Y + (AnchorSize.Y - FrameSize.Y) / 2
+					Y = Dropdown.AlignTop and AnchorPosition.Y or AnchorPosition.Y + (AnchorSize.Y - FrameSize.Y) / 2
 				else
 					X = AnchorPosition.X + AnchorSize.X - FrameSize.X
 					Y = AnchorPosition.Y + AnchorSize.Y + 4
@@ -1521,6 +1521,17 @@ function Wolf:AddSection(Title)
 		2
 	)
 	Chevron.AnchorPoint = Vector2.new(0, 0.5)
+	local SectionAccent = Instance.new("Frame")
+	SectionAccent.Name = "SectionAccent"
+	SectionAccent.Position = UDim2.fromOffset(0, 6)
+	SectionAccent.Size = UDim2.new(0, 3, 1, -12)
+	SectionAccent.BackgroundColor3 = self.Theme.Accent
+	SectionAccent.BorderSizePixel = 0
+	SectionAccent.Parent = SectionHeader
+	local SectionAccentGradient = Instance.new("UIGradient")
+	SectionAccentGradient.Color = ColorSequence.new(self.Theme.Accent, self.Theme.AccentDark)
+	SectionAccentGradient.Rotation = 90
+	SectionAccentGradient.Parent = SectionAccent
 
 	local SectionContent = Instance.new("Frame")
 	SectionContent.Name = "SectionContent"
@@ -2806,9 +2817,13 @@ function Wolf:AddShortcut(Config)
 		local TriggerPosition = TriggerButton.AbsolutePosition
 		local TriggerSize = TriggerButton.AbsoluteSize
 		local GroupPosition = Vector2.new(
-			TriggerPosition.X - GroupWidth - 4,
+			TriggerPosition.X + TriggerSize.X + 4,
 			TriggerPosition.Y + (TriggerSize.Y - Button.AbsoluteSize.Y) / 2
 		)
+		local Viewport = workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize or Vector2.new(1280, 720)
+		if GroupPosition.X + GroupWidth > Viewport.X - 8 then
+			GroupPosition = Vector2.new(TriggerPosition.X - GroupWidth - 4, GroupPosition.Y)
+		end
 		local ShortcutPosition = ClampShortcutPosition(GroupPosition, Vector2.new(GroupWidth, Button.AbsoluteSize.Y))
 		Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
 		if ChevronButton then
@@ -3036,6 +3051,7 @@ function Wolf:AddShortcut(Config)
 				Frame = Element.Popup,
 				Anchor = HookClone or ChevronButton,
 				SideAnchor = IsColorPickerHook,
+				AlignTop = IsColorPickerHook,
 				Chevron = Chevron,
 				ClosedIcon = HookExpanded and "chevron-left" or "chevron-right",
 			})
