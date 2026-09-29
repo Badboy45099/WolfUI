@@ -106,10 +106,10 @@ end
 
 Wolf.Fonts = {
 	Logo = Font.fromName("GrenzeGotisch", Enum.FontWeight.Bold),
-	Title = Font.fromName("Arcade", Enum.FontWeight.SemiBold),
-	Body = Font.fromName("Arcade", Enum.FontWeight.Medium),
-	Small = Font.fromName("Arcade", Enum.FontWeight.Regular),
-	Button = Font.fromName("Arcade", Enum.FontWeight.Bold),
+	Title = Font.fromName("Gotham", Enum.FontWeight.SemiBold),
+	Body = Font.fromName("Gotham", Enum.FontWeight.Medium),
+	Small = Font.fromName("Gotham", Enum.FontWeight.Regular),
+	Button = Font.fromName("Gotham", Enum.FontWeight.Bold),
 }
 
 Wolf.Theme = {
@@ -204,7 +204,7 @@ local function AddVisibleDescription(Frame, Config)
 	DescriptionLabel.FontFace = Wolf.Fonts.Small
 	DescriptionLabel.Text = Description
 	DescriptionLabel.TextColor3 = Wolf.Theme.SubText
-	DescriptionLabel.TextSize = 10
+	DescriptionLabel.TextSize = 11
 	DescriptionLabel.TextWrapped = true
 	DescriptionLabel.TextXAlignment = Enum.TextXAlignment.Left
 	DescriptionLabel.TextYAlignment = Enum.TextYAlignment.Top
@@ -475,7 +475,7 @@ function Wolf:CreateWindow(Config)
 	DeviceLabel.Position = UDim2.fromOffset(12, 78)
 	DeviceLabel.Size = UDim2.fromOffset(46, 18)
 	DeviceLabel.FontFace = self.Fonts.Small
-	DeviceLabel.TextSize = 11
+	DeviceLabel.TextSize = 12
 	DeviceLabel.TextColor3 = self.Theme.SubText
 	DeviceLabel.TextXAlignment = Enum.TextXAlignment.Left
 	DeviceLabel.Text = UserInputService.TouchEnabled and "MOBILE" or "PC"
@@ -574,7 +574,7 @@ function Wolf:CreateWindow(Config)
 	HeaderTitle.Size = UDim2.fromOffset(200, 52)
 	HeaderTitle.FontFace = self.Fonts.Logo
 	HeaderTitle.Text = Config.Title or "WOLF UI"
-	HeaderTitle.TextSize = 25
+	HeaderTitle.TextSize = 30
 	HeaderTitle.TextColor3 = self.Theme.Accent
 	HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 	HeaderTitle.Parent = HeaderFrame
@@ -1253,6 +1253,7 @@ function Wolf:AddTab(Config)
 	local TabGradient = Instance.new("UIGradient")
 	TabGradient.Color = ColorSequence.new(self.Theme.AccentDark, self.Theme.Accent)
 	TabGradient.Rotation = 0
+	TabGradient.Transparency = NumberSequence.new(0.25) 
 	TabGradient.Parent = TabButton
 	Padding(TabButton, TabIcon and 21 or 4, 6, 0, 0)
 	local TabIconImage = CreateIcon(
@@ -1269,7 +1270,7 @@ function Wolf:AddTab(Config)
 	TabText.Size = UDim2.new(1, TabIcon and -35 or -16, 1, 0)
 	TabText.FontFace = self.Fonts.Body
 	TabText.Text = TabTitle
-	TabText.TextSize = 12
+	TabText.TextSize = 14
 	TabText.TextColor3 = self.Theme.Text
 	TabText.TextXAlignment = Enum.TextXAlignment.Left
 	TabText.TextTruncate = Enum.TextTruncate.AtEnd
