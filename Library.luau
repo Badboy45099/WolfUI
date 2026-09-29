@@ -105,11 +105,11 @@ end
 ---------------------------------------------------------------------
 
 Wolf.Fonts = {
-	Logo = Font.fromName("Bangers", Enum.FontWeight.Bold),
-	Title = Font.fromName("BuilderSans", Enum.FontWeight.SemiBold),
-	Body = Font.fromName("BuilderSans", Enum.FontWeight.Medium),
-	Small = Font.fromName("BuilderSans", Enum.FontWeight.Regular),
-	Button = Font.fromName("BuilderSans", Enum.FontWeight.Bold),
+	Logo = Font.fromName("GrenzeGotisch", Enum.FontWeight.Bold),
+	Title = Font.fromName("Arcade", Enum.FontWeight.SemiBold),
+	Body = Font.fromName("Arcade", Enum.FontWeight.Medium),
+	Small = Font.fromName("Arcade", Enum.FontWeight.Regular),
+	Button = Font.fromName("Arcade", Enum.FontWeight.Bold),
 }
 
 Wolf.Theme = {
@@ -705,7 +705,7 @@ function Wolf:CreateWindow(Config)
 	FootText.Parent = Footnote
 
 	local FooterIcon =
-		CreateIcon(Footnote, Config.Icon, UDim2.new(0, 8, 0.5, 0), UDim2.fromOffset(14, 14), self.Theme.SubText, 3)
+		CreateIcon(Footnote, Config.Icon, UDim2.new(0, 8, 0.5, 0), UDim2.fromOffset(14, 14), self.Theme.Accent, 3)
 	FooterIcon.AnchorPoint = Vector2.new(0, 0.5)
 	FootText.Position = UDim2.fromOffset(Config.Icon and 28 or 12, 0)
 	FootText.Size = UDim2.new(1, Config.Icon and -56 or -40, 1, 0)
@@ -1225,7 +1225,7 @@ function Wolf:AddTab(Config)
 	PageTitle.LayoutOrder = -1
 	PageTitle.Size = UDim2.new(1, 0, 0, 42)
 	PageTitle.BackgroundTransparency = 1
-	PageTitle.FontFace = Font.fromName("PermanentMarker", Enum.FontWeight.Bold)
+	PageTitle.FontFace = Font.fromName("Bangers", Enum.FontWeight.Bold)
 	PageTitle.Text = TabTitle
 	PageTitle.TextColor3 = self.Theme.Text
 	PageTitle.TextSize = 20
@@ -1250,8 +1250,19 @@ function Wolf:AddTab(Config)
 	TabButton.Parent = self.TabContainer
 	Corner(TabButton, 6)
 	Stroke(TabButton, self.Theme.Border)
+	local TabGradient = Instance.new("UIGradient")
+	TabGradient.Color = ColorSequence.new(self.Theme.AccentDark, self.Theme.Accent)
+	TabGradient.Rotation = 0
+	TabGradient.Parent = TabButton
 	Padding(TabButton, TabIcon and 21 or 4, 6, 0, 0)
-	CreateIcon(TabButton, TabIcon, UDim2.fromOffset(0, 10), UDim2.fromOffset(14, 14), self.Theme.Text, 3)
+	local TabIconImage = CreateIcon(
+		TabButton,
+		TabIcon,
+		UDim2.fromOffset(0, 10),
+		UDim2.fromOffset(14, 14),
+		Config.IconColor or self.Theme.SubText,
+		3
+	)
 	local TabText = Instance.new("TextLabel")
 	TabText.BackgroundTransparency = 1
 	TabText.Position = UDim2.fromOffset(TabIcon and 18 or 4, 0)
@@ -1281,6 +1292,8 @@ function Wolf:AddTab(Config)
 		Page = TabPage,
 		Title = TabTitle,
 		Button = TabButton,
+		Icon = TabIconImage,
+		IconColor = Config.IconColor,
 	}, { __index = Wolf })
 
 	table.insert(self.Tabs, Tab)
@@ -1291,8 +1304,10 @@ function Wolf:AddTab(Config)
 		end
 		for _, ExistingTab in ipairs(self.Tabs) do
 			ExistingTab.Page.Visible = ExistingTab == Tab
-			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.Accent or self.Theme.Card
+			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and Color3.new(1, 1, 1) or self.Theme.Card
 			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
+			ExistingTab.Icon.ImageColor3 = ExistingTab.IconColor
+				or (ExistingTab == Tab and self.Theme.Accent or self.Theme.SubText)
 		end
 		self.ActiveTab = Tab
 		self.ContentArea.CanvasPosition = Vector2.new(0, 0)
@@ -1626,7 +1641,7 @@ function Wolf:AddButton(Config)
 			IconName,
 			UDim2.fromOffset(12, 10),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
@@ -1693,7 +1708,7 @@ function Wolf:AddToggle(Config)
 			IconName,
 			UDim2.fromOffset(12, 10),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
@@ -1810,7 +1825,7 @@ function Wolf:AddSlider(Config)
 			IconName,
 			UDim2.fromOffset(12, 8),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
@@ -1919,7 +1934,7 @@ function Wolf:AddTextbox(Config)
 			IconName,
 			UDim2.fromOffset(12, 10),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
@@ -1989,7 +2004,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		IconName,
 		UDim2.fromOffset(12, 10),
 		UDim2.fromOffset(16, 16),
-		Config.IconColor or self.Theme.SubText,
+		Config.IconColor or self.Theme.Accent,
 		2
 	)
 
@@ -2163,7 +2178,7 @@ function Wolf:AddColorPicker(Config)
 		IconName,
 		UDim2.fromOffset(12, 10),
 		UDim2.fromOffset(16, 16),
-		Config.IconColor or self.Theme.SubText,
+		Config.IconColor or self.Theme.Accent,
 		2
 	)
 
@@ -3195,7 +3210,7 @@ function Wolf:AddDropdown(Config)
 			IconName,
 			UDim2.fromOffset(12, 12),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
@@ -3422,7 +3437,7 @@ function Wolf:AddMultiDropdown(Config)
 			IconName,
 			UDim2.fromOffset(12, 12),
 			UDim2.fromOffset(16, 16),
-			Config.IconColor or self.Theme.SubText,
+			Config.IconColor or self.Theme.Accent,
 			2
 		)
 	end
