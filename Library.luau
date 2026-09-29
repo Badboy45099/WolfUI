@@ -551,12 +551,22 @@ function Wolf:CreateWindow(Config)
 	HeaderFrame.BorderSizePixel = 0
 	HeaderFrame.ZIndex = 2
 	HeaderFrame.Parent = MainFrame
+	local HeaderGradient = Instance.new("UIGradient")
+	HeaderGradient.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, self.Theme.Header),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(27, 20, 21)),
+	})
+	HeaderGradient.Rotation = 0
+	HeaderGradient.Parent = HeaderFrame
 
 	local AccentBar = Instance.new("Frame")
 	AccentBar.Size = UDim2.new(1, 0, 0, 2)
 	AccentBar.BorderSizePixel = 0
 	AccentBar.BackgroundColor3 = self.Theme.Accent
 	AccentBar.Parent = MainFrame
+	local AccentGradient = Instance.new("UIGradient")
+	AccentGradient.Color = ColorSequence.new(self.Theme.AccentDark, self.Theme.Accent)
+	AccentGradient.Parent = AccentBar
 
 	local HeaderTitle = Instance.new("TextLabel")
 	HeaderTitle.BackgroundTransparency = 1
@@ -1600,7 +1610,14 @@ function Wolf:AddButton(Config)
 	if IconName then
 		TextBtn.Position = UDim2.fromOffset(36, 0)
 		TextBtn.Size = UDim2.new(1, -48, 1, 0)
-		CreateIcon(ButtonFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			ButtonFrame,
+			IconName,
+			UDim2.fromOffset(12, 10),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	TextBtn.MouseEnter:Connect(function()
@@ -1660,7 +1677,14 @@ function Wolf:AddToggle(Config)
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
 		Label.Size = UDim2.new(1, -84, 1, 0)
-		CreateIcon(ToggleFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			ToggleFrame,
+			IconName,
+			UDim2.fromOffset(12, 10),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	local Indicator = Instance.new("Frame")
@@ -1770,7 +1794,14 @@ function Wolf:AddSlider(Config)
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 6)
 		Label.Size = UDim2.new(1, -94, 0, 18)
-		CreateIcon(SliderFrame, IconName, UDim2.fromOffset(12, 8), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			SliderFrame,
+			IconName,
+			UDim2.fromOffset(12, 8),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	local ValueLabel = Instance.new("TextLabel")
@@ -1872,7 +1903,14 @@ function Wolf:AddTextbox(Config)
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
 		Label.Size = UDim2.new(0.5, -36, 1, 0)
-		CreateIcon(InputFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			InputFrame,
+			IconName,
+			UDim2.fromOffset(12, 10),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	local Box = Instance.new("TextBox")
@@ -1935,7 +1973,14 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Label.TextSize = 12
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = PickerFrame
-	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	CreateIcon(
+		PickerFrame,
+		IconName,
+		UDim2.fromOffset(12, 10),
+		UDim2.fromOffset(16, 16),
+		Config.IconColor or self.Theme.SubText,
+		2
+	)
 
 	local ColorPickerButton = Instance.new("TextButton")
 	ColorPickerButton.Name = "ColorPickerButton"
@@ -2102,7 +2147,14 @@ function Wolf:AddColorPicker(Config)
 	Label.TextSize = 12
 	Label.TextXAlignment = Enum.TextXAlignment.Left
 	Label.Parent = PickerFrame
-	CreateIcon(PickerFrame, IconName, UDim2.fromOffset(12, 10), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+	CreateIcon(
+		PickerFrame,
+		IconName,
+		UDim2.fromOffset(12, 10),
+		UDim2.fromOffset(16, 16),
+		Config.IconColor or self.Theme.SubText,
+		2
+	)
 
 	local ColorPickerButton = Instance.new("TextButton")
 	ColorPickerButton.Name = "ColorPickerButton"
@@ -2737,53 +2789,35 @@ function Wolf:AddShortcut(Config)
 		)
 	end
 
-	local function UpdateShortcutPosition(UseTargetPosition)
+	local function UpdateShortcutPosition()
 		if not ActionElement or not ActionElement.Frame or not ActionElement.Frame.Parent then
 			return
 		end
-		local ElementPosition = ActionElement.Frame.AbsolutePosition
 		if HookSource and HookSource.AbsoluteSize.X > 0 and HookSource.AbsoluteSize.Y > 0 then
 			HookSize = HookSource.AbsoluteSize
 		end
-		local TotalWidth = Button.AbsoluteSize.X
-			+ (ChevronButton and ChevronButton.AbsoluteSize.X + 4 or 0)
-			+ (HookClone and HookSize.X + 4 or 0)
-		if UseTargetPosition then
-			local ShortcutPosition = ClampShortcutPosition(
-				ElementPosition - Vector2.new(TotalWidth + 10, 0),
-				Vector2.new(TotalWidth, Button.AbsoluteSize.Y)
-			)
-			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
-			if ChevronButton then
-				ChevronButton.Position =
-					UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
-			end
-		else
-			local ShortcutPosition =
-				ClampShortcutPosition(Button.AbsolutePosition, Vector2.new(TotalWidth, Button.AbsoluteSize.Y))
-			Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
-			if ChevronButton then
-				ChevronButton.Position =
-					UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
-			end
+		local GroupWidth = Button.AbsoluteSize.X
+		if ChevronButton then
+			GroupWidth = GroupWidth + ChevronButton.AbsoluteSize.X + 4
+		end
+		if HookClone then
+			GroupWidth = GroupWidth + HookSize.X + 4
+		end
+		local TriggerPosition = TriggerButton.AbsolutePosition
+		local TriggerSize = TriggerButton.AbsoluteSize
+		local GroupPosition = Vector2.new(
+			TriggerPosition.X - GroupWidth - 4,
+			TriggerPosition.Y + (TriggerSize.Y - Button.AbsoluteSize.Y) / 2
+		)
+		local ShortcutPosition = ClampShortcutPosition(GroupPosition, Vector2.new(GroupWidth, Button.AbsoluteSize.Y))
+		Button.Position = UDim2.fromOffset(ShortcutPosition.X, ShortcutPosition.Y)
+		if ChevronButton then
+			ChevronButton.Position =
+				UDim2.fromOffset(ShortcutPosition.X + Button.AbsoluteSize.X + 4, ShortcutPosition.Y)
 		end
 	end
 
-	if IsToggleShortcut then
-		task.defer(function()
-			UpdateShortcutPosition(true)
-		end)
-	else
-		Button.Position = UDim2.fromOffset(
-			math.max(
-				8,
-				(workspace.CurrentCamera and workspace.CurrentCamera.ViewportSize.X or 1280)
-					- Button.AbsoluteSize.X
-					- 18
-			),
-			8 + (self.ShortcutCount - 1) * 42
-		)
-	end
+	task.defer(UpdateShortcutPosition)
 
 	local function UpdateTriggerPosition()
 		if
@@ -3060,7 +3094,7 @@ function Wolf:AddShortcut(Config)
 	TriggerButton.MouseButton1Click:Connect(function()
 		local ShowShortcut = not Button.Visible
 		if ShowShortcut then
-			UpdateShortcutPosition(true)
+			UpdateShortcutPosition()
 		end
 		Button.Visible = ShowShortcut
 		SetTriggerHighlighted(ShowShortcut)
@@ -3140,7 +3174,14 @@ function Wolf:AddDropdown(Config)
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
 		Label.Size = UDim2.new(0.45, -36, 1, 0)
-		CreateIcon(DropdownButton, IconName, UDim2.fromOffset(12, 12), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			DropdownButton,
+			IconName,
+			UDim2.fromOffset(12, 12),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	local Chevron = CreateIcon(
@@ -3360,7 +3401,14 @@ function Wolf:AddMultiDropdown(Config)
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
 		Label.Size = UDim2.new(0.45, -36, 1, 0)
-		CreateIcon(DropdownButton, IconName, UDim2.fromOffset(12, 12), UDim2.fromOffset(16, 16), self.Theme.SubText, 2)
+		CreateIcon(
+			DropdownButton,
+			IconName,
+			UDim2.fromOffset(12, 12),
+			UDim2.fromOffset(16, 16),
+			Config.IconColor or self.Theme.SubText,
+			2
+		)
 	end
 
 	local ValueLabel = Instance.new("TextLabel")
