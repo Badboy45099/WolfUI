@@ -1791,7 +1791,7 @@ function Wolf:AddSlider(Config)
 	local Max = Config.Max or 100
 	local Default = Config.Default or Min
 	local Callback = Config.Callback or function() end
-	local DragSlowness = 0.15 -- adjust for dragging slow
+	local DragSlowness = 0.25 -- adjust for dragging slow
 
 	local SliderFrame = Instance.new("Frame")
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
