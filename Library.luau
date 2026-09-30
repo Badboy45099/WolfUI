@@ -21,6 +21,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
@@ -465,6 +466,117 @@ function Wolf:SetTheme(ThemeName)
 	return self.CurrentTheme
 end
 
+function Wolf:SetLiquidGlass(Enabled)
+	Enabled = Enabled == true
+	if Enabled == self._LiquidGlassEnabled then
+		return Enabled
+	end
+
+	if not Enabled then
+		for _, Connection in ipairs(self._LiquidGlassConnections or {}) do
+			Connection:Disconnect()
+		end
+		table.clear(self._LiquidGlassConnections or {})
+
+		for Object, Original in pairs(self._LiquidGlassOriginals or {}) do
+			pcall(function()
+				if Object:IsA("GuiObject") then
+					Object.BackgroundTransparency = Original.BackgroundTransparency
+				elseif Object:IsA("UIStroke") then
+					Object.Thickness = Original.Thickness
+					Object.Transparency = Original.Transparency
+				end
+			end)
+		end
+		table.clear(self._LiquidGlassOriginals or {})
+
+		for _, Gradient in pairs(self._LiquidGlassGradients or {}) do
+			Gradient:Destroy()
+		end
+		table.clear(self._LiquidGlassGradients or {})
+
+		if self._LiquidGlassBlur then
+			self._LiquidGlassBlur:Destroy()
+			self._LiquidGlassBlur = nil
+		end
+		self._LiquidGlassEnabled = false
+		return false
+	end
+
+	local Roots = { self.Gui, self.ShortcutGui, self.PopupGui, self.ToggleGui }
+	local HasRoot = false
+	for _, Root in pairs(Roots) do
+		HasRoot = HasRoot or Root ~= nil
+	end
+	if not HasRoot then
+		return false
+	end
+
+	self._LiquidGlassOriginals = {}
+	self._LiquidGlassGradients = {}
+	self._LiquidGlassConnections = {}
+
+	local function ApplyGlass(Object)
+		if HasPreservedThemeColor(Object) then
+			return
+		end
+
+		if Object:IsA("GuiObject") and Object.BackgroundTransparency < 1 then
+			if not self._LiquidGlassOriginals[Object] then
+				self._LiquidGlassOriginals[Object] = {
+					BackgroundTransparency = Object.BackgroundTransparency,
+				}
+			end
+			local OriginalTransparency = self._LiquidGlassOriginals[Object].BackgroundTransparency
+			Object.BackgroundTransparency = math.max(OriginalTransparency, math.min(0.78, OriginalTransparency + 0.2))
+		elseif Object:IsA("UIStroke") then
+			if not self._LiquidGlassOriginals[Object] then
+				self._LiquidGlassOriginals[Object] = {
+					Thickness = Object.Thickness,
+					Transparency = Object.Transparency,
+				}
+			end
+			local Original = self._LiquidGlassOriginals[Object]
+			Object.Thickness = math.max(Original.Thickness, 1.25)
+			Object.Transparency = math.min(Original.Transparency, 0.24)
+
+			local Gradient = Instance.new("UIGradient")
+			Gradient.Name = "WolfLiquidGlassGradient"
+			Gradient.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, Color3.fromRGB(178, 225, 255)),
+				ColorSequenceKeypoint.new(0.48, Color3.fromRGB(255, 255, 255)),
+				ColorSequenceKeypoint.new(1, Color3.fromRGB(205, 190, 255)),
+			})
+			Gradient.Transparency = NumberSequence.new({
+				NumberSequenceKeypoint.new(0, 0.1),
+				NumberSequenceKeypoint.new(0.5, 0.45),
+				NumberSequenceKeypoint.new(1, 0.1),
+			})
+			Gradient.Rotation = 25
+			Gradient:SetAttribute("WolfPreserveThemeColor", true)
+			Gradient.Parent = Object
+			table.insert(self._LiquidGlassGradients, Gradient)
+		end
+	end
+
+	for _, Root in pairs(Roots) do
+		if Root then
+			for _, Object in ipairs(Root:GetDescendants()) do
+				ApplyGlass(Object)
+			end
+			table.insert(self._LiquidGlassConnections, Root.DescendantAdded:Connect(ApplyGlass))
+		end
+	end
+
+	local Blur = Instance.new("BlurEffect")
+	Blur.Name = "WolfLiquidGlassBlur"
+	Blur.Size = 5
+	Blur.Parent = Lighting
+	self._LiquidGlassBlur = Blur
+	self._LiquidGlassEnabled = true
+	return true
+end
+
 ---------------------------------------------------------------------
 -- UTILITY HELPERS
 ---------------------------------------------------------------------
@@ -641,6 +753,9 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	if self._LiquidGlassEnabled then
+		self:SetLiquidGlass(false)
+	end
 	CancelThemeTweens(self)
 	self.Theme = table.clone(self.Themes.Default)
 	self.CurrentTheme = "Default"
@@ -1503,6 +1618,7 @@ function Wolf:CreateWindow(Config)
 end
 
 function Wolf:Destroy()
+	self:SetLiquidGlass(false)
 	CancelThemeTweens(self)
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -3757,7 +3873,9 @@ function Wolf:AddDropdown(Config)
 	ValueScroller.CanvasSize = UDim2.new()
 	ValueScroller.AutomaticCanvasSize = Enum.AutomaticSize.X
 	ValueScroller.ScrollingDirection = Enum.ScrollingDirection.X
-	ValueScroller.ScrollBarThickness = 2
+	ValueScroller.ScrollingEnabled = true
+	ValueScroller.ElasticBehavior = Enum.ElasticBehavior.Never
+	ValueScroller.ScrollBarThickness = UserInputService.TouchEnabled and 7 or 2
 	ValueScroller.ScrollBarImageColor3 = self.Theme.Accent
 	ValueScroller.ScrollBarImageTransparency = 0.15
 	ValueScroller.Active = true
