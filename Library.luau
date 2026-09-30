@@ -105,11 +105,12 @@ end
 ---------------------------------------------------------------------
 
 Wolf.Fonts = {
-	Logo = Font.fromName("GrenzeGotisch", Enum.FontWeight.Bold),
-	Title = Font.fromName("Gotham", Enum.FontWeight.SemiBold),
-	Body = Font.fromName("Gotham", Enum.FontWeight.Medium),
-	Small = Font.fromName("Gotham", Enum.FontWeight.Regular),
-	Button = Font.fromName("Gotham", Enum.FontWeight.Bold),
+	Logo = Font.fromEnum(Enum.Font.GrenzeGotisch),
+	Title = Font.fromEnum(Enum.Font.Arcade),
+	Body = Font.fromEnum(Enum.Font.Arcade),
+	Small = Font.fromEnum(Enum.Font.Arcade),
+	Button = Font.fromEnum(Enum.Font.Arcade),
+	Interface = Font.fromEnum(Enum.Font.SourceSans),
 }
 
 Wolf.Theme = {
@@ -215,14 +216,14 @@ local function AddVisibleDescription(Frame, Config)
 	if Layout or Frame.AutomaticSize == Enum.AutomaticSize.Y then
 		DescriptionLabel.LayoutOrder = 100000
 		DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
-		DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
+		DescriptionLabel.Size = UDim2.new(1, -32, 0, 0)
 		Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 1)
 		return
 	end
 
 	local OriginalHeight = Frame.Size.Y.Offset
-	DescriptionLabel.Position = UDim2.fromOffset(12, OriginalHeight + 4)
-	DescriptionLabel.Size = UDim2.new(1, -24, 0, 0)
+	DescriptionLabel.Position = UDim2.fromOffset(16, OriginalHeight + 4)
+	DescriptionLabel.Size = UDim2.new(1, -32, 0, 0)
 	DescriptionLabel.AutomaticSize = Enum.AutomaticSize.Y
 	Frame.Size = UDim2.new(Frame.Size.X.Scale, Frame.Size.X.Offset, Frame.Size.Y.Scale, OriginalHeight + 32)
 	local function KeepControlsInOriginalRow()
@@ -259,7 +260,7 @@ local function AddVisibleDescription(Frame, Config)
 	task.defer(UpdateDescriptionHeight)
 	DescriptionLabel:GetPropertyChangedSignal("TextBounds"):Connect(UpdateDescriptionHeight)
 	Frame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-		DescriptionLabel.Size = UDim2.new(1, -24, 0, DescriptionLabel.Size.Y.Offset)
+		DescriptionLabel.Size = UDim2.new(1, -32, 0, DescriptionLabel.Size.Y.Offset)
 	end)
 	Parent:SetAttribute("WolfNextLayoutOrder", NextLayoutOrder + 1)
 	Frame.Destroying:Connect(function()
@@ -440,7 +441,7 @@ function Wolf:CreateWindow(Config)
 	PlayerName.BackgroundTransparency = 1
 	PlayerName.Position = UDim2.fromOffset(68, 20)
 	PlayerName.Size = UDim2.new(1, -76, 0, 18)
-	PlayerName.FontFace = self.Fonts.Body
+	PlayerName.FontFace = self.Fonts.Interface
 	PlayerName.TextSize = 14
 	PlayerName.TextColor3 = self.Theme.Text
 	PlayerName.TextXAlignment = Enum.TextXAlignment.Left
@@ -452,7 +453,7 @@ function Wolf:CreateWindow(Config)
 	Username.BackgroundTransparency = 1
 	Username.Position = UDim2.fromOffset(68, 38)
 	Username.Size = UDim2.new(1, -76, 0, 15)
-	Username.FontFace = self.Fonts.Small
+	Username.FontFace = self.Fonts.Interface
 	Username.TextSize = 10
 	Username.TextColor3 = self.Theme.SubText
 	Username.TextXAlignment = Enum.TextXAlignment.Left
@@ -474,7 +475,7 @@ function Wolf:CreateWindow(Config)
 	DeviceLabel.BackgroundTransparency = 1
 	DeviceLabel.Position = UDim2.fromOffset(12, 78)
 	DeviceLabel.Size = UDim2.fromOffset(46, 18)
-	DeviceLabel.FontFace = self.Fonts.Small
+	DeviceLabel.FontFace = self.Fonts.Interface
 	DeviceLabel.TextSize = 12
 	DeviceLabel.TextColor3 = self.Theme.SubText
 	DeviceLabel.TextXAlignment = Enum.TextXAlignment.Left
@@ -504,7 +505,7 @@ function Wolf:CreateWindow(Config)
 	FPSLabel.BackgroundTransparency = 1
 	FPSLabel.Position = UDim2.fromOffset(22, 0)
 	FPSLabel.Size = UDim2.new(1, -26, 1, 0)
-	FPSLabel.FontFace = self.Fonts.Small
+	FPSLabel.FontFace = self.Fonts.Interface
 	FPSLabel.Text = "-- FPS"
 	FPSLabel.TextColor3 = self.Theme.Text
 	FPSLabel.TextSize = 10
@@ -563,11 +564,11 @@ function Wolf:CreateWindow(Config)
 
 	local HeaderTitle = Instance.new("TextLabel")
 	HeaderTitle.BackgroundTransparency = 1
-	HeaderTitle.Position = UDim2.fromOffset(16, 0)
-	HeaderTitle.Size = UDim2.fromOffset(200, 52)
+	HeaderTitle.Position = UDim2.fromOffset(20, 0)
+	HeaderTitle.Size = UDim2.fromOffset(240, 52)
 	HeaderTitle.FontFace = self.Fonts.Logo
 	HeaderTitle.Text = Config.Title or "WOLF UI"
-	HeaderTitle.TextSize = 30
+	HeaderTitle.TextSize = 32
 	HeaderTitle.TextColor3 = self.Theme.Accent
 	HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
 	HeaderTitle.Parent = HeaderFrame
@@ -615,7 +616,7 @@ function Wolf:CreateWindow(Config)
 	SearchBox.PlaceholderColor3 = self.Theme.SubText
 	SearchBox.Text = ""
 	SearchBox.PlaceholderText = "Search..."
-	SearchBox.FontFace = self.Fonts.Body
+	SearchBox.FontFace = self.Fonts.Interface
 	SearchBox.TextSize = 12
 	SearchBox.ClearTextOnFocus = false
 	SearchBox.ClipsDescendants = true
@@ -637,7 +638,7 @@ function Wolf:CreateWindow(Config)
 	LockButton.Size = UDim2.fromOffset(68, 30)
 	LockButton.BackgroundColor3 = self.Theme.AccentDark
 	LockButton.TextColor3 = Color3.new(1, 1, 1)
-	LockButton.FontFace = self.Fonts.Button
+	LockButton.FontFace = self.Fonts.Interface
 	LockButton.TextSize = 11
 	LockButton.Text = ""
 	LockButton.Parent = ControlsHolder
@@ -648,7 +649,7 @@ function Wolf:CreateWindow(Config)
 	LockText.BackgroundTransparency = 1
 	LockText.Position = UDim2.fromOffset(25, 0)
 	LockText.Size = UDim2.new(1, -29, 1, 0)
-	LockText.FontFace = self.Fonts.Button
+	LockText.FontFace = self.Fonts.Interface
 	LockText.Text = "LOCK"
 	LockText.TextSize = 11
 	LockText.TextColor3 = Color3.new(1, 1, 1)
@@ -1218,7 +1219,7 @@ function Wolf:AddTab(Config)
 	PageTitle.LayoutOrder = -1
 	PageTitle.Size = UDim2.new(1, 0, 0, 42)
 	PageTitle.BackgroundTransparency = 1
-	PageTitle.FontFace = Font.fromName("Bangers", Enum.FontWeight.Bold)
+	PageTitle.FontFace = Font.fromEnum(Enum.Font.Bangers)
 	PageTitle.Text = TabTitle
 	PageTitle.TextColor3 = self.Theme.Text
 	PageTitle.TextSize = 20
@@ -1246,7 +1247,7 @@ function Wolf:AddTab(Config)
 	local TabGradient = Instance.new("UIGradient")
 	TabGradient.Color = ColorSequence.new(self.Theme.AccentDark, self.Theme.Accent)
 	TabGradient.Rotation = 0
-	TabGradient.Transparency = NumberSequence.new(0.25) 
+	TabGradient.Transparency = NumberSequence.new(0.25)
 	TabGradient.Parent = TabButton
 	Padding(TabButton, TabIcon and 21 or 4, 6, 0, 0)
 	local TabIconImage = CreateIcon(
@@ -1254,7 +1255,7 @@ function Wolf:AddTab(Config)
 		TabIcon,
 		UDim2.fromOffset(0, 10),
 		UDim2.fromOffset(14, 14),
-		Config.IconColor or self.Theme.SubText,
+		Config.IconColor or self.Theme.Text,
 		3
 	)
 	local TabText = Instance.new("TextLabel")
@@ -1300,8 +1301,7 @@ function Wolf:AddTab(Config)
 			ExistingTab.Page.Visible = ExistingTab == Tab
 			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and Color3.new(1, 1, 1) or self.Theme.Card
 			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
-			ExistingTab.Icon.ImageColor3 = ExistingTab.IconColor
-				or (ExistingTab == Tab and self.Theme.Accent or self.Theme.SubText)
+			ExistingTab.Icon.ImageColor3 = ExistingTab.IconColor or self.Theme.Text
 		end
 		self.ActiveTab = Tab
 		self.ContentArea.CanvasPosition = Vector2.new(0, 0)
