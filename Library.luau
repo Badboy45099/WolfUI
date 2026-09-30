@@ -133,6 +133,7 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(255, 255, 255),
 		ToggleKnob = Color3.fromRGB(240, 240, 240),
 		SliderThumb = Color3.fromRGB(232, 232, 232),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Violet & Black (Cyberpunk)"] = {
 		Background = Color3.fromRGB(10, 8, 16),
@@ -148,9 +149,10 @@ Wolf.Themes = {
 		Border = Color3.fromRGB(65, 48, 82),
 		ActiveTab = Color3.fromRGB(48, 37, 62),
 		ToggleKnob = Color3.fromRGB(235, 250, 255),
-		SliderThumb = Color3.fromRGB(90, 235, 255),
+		SliderThumb = Color3.fromHSV(0.663636, 0.647059, 1),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
-	["Charcoal & Black (Luxury)"] = {
+	["Brown & Golden"] = {
 		Background = Color3.fromRGB(16, 16, 16),
 		Sidebar = Color3.fromRGB(23, 23, 22),
 		Header = Color3.fromRGB(19, 19, 18),
@@ -165,6 +167,24 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(62, 59, 49),
 		ToggleKnob = Color3.fromRGB(245, 240, 222),
 		SliderThumb = Color3.fromRGB(224, 199, 139),
+		ButtonText = Color3.fromRGB(255, 255, 255),
+	},
+	["Charcoal & Black (Dark)"] = {
+		Background = Color3.fromRGB(7, 7, 8),
+		Sidebar = Color3.fromRGB(12, 12, 13),
+		Header = Color3.fromRGB(9, 9, 10),
+		Card = Color3.fromRGB(19, 19, 21),
+		Surface = Color3.fromRGB(29, 29, 32),
+		SurfaceHover = Color3.fromRGB(42, 42, 46),
+		Accent = Color3.fromRGB(180, 180, 188),
+		AccentDark = Color3.fromRGB(75, 75, 82),
+		Text = Color3.fromRGB(245, 245, 247),
+		SubText = Color3.fromRGB(160, 160, 168),
+		Border = Color3.fromRGB(48, 48, 53),
+		ActiveTab = Color3.fromRGB(52, 52, 57),
+		ToggleKnob = Color3.fromRGB(240, 240, 242),
+		SliderThumb = Color3.fromRGB(210, 210, 216),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Cloud & Milk (Clean Light)"] = {
 		Background = Color3.fromRGB(239, 242, 245),
@@ -181,6 +201,7 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(209, 224, 237),
 		ToggleKnob = Color3.fromRGB(255, 255, 255),
 		SliderThumb = Color3.fromRGB(32, 73, 108),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Strawberry & Blood (High Energy)"] = {
 		Background = Color3.fromRGB(29, 8, 13),
@@ -197,6 +218,7 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(100, 25, 43),
 		ToggleKnob = Color3.fromRGB(250, 226, 233),
 		SliderThumb = Color3.fromRGB(255, 151, 178),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Forrest (Organic Dark)"] = {
 		Background = Color3.fromRGB(13, 20, 16),
@@ -213,22 +235,24 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(54, 72, 55),
 		ToggleKnob = Color3.fromRGB(226, 234, 216),
 		SliderThumb = Color3.fromRGB(187, 216, 161),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Yellow & Orange (Creative)"] = {
-		Background = Color3.fromRGB(28, 18, 9),
-		Sidebar = Color3.fromRGB(39, 25, 12),
-		Header = Color3.fromRGB(33, 21, 10),
-		Card = Color3.fromRGB(52, 34, 15),
-		Surface = Color3.fromRGB(70, 46, 19),
-		SurfaceHover = Color3.fromRGB(91, 59, 22),
-		Accent = Color3.fromRGB(255, 151, 51),
-		AccentDark = Color3.fromRGB(171, 82, 20),
-		Text = Color3.fromRGB(255, 244, 219),
-		SubText = Color3.fromRGB(202, 176, 136),
-		Border = Color3.fromRGB(105, 74, 40),
-		ActiveTab = Color3.fromRGB(94, 61, 25),
-		ToggleKnob = Color3.fromRGB(255, 238, 181),
-		SliderThumb = Color3.fromRGB(255, 206, 76),
+		Background = Color3.fromRGB(34, 23, 4),
+		Sidebar = Color3.fromRGB(48, 34, 5),
+		Header = Color3.fromRGB(40, 28, 4),
+		Card = Color3.fromRGB(62, 45, 6),
+		Surface = Color3.fromRGB(87, 63, 8),
+		SurfaceHover = Color3.fromRGB(112, 81, 8),
+		Accent = Color3.fromRGB(255, 196, 0),
+		AccentDark = Color3.fromRGB(179, 112, 0),
+		Text = Color3.fromRGB(255, 250, 222),
+		SubText = Color3.fromRGB(218, 193, 112),
+		Border = Color3.fromRGB(130, 94, 12),
+		ActiveTab = Color3.fromRGB(113, 80, 5),
+		ToggleKnob = Color3.fromRGB(255, 240, 160),
+		SliderThumb = Color3.fromRGB(255, 224, 65),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Electric Blue & Slate (Modern Tech)"] = {
 		Background = Color3.fromRGB(12, 18, 26),
@@ -245,6 +269,7 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(44, 69, 95),
 		ToggleKnob = Color3.fromRGB(230, 246, 255),
 		SliderThumb = Color3.fromRGB(123, 207, 255),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 	["Ocean Blue & Sand (Lifestyle)"] = {
 		Background = Color3.fromRGB(12, 27, 38),
@@ -261,6 +286,7 @@ Wolf.Themes = {
 		ActiveTab = Color3.fromRGB(54, 87, 94),
 		ToggleKnob = Color3.fromRGB(247, 235, 205),
 		SliderThumb = Color3.fromRGB(224, 199, 144),
+		ButtonText = Color3.fromRGB(255, 255, 255),
 	},
 }
 Wolf.Theme = table.clone(Wolf.Themes.Default)
@@ -280,6 +306,7 @@ local ThemeColorKeys = {
 	"ActiveTab",
 	"ToggleKnob",
 	"SliderThumb",
+	"ButtonText",
 }
 
 local function CancelThemeTweens(Library)
@@ -302,6 +329,17 @@ local function FindThemeColorRole(Color, Theme)
 		end
 	end
 	return nil
+end
+
+local function HasPreservedThemeColor(Object)
+	local Current = Object
+	while Current do
+		if Current:GetAttribute("WolfPreserveThemeColor") then
+			return true
+		end
+		Current = Current.Parent
+	end
+	return false
 end
 
 function Wolf:SetTheme(ThemeName)
@@ -381,16 +419,19 @@ function Wolf:SetTheme(ThemeName)
 			for _, Object in ipairs(Instances) do
 				local Properties =
 					{ "BackgroundColor3", "TextColor3", "PlaceholderColor3", "ImageColor3", "ScrollBarImageColor3" }
-				for _, Property in ipairs(Properties) do
-					local Success, CurrentColor = pcall(function()
-						return Object[Property]
-					end)
-					if Success then
-						local AttributeName = "WolfThemeRole_" .. Property
-						local Role = Object:GetAttribute(AttributeName) or FindThemeColorRole(CurrentColor, CurrentTheme)
-						if Role and NextTheme[Role] then
-							Object:SetAttribute(AttributeName, Role)
-							TransitionColor(Object, Property, NextTheme[Role])
+				if not HasPreservedThemeColor(Object) then
+					for _, Property in ipairs(Properties) do
+						local Success, CurrentColor = pcall(function()
+							return Object[Property]
+						end)
+						if Success then
+							local AttributeName = "WolfThemeRole_" .. Property
+							local Role = Object:GetAttribute(AttributeName)
+								or FindThemeColorRole(CurrentColor, CurrentTheme)
+							if Role and NextTheme[Role] then
+								Object:SetAttribute(AttributeName, Role)
+								TransitionColor(Object, Property, NextTheme[Role])
+							end
 						end
 					end
 				end
@@ -404,7 +445,7 @@ function Wolf:SetTheme(ThemeName)
 						TransitionColor(StrokeObject, "Color", NextTheme[Role])
 					end
 				end
-				if Object:IsA("UIGradient") then
+				if Object:IsA("UIGradient") and not HasPreservedThemeColor(Object) then
 					local Keypoints = {}
 					for _, Keypoint in ipairs(Object.Color.Keypoints) do
 						local Role = FindThemeColorRole(Keypoint.Value, CurrentTheme)
@@ -721,7 +762,8 @@ function Wolf:CreateWindow(Config)
 	Avatar.Size = UDim2.fromOffset(48, 48)
 	Avatar.BackgroundTransparency = 1
 	ApplyIcon(Avatar, "user")
-	Avatar.ImageColor3 = self.Theme.Text
+	Avatar.ImageColor3 = self.Theme.ButtonText
+	Avatar:SetAttribute("WolfThemeRole_ImageColor3", "ButtonText")
 	Avatar.Parent = ProfileCard
 	Corner(Avatar, 100)
 
@@ -933,14 +975,15 @@ function Wolf:CreateWindow(Config)
 	LockButton.Name = "LockButton"
 	LockButton.Size = UDim2.fromOffset(68, 30)
 	LockButton.BackgroundColor3 = self.Theme.AccentDark
-	LockButton.TextColor3 = Color3.new(1, 1, 1)
+	LockButton:SetAttribute("WolfThemeRole_BackgroundColor3", "AccentDark")
 	LockButton.FontFace = self.Fonts.Interface
 	LockButton.TextSize = 11
 	LockButton.Text = ""
 	LockButton.Parent = ControlsHolder
 	Corner(LockButton, 6)
 	local LockIcon =
-		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(13, 13), Color3.new(1, 1, 1), 2)
+		CreateIcon(LockButton, "lock", UDim2.fromOffset(7, 8), UDim2.fromOffset(13, 13), self.Theme.ButtonText, 2)
+	LockIcon:SetAttribute("WolfThemeRole_ImageColor3", "ButtonText")
 	local LockText = Instance.new("TextLabel")
 	LockText.BackgroundTransparency = 1
 	LockText.Position = UDim2.fromOffset(25, 0)
@@ -948,7 +991,8 @@ function Wolf:CreateWindow(Config)
 	LockText.FontFace = self.Fonts.Interface
 	LockText.Text = "LOCK"
 	LockText.TextSize = 11
-	LockText.TextColor3 = Color3.new(1, 1, 1)
+	LockText.TextColor3 = self.Theme.ButtonText
+	LockText:SetAttribute("WolfThemeRole_TextColor3", "ButtonText")
 	LockText.TextXAlignment = Enum.TextXAlignment.Left
 	LockText.Parent = LockButton
 
@@ -1029,7 +1073,8 @@ function Wolf:CreateWindow(Config)
 	ToggleButton.BackgroundTransparency = 1
 	ToggleButton.AutoButtonColor = false
 	ToggleButton.Image = "rbxthumb://type=Asset&id=112381138279003&w=150&h=150"
-	ToggleButton.ImageColor3 = self.Theme.Text
+	ToggleButton.ImageColor3 = self.Theme.ButtonText
+	ToggleButton:SetAttribute("WolfThemeRole_ImageColor3", "ButtonText")
 	ToggleButton.ZIndex = 100
 	ToggleButton.Parent = ToggleGui
 	Corner(ToggleButton, 8)
@@ -1403,8 +1448,10 @@ function Wolf:CreateWindow(Config)
 		self.Locked = not self.Locked
 		LockText.Text = self.Locked and "UNLOCK" or "LOCK"
 		ApplyIcon(LockIcon, self.Locked and "unlock" or "lock")
+		local BackgroundRole = self.Locked and "Surface" or "AccentDark"
+		LockButton:SetAttribute("WolfThemeRole_BackgroundColor3", BackgroundRole)
 		Tween(LockButton, {
-			BackgroundColor3 = self.Locked and self.Theme.Surface or self.Theme.AccentDark,
+			BackgroundColor3 = self.Theme[BackgroundRole],
 		})
 	end)
 
@@ -1535,6 +1582,7 @@ function Wolf:AddTab(Config)
 	TabButton.Name = TabTitle .. "Tab"
 	TabButton.Size = UDim2.new(1, 0, 0, 34)
 	TabButton.BackgroundColor3 = self.Theme.Card
+	TabButton:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 	TabButton.BackgroundTransparency = 1
 	TabButton.TextColor3 = self.Theme.Text
 	TabButton.FontFace = self.Fonts.Body
@@ -1599,7 +1647,9 @@ function Wolf:AddTab(Config)
 		end
 		for _, ExistingTab in ipairs(self.Tabs) do
 			ExistingTab.Page.Visible = ExistingTab == Tab
-			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.ActiveTab or self.Theme.Card
+			local BackgroundRole = ExistingTab == Tab and "ActiveTab" or "Card"
+			ExistingTab.Button:SetAttribute("WolfThemeRole_BackgroundColor3", BackgroundRole)
+			ExistingTab.Button.BackgroundColor3 = self.Theme[BackgroundRole]
 			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
 			ExistingTab.Icon.ImageColor3 = ExistingTab.IconColor or self.Theme.Text
 		end
@@ -1656,6 +1706,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	Indicator.Position = UDim2.new(1, -10, 0.5, 0)
 	Indicator.Size = UDim2.fromOffset(36, 18)
 	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
+	Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
 	Indicator.Parent = ToggleFrame
 	Corner(Indicator, 5)
 
@@ -1682,6 +1733,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	local function Update()
 		ToggleObj.Value = State
 		ToggleFrame:SetAttribute("WolfElementState", State and "on" or "off")
+		Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
 		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
 		Callback(State)
@@ -1731,6 +1783,7 @@ function Wolf:AddButtonLegacy(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
+	ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 	ButtonFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
 	AddVisibleDescription(ButtonFrame, Config)
@@ -1747,14 +1800,18 @@ function Wolf:AddButtonLegacy(Config)
 	TextBtn.Parent = ButtonFrame
 
 	TextBtn.MouseEnter:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "SurfaceHover")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
 	end)
 	TextBtn.MouseLeave:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Card })
 	end)
 	TextBtn.MouseButton1Click:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Accent")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Accent }, 0.08)
 		task.delay(0.08, function()
+			ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "SurfaceHover")
 			Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
 		end)
 		Callback()
@@ -1910,6 +1967,7 @@ function Wolf:AddButton(Config)
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
+	ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 	ButtonFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
 	AddVisibleDescription(ButtonFrame, Config)
@@ -1941,14 +1999,18 @@ function Wolf:AddButton(Config)
 	end
 
 	TextBtn.MouseEnter:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "SurfaceHover")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
 	end)
 	TextBtn.MouseLeave:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Card })
 	end)
 	TextBtn.MouseButton1Click:Connect(function()
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Accent")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Accent }, 0.08)
 		task.delay(0.08, function()
+			ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "SurfaceHover")
 			Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
 		end)
 		Callback()
@@ -2012,6 +2074,7 @@ function Wolf:AddToggle(Config)
 	Indicator.Position = UDim2.new(1, -10, 0.5, 0)
 	Indicator.Size = UDim2.fromOffset(36, 18)
 	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
+	Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
 	Indicator.Parent = ToggleFrame
 	Corner(Indicator, 5)
 
@@ -2037,6 +2100,7 @@ function Wolf:AddToggle(Config)
 	local function Update()
 		ToggleObj.Value = State
 		ToggleFrame:SetAttribute("WolfElementState", State and "on" or "off")
+		Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
 		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
 		Callback(State)
@@ -2157,7 +2221,7 @@ function Wolf:AddSlider(Config)
 	Thumb.BackgroundColor3 = self.Theme.SliderThumb
 	Thumb.ZIndex = 2
 	Thumb.Parent = Track
-	Corner(Thumb, 6)
+	Corner(Thumb, 3)
 
 	local UserDragging = false
 	local CurrentTween = nil
@@ -2326,6 +2390,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 
 	local ColorPickerButton = Instance.new("TextButton")
 	ColorPickerButton.Name = "ColorPickerButton"
+	ColorPickerButton:SetAttribute("WolfPreserveThemeColor", true)
 	ColorPickerButton.AnchorPoint = Vector2.new(1, 0.5)
 	ColorPickerButton.Position = UDim2.new(1, -10, 0.5, 0)
 	ColorPickerButton.Size = UDim2.fromOffset(42, 22)
@@ -2351,6 +2416,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 	Padding(Popup, 10, 10, 10, 10)
 
 	local Preview = Instance.new("Frame")
+	Preview:SetAttribute("WolfPreserveThemeColor", true)
 	Preview.Size = UDim2.new(1, 0, 0, 24)
 	Preview.BackgroundColor3 = CurrentColor
 	Preview.ZIndex = 51
@@ -2500,6 +2566,7 @@ function Wolf:AddColorPicker(Config)
 
 	local ColorPickerButton = Instance.new("TextButton")
 	ColorPickerButton.Name = "ColorPickerButton"
+	ColorPickerButton:SetAttribute("WolfPreserveThemeColor", true)
 	ColorPickerButton.AnchorPoint = Vector2.new(1, 0.5)
 	ColorPickerButton.Position = UDim2.new(1, -10, 0.5, 0)
 	ColorPickerButton.Size = UDim2.fromOffset(42, 22)
@@ -2555,6 +2622,7 @@ function Wolf:AddColorPicker(Config)
 	end
 
 	local SatValBox = NewBar("SaturationValue", 110)
+	SatValBox:SetAttribute("WolfPreserveThemeColor", true)
 	SatValBox.BackgroundColor3 = Color3.new(1, 1, 1)
 	local SatGradient = Instance.new("UIGradient")
 	SatGradient.Parent = SatValBox
@@ -2585,6 +2653,7 @@ function Wolf:AddColorPicker(Config)
 	Stroke(SVCursor, Color3.new(1, 1, 1), 0)
 
 	local HueBar = NewBar("Hue", 14)
+	HueBar:SetAttribute("WolfPreserveThemeColor", true)
 	local HueGradient = Instance.new("UIGradient")
 	HueGradient.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 0, 0)),
@@ -2609,6 +2678,7 @@ function Wolf:AddColorPicker(Config)
 
 	local AlphaBar = NewBar("Alpha", 14)
 	local AlphaCanvas = Instance.new("Frame")
+	AlphaCanvas:SetAttribute("WolfPreserveThemeColor", true)
 	AlphaCanvas.Size = UDim2.fromScale(1, 1)
 	AlphaCanvas.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
 	AlphaCanvas.BorderSizePixel = 0
@@ -2674,6 +2744,7 @@ function Wolf:AddColorPicker(Config)
 	Stroke(HexBox, self.Theme.Border)
 
 	local ColorPreview = Instance.new("Frame")
+	ColorPreview:SetAttribute("WolfPreserveThemeColor", true)
 	ColorPreview.Size = UDim2.fromOffset(20, 20)
 	ColorPreview.Position = UDim2.new(0, 6, 0.5, -10)
 	ColorPreview.BackgroundColor3 = Default
@@ -3092,11 +3163,15 @@ function Wolf:AddShortcut(Config)
 	)
 	TriggerIcon.AnchorPoint = Vector2.new(0.5, 0.5)
 	TriggerIcon.ImageTransparency = 0
+	TriggerIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
 	local TriggerStroke = TriggerButton:FindFirstChildOfClass("UIStroke")
 	local function SetTriggerHighlighted(Highlighted)
+		TriggerButton:SetAttribute("WolfThemeRole_BackgroundColor3", Highlighted and "Accent" or "Card")
+		TriggerIcon:SetAttribute("WolfThemeRole_ImageColor3", Highlighted and "ButtonText" or "SubText")
 		TriggerButton.BackgroundColor3 = Highlighted and self.Theme.Accent or self.Theme.Card
-		TriggerIcon.ImageColor3 = Highlighted and self.Theme.Text or self.Theme.SubText
+		TriggerIcon.ImageColor3 = Highlighted and self.Theme.ButtonText or self.Theme.SubText
 		if TriggerStroke then
+			TriggerStroke:SetAttribute("WolfThemeRole_Color", Highlighted and "Accent" or "Border")
 			TriggerStroke.Color = Highlighted and self.Theme.Accent or self.Theme.Border
 			TriggerStroke.Transparency = Highlighted and 0 or 0.2
 		end
@@ -3553,9 +3628,29 @@ function Wolf:AddDropdown(Config)
 	SelectionFrame.Parent = DropdownButton
 	Corner(SelectionFrame, 4)
 	Stroke(SelectionFrame, self.Theme.Border, 0.2)
+	local ValueScroller = Instance.new("ScrollingFrame")
+	ValueScroller.Name = "DropdownValueScroller"
+	ValueScroller.Position = UDim2.fromOffset(8, 1)
+	ValueScroller.Size = UDim2.new(1, -34, 1, -2)
+	ValueScroller.BackgroundTransparency = 1
+	ValueScroller.BorderSizePixel = 0
+	ValueScroller.CanvasSize = UDim2.new()
+	ValueScroller.AutomaticCanvasSize = Enum.AutomaticSize.X
+	ValueScroller.ScrollingDirection = Enum.ScrollingDirection.X
+	ValueScroller.ScrollBarThickness = 2
+	ValueScroller.ScrollBarImageColor3 = self.Theme.Accent
+	ValueScroller.ScrollBarImageTransparency = 0.15
+	ValueScroller.Active = true
+	ValueScroller.ZIndex = 3
+	ValueScroller.Parent = SelectionFrame
 	ValueLabel.Parent = SelectionFrame
-	ValueLabel.Position = UDim2.fromOffset(8, 0)
-	ValueLabel.Size = UDim2.new(1, -34, 1, 0)
+	ValueLabel.Position = UDim2.fromOffset(0, 0)
+	ValueLabel.Size = UDim2.new(0, 0, 1, 0)
+	ValueLabel.AutomaticSize = Enum.AutomaticSize.X
+	ValueLabel.TextXAlignment = Enum.TextXAlignment.Left
+	ValueLabel.TextTruncate = Enum.TextTruncate.None
+	ValueLabel.ZIndex = 4
+	ValueLabel.Parent = ValueScroller
 	Chevron.Parent = SelectionFrame
 	Chevron.Position = UDim2.new(1, -26, 0.5, 0)
 
@@ -3591,6 +3686,12 @@ function Wolf:AddDropdown(Config)
 	local function UpdateValue(Value)
 		Selected = Value
 		ValueLabel.Text = Value == nil and "Select..." or tostring(Value)
+		task.defer(function()
+			if ValueScroller.Parent then
+				local MaxCanvasX = math.max(0, ValueLabel.AbsoluteSize.X - ValueScroller.AbsoluteSize.X)
+				ValueScroller.CanvasPosition = Vector2.new(MaxCanvasX, 0)
+			end
+		end)
 		for OptionValue, OptionIcon in pairs(OptionIcons) do
 			OptionIcon.Visible = OptionValue == Selected
 		end
