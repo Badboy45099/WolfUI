@@ -481,6 +481,7 @@ function Wolf:SetLiquidGlass(Enabled)
 			pcall(function()
 				if Object:IsA("GuiObject") then
 					Object.BackgroundTransparency = Original.BackgroundTransparency
+					Object.BackgroundColor3 = Original.BackgroundColor3
 				elseif Object:IsA("UIStroke") then
 					Object.Thickness = Original.Thickness
 					Object.Transparency = Original.Transparency
@@ -494,11 +495,11 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 		table.clear(self._LiquidGlassGradients or {})
 
-		if self._LiquidGlassCornerTween then
-			self._LiquidGlassCornerTween:Cancel()
-			self._LiquidGlassCornerTween:Destroy()
-			self._LiquidGlassCornerTween = nil
+		for _, CornerTween in ipairs(self._LiquidGlassCornerTweens or {}) do
+			CornerTween:Cancel()
+			CornerTween:Destroy()
 		end
+		table.clear(self._LiquidGlassCornerTweens or {})
 		if self._LiquidGlassCorner then
 			self._LiquidGlassCorner:Destroy()
 			self._LiquidGlassCorner = nil
@@ -529,10 +530,22 @@ function Wolf:SetLiquidGlass(Enabled)
 			if not self._LiquidGlassOriginals[Object] then
 				self._LiquidGlassOriginals[Object] = {
 					BackgroundTransparency = Object.BackgroundTransparency,
+					BackgroundColor3 = Object.BackgroundColor3,
 				}
 			end
-			local OriginalTransparency = self._LiquidGlassOriginals[Object].BackgroundTransparency
-			Object.BackgroundTransparency = math.max(OriginalTransparency, math.min(0.78, OriginalTransparency + 0.2))
+			local Original = self._LiquidGlassOriginals[Object]
+			local Role = Object:GetAttribute("WolfThemeRole_BackgroundColor3")
+				or FindThemeColorRole(Original.BackgroundColor3, self.Theme)
+			local IsSurface = Role == "Background"
+				or Role == "Sidebar"
+				or Role == "Header"
+				or Role == "Card"
+				or Role == "Surface"
+				or Role == "SurfaceHover"
+			local TintAmount = IsSurface and 0.2 or 0.08
+			local OriginalTransparency = Original.BackgroundTransparency
+			Object.BackgroundColor3 = Original.BackgroundColor3:Lerp(Color3.fromRGB(220, 242, 255), TintAmount)
+			Object.BackgroundTransparency = math.max(OriginalTransparency, math.min(0.84, OriginalTransparency + 0.32))
 		elseif Object:IsA("UIStroke") then
 			if not self._LiquidGlassOriginals[Object] then
 				self._LiquidGlassOriginals[Object] = {
@@ -583,36 +596,40 @@ function Wolf:SetLiquidGlass(Enabled)
 		CornerGlint.Parent = self.MainFrame
 		self._LiquidGlassCorner = CornerGlint
 
-		local FirstBolt = Instance.new("Frame")
-		FirstBolt.AnchorPoint = Vector2.new(0.5, 0.5)
-		FirstBolt.Position = UDim2.fromScale(0.55, 0.5)
-		FirstBolt.Size = UDim2.fromOffset(2, 16)
-		FirstBolt.Rotation = 38
-		FirstBolt.BackgroundColor3 = Color3.fromRGB(201, 244, 255)
-		FirstBolt.BackgroundTransparency = 0.18
-		FirstBolt.BorderSizePixel = 0
-		FirstBolt.Active = false
-		FirstBolt.ZIndex = 6
-		FirstBolt.Parent = CornerGlint
-
-		local SecondBolt = Instance.new("Frame")
-		SecondBolt.AnchorPoint = Vector2.new(0.5, 0.5)
-		SecondBolt.Position = UDim2.fromScale(0.76, 0.69)
-		SecondBolt.Size = UDim2.fromOffset(2, 8)
-		SecondBolt.Rotation = -38
-		SecondBolt.BackgroundColor3 = Color3.fromRGB(201, 244, 255)
-		SecondBolt.BackgroundTransparency = 0.18
-		SecondBolt.BorderSizePixel = 0
-		SecondBolt.Active = false
-		SecondBolt.ZIndex = 6
-		SecondBolt.Parent = CornerGlint
-
-		self._LiquidGlassCornerTween = TweenService:Create(
-			FirstBolt,
-			TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
-			{ BackgroundTransparency = 0.82 }
+		local Glow = CreateIcon(
+			CornerGlint,
+			"zap",
+			UDim2.fromScale(0.5, 0.5),
+			UDim2.fromOffset(24, 24),
+			Color3.fromRGB(76, 202, 255),
+			6
 		)
-		self._LiquidGlassCornerTween:Play()
+		Glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		Glow.ImageTransparency = 0.58
+
+		local Bolt = CreateIcon(
+			CornerGlint,
+			"zap",
+			UDim2.fromScale(0.5, 0.5),
+			UDim2.fromOffset(15, 15),
+			Color3.fromRGB(236, 252, 255),
+			7
+		)
+		Bolt.AnchorPoint = Vector2.new(0.5, 0.5)
+		Bolt.ImageTransparency = 0.08
+
+		local PulseInfo = TweenInfo.new(0.65, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
+		local GlowTween = TweenService:Create(Glow, PulseInfo, {
+			ImageTransparency = 0.92,
+			Size = UDim2.fromOffset(29, 29),
+		})
+		local BoltTween = TweenService:Create(Bolt, PulseInfo, {
+			ImageTransparency = 0.38,
+			Rotation = 12,
+		})
+		self._LiquidGlassCornerTweens = { GlowTween, BoltTween }
+		GlowTween:Play()
+		BoltTween:Play()
 	end
 	self._LiquidGlassEnabled = true
 	return true
