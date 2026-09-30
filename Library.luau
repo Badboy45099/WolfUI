@@ -21,7 +21,6 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
-local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
@@ -495,9 +494,14 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 		table.clear(self._LiquidGlassGradients or {})
 
-		if self._LiquidGlassBlur then
-			self._LiquidGlassBlur:Destroy()
-			self._LiquidGlassBlur = nil
+		if self._LiquidGlassCornerTween then
+			self._LiquidGlassCornerTween:Cancel()
+			self._LiquidGlassCornerTween:Destroy()
+			self._LiquidGlassCornerTween = nil
+		end
+		if self._LiquidGlassCorner then
+			self._LiquidGlassCorner:Destroy()
+			self._LiquidGlassCorner = nil
 		end
 		self._LiquidGlassEnabled = false
 		return false
@@ -568,11 +572,48 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 	end
 
-	local Blur = Instance.new("BlurEffect")
-	Blur.Name = "WolfLiquidGlassBlur"
-	Blur.Size = 5
-	Blur.Parent = Lighting
-	self._LiquidGlassBlur = Blur
+	if self.MainFrame and self.MainFrame.Parent then
+		local CornerGlint = Instance.new("Frame")
+		CornerGlint.Name = "WolfLiquidGlassCorner"
+		CornerGlint.Position = UDim2.fromOffset(2, 2)
+		CornerGlint.Size = UDim2.fromOffset(17, 17)
+		CornerGlint.BackgroundTransparency = 1
+		CornerGlint.Active = false
+		CornerGlint.ZIndex = 5
+		CornerGlint.Parent = self.MainFrame
+		self._LiquidGlassCorner = CornerGlint
+
+		local FirstBolt = Instance.new("Frame")
+		FirstBolt.AnchorPoint = Vector2.new(0.5, 0.5)
+		FirstBolt.Position = UDim2.fromScale(0.55, 0.5)
+		FirstBolt.Size = UDim2.fromOffset(2, 16)
+		FirstBolt.Rotation = 38
+		FirstBolt.BackgroundColor3 = Color3.fromRGB(201, 244, 255)
+		FirstBolt.BackgroundTransparency = 0.18
+		FirstBolt.BorderSizePixel = 0
+		FirstBolt.Active = false
+		FirstBolt.ZIndex = 6
+		FirstBolt.Parent = CornerGlint
+
+		local SecondBolt = Instance.new("Frame")
+		SecondBolt.AnchorPoint = Vector2.new(0.5, 0.5)
+		SecondBolt.Position = UDim2.fromScale(0.76, 0.69)
+		SecondBolt.Size = UDim2.fromOffset(2, 8)
+		SecondBolt.Rotation = -38
+		SecondBolt.BackgroundColor3 = Color3.fromRGB(201, 244, 255)
+		SecondBolt.BackgroundTransparency = 0.18
+		SecondBolt.BorderSizePixel = 0
+		SecondBolt.Active = false
+		SecondBolt.ZIndex = 6
+		SecondBolt.Parent = CornerGlint
+
+		self._LiquidGlassCornerTween = TweenService:Create(
+			FirstBolt,
+			TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true),
+			{ BackgroundTransparency = 0.82 }
+		)
+		self._LiquidGlassCornerTween:Play()
+	end
 	self._LiquidGlassEnabled = true
 	return true
 end
