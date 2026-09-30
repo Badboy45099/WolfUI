@@ -295,6 +295,15 @@ local function CancelThemeTweens(Library)
 	end
 end
 
+local function FindThemeColorRole(Color, Theme)
+	for _, Key in ipairs(ThemeColorKeys) do
+		if Theme[Key] == Color then
+			return Key
+		end
+	end
+	return nil
+end
+
 function Wolf:SetTheme(ThemeName)
 	local DefaultTheme = self.Themes.Default
 	local RequestedTheme
@@ -318,11 +327,19 @@ function Wolf:SetTheme(ThemeName)
 		if ObjectTweens and ObjectTweens[Property] then
 			ObjectTweens[Property]:Cancel()
 		end
-		local NewTween = TweenService:Create(
-			Object,
-			TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
-			{ [Property] = TargetColor }
-		)
+		local Success, NewTween = pcall(function()
+			return TweenService:Create(
+				Object,
+				TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+				{ [Property] = TargetColor }
+			)
+		end)
+		if not Success then
+			pcall(function()
+				Object[Property] = TargetColor
+			end)
+			return
+		end
 		ObjectTweens = ObjectTweens or {}
 		self._ThemeTweens[Object] = ObjectTweens
 		ObjectTweens[Property] = NewTween
@@ -338,18 +355,24 @@ function Wolf:SetTheme(ThemeName)
 			end
 			NewTween:Destroy()
 		end)
-		NewTween:Play()
+		local Played = pcall(function()
+			NewTween:Play()
+		end)
+		if not Played then
+			ObjectTweens[Property] = nil
+			if not next(ObjectTweens) then
+				self._ThemeTweens[Object] = nil
+			end
+			pcall(function()
+				Object[Property] = TargetColor
+			end)
+			NewTween:Destroy()
+		end
 	end
 
 	local CurrentTheme = typeof(self.Theme) == "table" and self.Theme or DefaultTheme
-	local ColorMap = {}
-	for _, Key in ipairs(ThemeColorKeys) do
-		local CurrentColor = CurrentTheme[Key]
-		ColorMap[typeof(CurrentColor) == "Color3" and CurrentColor or DefaultTheme[Key]] = NextTheme[Key]
-	end
-
-	local Roots = { self.Gui, self.ShortcutGui, self.PopupGui }
-	for _, Root in ipairs(Roots) do
+	local Roots = { self.Gui, self.ShortcutGui, self.PopupGui, self.ToggleGui }
+	for _, Root in pairs(Roots) do
 		if Root then
 			local Instances = { Root }
 			for _, Descendant in ipairs(Root:GetDescendants()) do
@@ -362,22 +385,32 @@ function Wolf:SetTheme(ThemeName)
 					local Success, CurrentColor = pcall(function()
 						return Object[Property]
 					end)
-					local TargetColor = Success and ColorMap[CurrentColor]
-					if TargetColor then
-						TransitionColor(Object, Property, TargetColor)
+					if Success then
+						local AttributeName = "WolfThemeRole_" .. Property
+						local Role = Object:GetAttribute(AttributeName) or FindThemeColorRole(CurrentColor, CurrentTheme)
+						if Role and NextTheme[Role] then
+							Object:SetAttribute(AttributeName, Role)
+							TransitionColor(Object, Property, NextTheme[Role])
+						end
 					end
 				end
 
 				local StrokeObject = Object:FindFirstChildOfClass("UIStroke")
-				if StrokeObject and ColorMap[StrokeObject.Color] then
-					TransitionColor(StrokeObject, "Color", ColorMap[StrokeObject.Color])
+				if StrokeObject then
+					local Role = StrokeObject:GetAttribute("WolfThemeRole_Color")
+						or FindThemeColorRole(StrokeObject.Color, CurrentTheme)
+					if Role and NextTheme[Role] then
+						StrokeObject:SetAttribute("WolfThemeRole_Color", Role)
+						TransitionColor(StrokeObject, "Color", NextTheme[Role])
+					end
 				end
 				if Object:IsA("UIGradient") then
 					local Keypoints = {}
 					for _, Keypoint in ipairs(Object.Color.Keypoints) do
+						local Role = FindThemeColorRole(Keypoint.Value, CurrentTheme)
 						table.insert(
 							Keypoints,
-							ColorSequenceKeypoint.new(Keypoint.Time, ColorMap[Keypoint.Value] or Keypoint.Value)
+							ColorSequenceKeypoint.new(Keypoint.Time, Role and NextTheme[Role] or Keypoint.Value)
 						)
 					end
 					Object.Color = ColorSequence.new(Keypoints)
@@ -986,6 +1019,7 @@ function Wolf:CreateWindow(Config)
 	ToggleGui.ResetOnSpawn = false
 	ToggleGui.DisplayOrder = 100
 	ToggleGui.Parent = ParentContainer
+	self.ToggleGui = ToggleGui
 
 	local ToggleButton = Instance.new("ImageButton")
 	ToggleButton.Name = "ToggleButton"
@@ -1453,6 +1487,8 @@ function Wolf:Destroy()
 			ToggleGui:Destroy()
 		end
 	end
+	self.ToggleGui = nil
+	self.ToggleButton = nil
 	table.clear(self.Tabs)
 	table.clear(self.Elements)
 	self.ShortcutHolder = nil
