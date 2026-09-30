@@ -1799,7 +1799,7 @@ function Wolf:AddSlider(Config)
 	SliderFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(SliderFrame, "slider", Title, "Numeric range control with a current value.", tostring(Default))
 	AddVisibleDescription(SliderFrame, Config)
-	Corner(SliderFrame, 2)
+	Corner(SliderFrame, 4)
 	Stroke(SliderFrame, self.Theme.Border)
 
 	local Label = Instance.new("TextLabel")
@@ -1841,14 +1841,14 @@ function Wolf:AddSlider(Config)
 	Track.Size = UDim2.new(1, -24, 0, 6)
 	Track.BackgroundColor3 = self.Theme.Surface
 	Track.Parent = SliderFrame
-	Corner(Track, 100)
+	Corner(Track, 2)
 
 	local Fill = Instance.new("Frame")
 	local Range = math.max(Max - Min, 1)
 	Fill.Size = UDim2.new(math.clamp((Default - Min) / Range, 0, 1), 0, 1, 0)
 	Fill.BackgroundColor3 = self.Theme.Accent
 	Fill.Parent = Track
-	Corner(Fill, 100)
+	Corner(Fill, 2)
 
 	local UserDragging = false
 	local CurrentTween = nil
