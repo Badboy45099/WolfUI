@@ -1937,6 +1937,7 @@ function Wolf:AddSection(Title)
 	end
 	local RoutedMethods = {
 		"AddButton",
+		"AddParagraph",
 		"AddToggle",
 		"AddSlider",
 		"AddTextbox",
@@ -2340,6 +2341,125 @@ function Wolf:AddTextbox(Config)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = InputFrame })
 	return InputFrame
+end
+
+function Wolf:AddParagraph(Config)
+	Config = typeof(Config) == "table" and Config or { Title = Config }
+	local Title = tostring(Config.Title or "Paragraph")
+	local IconName = Config.Icon or Config.icon
+	local Content = tostring(Config.Content or Config.Text or Config.Description or "")
+	local Gap = typeof(Config.Gap) == "number" and math.max(0, Config.Gap) or 12
+
+	local ParagraphFrame = Instance.new("Frame")
+	ParagraphFrame.Name = "Paragraph"
+	ParagraphFrame.Size = UDim2.fromScale(1, 0)
+	ParagraphFrame.AutomaticSize = Enum.AutomaticSize.Y
+	ParagraphFrame.BackgroundTransparency = 1
+	ParagraphFrame.Parent = ElementParent(self, Config)
+	AttachMetadata(ParagraphFrame, "paragraph", Title, Content)
+	Padding(ParagraphFrame, 0, 0, Gap, Gap)
+
+	local Layout = Instance.new("UIListLayout")
+	Layout.SortOrder = Enum.SortOrder.LayoutOrder
+	Layout.Padding = UDim.new(0, 4)
+	Layout.Parent = ParagraphFrame
+
+	local TitleRow = Instance.new("Frame")
+	TitleRow.Name = "ParagraphTitleRow"
+	TitleRow.Size = UDim2.fromScale(1, 0)
+	TitleRow.AutomaticSize = Enum.AutomaticSize.Y
+	TitleRow.BackgroundTransparency = 1
+	TitleRow.LayoutOrder = 1
+	TitleRow.Parent = ParagraphFrame
+
+	local TitleLayout = Instance.new("UIListLayout")
+	TitleLayout.FillDirection = Enum.FillDirection.Horizontal
+	TitleLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	TitleLayout.Padding = UDim.new(0, 6)
+	TitleLayout.Parent = TitleRow
+
+	if IconName then
+		CreateIcon(TitleRow, IconName, UDim2.new(), UDim2.fromOffset(14, 14), self.Theme.Accent, 2)
+	end
+
+	local TitleLabel = Instance.new("TextLabel")
+	TitleLabel.Name = "ParagraphTitle"
+	TitleLabel.Size = UDim2.new(1, IconName and -20 or 0, 0, 0)
+	TitleLabel.AutomaticSize = Enum.AutomaticSize.Y
+	TitleLabel.BackgroundTransparency = 1
+	TitleLabel.FontFace = self.Fonts.Body
+	TitleLabel.Text = Title
+	TitleLabel.TextColor3 = self.Theme.Text
+	TitleLabel.TextSize = 13
+	TitleLabel.TextWrapped = true
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+	TitleLabel.Parent = TitleRow
+
+	if Content ~= "" then
+		local ContentLabel = Instance.new("TextLabel")
+		ContentLabel.Name = "ParagraphContent"
+		ContentLabel.LayoutOrder = 2
+		ContentLabel.Size = UDim2.fromScale(1, 0)
+		ContentLabel.AutomaticSize = Enum.AutomaticSize.Y
+		ContentLabel.BackgroundTransparency = 1
+		ContentLabel.FontFace = self.Fonts.Small
+		ContentLabel.Text = Content
+		ContentLabel.TextColor3 = self.Theme.SubText
+		ContentLabel.TextSize = 11
+		ContentLabel.TextWrapped = true
+		ContentLabel.TextXAlignment = Enum.TextXAlignment.Left
+		ContentLabel.Parent = ParagraphFrame
+	end
+
+	local ParagraphContent = Instance.new("Frame")
+	ParagraphContent.Name = "ParagraphContentFrame"
+	ParagraphContent.Size = UDim2.fromScale(1, 0)
+	ParagraphContent.AutomaticSize = Enum.AutomaticSize.Y
+	ParagraphContent.BackgroundTransparency = 1
+	ParagraphContent.LayoutOrder = Content == "" and 2 or 3
+	ParagraphContent.Parent = ParagraphFrame
+	local ContentLayout = Instance.new("UIListLayout")
+	ContentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	ContentLayout.Padding = UDim.new(0, 8)
+	ContentLayout.Parent = ParagraphContent
+
+	table.insert(self.Library.Elements, { Text = Title .. " " .. Content, Frame = ParagraphFrame })
+	local Paragraph = setmetatable({
+		Library = self,
+		Frame = ParagraphFrame,
+		Content = ParagraphContent,
+		Title = Title,
+	}, WolfComponent)
+	local function ParagraphConfig(ElementConfig)
+		if typeof(ElementConfig) == "table" then
+			local RoutedConfig = table.clone(ElementConfig)
+			RoutedConfig.Section = Paragraph
+			return RoutedConfig
+		end
+		return { Title = ElementConfig, Section = Paragraph }
+	end
+	local RoutedMethods = {
+		"AddButton",
+		"AddParagraph",
+		"AddToggle",
+		"AddSlider",
+		"AddTextbox",
+		"AddRGBColorPickerLegacy",
+		"AddColorPicker",
+		"AddDropdown",
+		"AddMultiDropdown",
+	}
+	for _, MethodName in ipairs(RoutedMethods) do
+		Paragraph[MethodName] = function(_, ElementConfig)
+			return self[MethodName](self, ParagraphConfig(ElementConfig))
+		end
+	end
+	Paragraph.AddToggleLegacy = function(_, Idx, ElementConfig)
+		return self:AddToggleLegacy(Idx, ParagraphConfig(ElementConfig))
+	end
+	local ParentGroup = typeof(Config.Section) == "table" and Config.Section or self
+	ParentGroup[Title] = Paragraph
+	return Paragraph
 end
 
 -- Color picker component
