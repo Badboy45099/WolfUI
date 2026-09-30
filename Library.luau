@@ -1791,6 +1791,7 @@ function Wolf:AddSlider(Config)
 	local Max = Config.Max or 100
 	local Default = Config.Default or Min
 	local Callback = Config.Callback or function() end
+	local DragSlowness = 0.15 -- adjust for dragging slow
 
 	local SliderFrame = Instance.new("Frame")
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
@@ -1798,7 +1799,7 @@ function Wolf:AddSlider(Config)
 	SliderFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(SliderFrame, "slider", Title, "Numeric range control with a current value.", tostring(Default))
 	AddVisibleDescription(SliderFrame, Config)
-	Corner(SliderFrame, 6)
+	Corner(SliderFrame, 4)
 	Stroke(SliderFrame, self.Theme.Border)
 
 	local Label = Instance.new("TextLabel")
@@ -1850,11 +1851,21 @@ function Wolf:AddSlider(Config)
 	Corner(Fill, 100)
 
 	local UserDragging = false
+	local CurrentTween = nil
 
 	local function Update(input)
 		local Pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
 		local Value = math.floor(Min + (Max - Min) * Pos)
-		Fill.Size = UDim2.new(Pos, 0, 1, 0)
+
+		if CurrentTween then 
+			CurrentTween:Cancel() 
+		end
+
+		CurrentTween = TweenService:Create(Fill, TweenInfo.new(DragSlowness, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Size = UDim2.new(Pos, 0, 1, 0)
+		})
+		CurrentTween:Play()
+		
 		ValueLabel.Text = tostring(Value)
 		Callback(Value)
 	end
