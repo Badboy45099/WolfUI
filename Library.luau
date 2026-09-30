@@ -21,6 +21,7 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
+local Lighting = game:GetService("Lighting")
 local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
@@ -481,7 +482,6 @@ function Wolf:SetLiquidGlass(Enabled)
 			pcall(function()
 				if Object:IsA("GuiObject") then
 					Object.BackgroundTransparency = Original.BackgroundTransparency
-					Object.BackgroundColor3 = Original.BackgroundColor3
 				elseif Object:IsA("UIStroke") then
 					Object.Thickness = Original.Thickness
 					Object.Transparency = Original.Transparency
@@ -495,14 +495,9 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 		table.clear(self._LiquidGlassGradients or {})
 
-		for _, CornerTween in ipairs(self._LiquidGlassCornerTweens or {}) do
-			CornerTween:Cancel()
-			CornerTween:Destroy()
-		end
-		table.clear(self._LiquidGlassCornerTweens or {})
-		if self._LiquidGlassCorner then
-			self._LiquidGlassCorner:Destroy()
-			self._LiquidGlassCorner = nil
+		if self._LiquidGlassBlur then
+			self._LiquidGlassBlur:Destroy()
+			self._LiquidGlassBlur = nil
 		end
 		self._LiquidGlassEnabled = false
 		return false
@@ -530,22 +525,10 @@ function Wolf:SetLiquidGlass(Enabled)
 			if not self._LiquidGlassOriginals[Object] then
 				self._LiquidGlassOriginals[Object] = {
 					BackgroundTransparency = Object.BackgroundTransparency,
-					BackgroundColor3 = Object.BackgroundColor3,
 				}
 			end
-			local Original = self._LiquidGlassOriginals[Object]
-			local Role = Object:GetAttribute("WolfThemeRole_BackgroundColor3")
-				or FindThemeColorRole(Original.BackgroundColor3, self.Theme)
-			local IsSurface = Role == "Background"
-				or Role == "Sidebar"
-				or Role == "Header"
-				or Role == "Card"
-				or Role == "Surface"
-				or Role == "SurfaceHover"
-			local TintAmount = IsSurface and 0.2 or 0.08
-			local OriginalTransparency = Original.BackgroundTransparency
-			Object.BackgroundColor3 = Original.BackgroundColor3:Lerp(Color3.fromRGB(220, 242, 255), TintAmount)
-			Object.BackgroundTransparency = math.max(OriginalTransparency, math.min(0.84, OriginalTransparency + 0.32))
+			local OriginalTransparency = self._LiquidGlassOriginals[Object].BackgroundTransparency
+			Object.BackgroundTransparency = math.max(OriginalTransparency, math.min(0.78, OriginalTransparency + 0.2))
 		elseif Object:IsA("UIStroke") then
 			if not self._LiquidGlassOriginals[Object] then
 				self._LiquidGlassOriginals[Object] = {
@@ -585,52 +568,11 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 	end
 
-	if self.MainFrame and self.MainFrame.Parent then
-		local CornerGlint = Instance.new("Frame")
-		CornerGlint.Name = "WolfLiquidGlassCorner"
-		CornerGlint.Position = UDim2.fromOffset(2, 2)
-		CornerGlint.Size = UDim2.fromOffset(17, 17)
-		CornerGlint.BackgroundTransparency = 1
-		CornerGlint.Active = false
-		CornerGlint.ZIndex = 5
-		CornerGlint.Parent = self.MainFrame
-		self._LiquidGlassCorner = CornerGlint
-
-		local Glow = CreateIcon(
-			CornerGlint,
-			"zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(24, 24),
-			Color3.fromRGB(76, 202, 255),
-			6
-		)
-		Glow.AnchorPoint = Vector2.new(0.5, 0.5)
-		Glow.ImageTransparency = 0.58
-
-		local Bolt = CreateIcon(
-			CornerGlint,
-			"zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(15, 15),
-			Color3.fromRGB(236, 252, 255),
-			7
-		)
-		Bolt.AnchorPoint = Vector2.new(0.5, 0.5)
-		Bolt.ImageTransparency = 0.08
-
-		local PulseInfo = TweenInfo.new(0.65, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-		local GlowTween = TweenService:Create(Glow, PulseInfo, {
-			ImageTransparency = 0.92,
-			Size = UDim2.fromOffset(29, 29),
-		})
-		local BoltTween = TweenService:Create(Bolt, PulseInfo, {
-			ImageTransparency = 0.38,
-			Rotation = 12,
-		})
-		self._LiquidGlassCornerTweens = { GlowTween, BoltTween }
-		GlowTween:Play()
-		BoltTween:Play()
-	end
+	local Blur = Instance.new("BlurEffect")
+	Blur.Name = "WolfLiquidGlassBlur"
+	Blur.Size = 5
+	Blur.Parent = Lighting
+	self._LiquidGlassBlur = Blur
 	self._LiquidGlassEnabled = true
 	return true
 end
