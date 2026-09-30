@@ -113,23 +113,283 @@ Wolf.Fonts = {
 	Interface = Font.fromEnum(Enum.Font.SourceSans),
 }
 
-Wolf.Theme = {
-	Background = Color3.fromRGB(15, 15, 17),
-	Sidebar = Color3.fromRGB(22, 22, 25),
-	Header = Color3.fromRGB(18, 18, 20),
-	Card = Color3.fromRGB(28, 28, 32),
+Wolf.Themes = {
+	Default = {
+		Background = Color3.fromRGB(15, 15, 17),
+		Sidebar = Color3.fromRGB(22, 22, 25),
+		Header = Color3.fromRGB(18, 18, 20),
+		Card = Color3.fromRGB(28, 28, 32),
 
-	Surface = Color3.fromRGB(38, 38, 42),
-	SurfaceHover = Color3.fromRGB(50, 50, 56),
+		Surface = Color3.fromRGB(38, 38, 42),
+		SurfaceHover = Color3.fromRGB(50, 50, 56),
 
-	Accent = Color3.fromRGB(130, 6, 6),
-	AccentDark = Color3.fromRGB(90, 0, 0),
+		Accent = Color3.fromRGB(130, 6, 6),
+		AccentDark = Color3.fromRGB(90, 0, 0),
 
-	Text = Color3.fromRGB(245, 245, 245),
-	SubText = Color3.fromRGB(155, 155, 160),
+		Text = Color3.fromRGB(245, 245, 245),
+		SubText = Color3.fromRGB(155, 155, 160),
 
-	Border = Color3.fromRGB(50, 50, 55),
+		Border = Color3.fromRGB(50, 50, 55),
+		ActiveTab = Color3.fromRGB(255, 255, 255),
+		ToggleKnob = Color3.fromRGB(240, 240, 240),
+		SliderThumb = Color3.fromRGB(232, 232, 232),
+	},
+	["Violet & Black (Cyberpunk)"] = {
+		Background = Color3.fromRGB(10, 8, 16),
+		Sidebar = Color3.fromRGB(17, 13, 25),
+		Header = Color3.fromRGB(13, 10, 20),
+		Card = Color3.fromRGB(25, 19, 35),
+		Surface = Color3.fromRGB(38, 29, 52),
+		SurfaceHover = Color3.fromRGB(53, 39, 70),
+		Accent = Color3.fromRGB(185, 75, 255),
+		AccentDark = Color3.fromRGB(100, 35, 150),
+		Text = Color3.fromRGB(248, 241, 255),
+		SubText = Color3.fromRGB(177, 159, 194),
+		Border = Color3.fromRGB(65, 48, 82),
+		ActiveTab = Color3.fromRGB(48, 37, 62),
+		ToggleKnob = Color3.fromRGB(235, 250, 255),
+		SliderThumb = Color3.fromRGB(90, 235, 255),
+	},
+	["Charcoal & Black (Luxury)"] = {
+		Background = Color3.fromRGB(16, 16, 16),
+		Sidebar = Color3.fromRGB(23, 23, 22),
+		Header = Color3.fromRGB(19, 19, 18),
+		Card = Color3.fromRGB(31, 31, 29),
+		Surface = Color3.fromRGB(44, 44, 41),
+		SurfaceHover = Color3.fromRGB(58, 57, 52),
+		Accent = Color3.fromRGB(205, 172, 104),
+		AccentDark = Color3.fromRGB(125, 99, 52),
+		Text = Color3.fromRGB(244, 241, 232),
+		SubText = Color3.fromRGB(170, 166, 154),
+		Border = Color3.fromRGB(72, 70, 62),
+		ActiveTab = Color3.fromRGB(62, 59, 49),
+		ToggleKnob = Color3.fromRGB(245, 240, 222),
+		SliderThumb = Color3.fromRGB(224, 199, 139),
+	},
+	["Cloud & Milk (Clean Light)"] = {
+		Background = Color3.fromRGB(239, 242, 245),
+		Sidebar = Color3.fromRGB(226, 231, 236),
+		Header = Color3.fromRGB(248, 249, 250),
+		Card = Color3.fromRGB(250, 251, 252),
+		Surface = Color3.fromRGB(218, 224, 230),
+		SurfaceHover = Color3.fromRGB(204, 212, 220),
+		Accent = Color3.fromRGB(45, 100, 145),
+		AccentDark = Color3.fromRGB(32, 73, 108),
+		Text = Color3.fromRGB(36, 43, 50),
+		SubText = Color3.fromRGB(91, 101, 111),
+		Border = Color3.fromRGB(190, 199, 207),
+		ActiveTab = Color3.fromRGB(209, 224, 237),
+		ToggleKnob = Color3.fromRGB(255, 255, 255),
+		SliderThumb = Color3.fromRGB(32, 73, 108),
+	},
+	["Strawberry & Blood (High Energy)"] = {
+		Background = Color3.fromRGB(29, 8, 13),
+		Sidebar = Color3.fromRGB(43, 10, 17),
+		Header = Color3.fromRGB(35, 8, 14),
+		Card = Color3.fromRGB(57, 13, 23),
+		Surface = Color3.fromRGB(76, 19, 32),
+		SurfaceHover = Color3.fromRGB(99, 25, 41),
+		Accent = Color3.fromRGB(255, 91, 132),
+		AccentDark = Color3.fromRGB(145, 20, 47),
+		Text = Color3.fromRGB(255, 238, 242),
+		SubText = Color3.fromRGB(205, 151, 164),
+		Border = Color3.fromRGB(112, 38, 55),
+		ActiveTab = Color3.fromRGB(100, 25, 43),
+		ToggleKnob = Color3.fromRGB(250, 226, 233),
+		SliderThumb = Color3.fromRGB(255, 151, 178),
+	},
+	["Forrest (Organic Dark)"] = {
+		Background = Color3.fromRGB(13, 20, 16),
+		Sidebar = Color3.fromRGB(19, 29, 23),
+		Header = Color3.fromRGB(16, 25, 19),
+		Card = Color3.fromRGB(27, 39, 31),
+		Surface = Color3.fromRGB(39, 54, 43),
+		SurfaceHover = Color3.fromRGB(51, 69, 54),
+		Accent = Color3.fromRGB(151, 190, 134),
+		AccentDark = Color3.fromRGB(79, 119, 76),
+		Text = Color3.fromRGB(239, 242, 231),
+		SubText = Color3.fromRGB(164, 179, 157),
+		Border = Color3.fromRGB(61, 78, 63),
+		ActiveTab = Color3.fromRGB(54, 72, 55),
+		ToggleKnob = Color3.fromRGB(226, 234, 216),
+		SliderThumb = Color3.fromRGB(187, 216, 161),
+	},
+	["Yellow & Orange (Creative)"] = {
+		Background = Color3.fromRGB(28, 18, 9),
+		Sidebar = Color3.fromRGB(39, 25, 12),
+		Header = Color3.fromRGB(33, 21, 10),
+		Card = Color3.fromRGB(52, 34, 15),
+		Surface = Color3.fromRGB(70, 46, 19),
+		SurfaceHover = Color3.fromRGB(91, 59, 22),
+		Accent = Color3.fromRGB(255, 151, 51),
+		AccentDark = Color3.fromRGB(171, 82, 20),
+		Text = Color3.fromRGB(255, 244, 219),
+		SubText = Color3.fromRGB(202, 176, 136),
+		Border = Color3.fromRGB(105, 74, 40),
+		ActiveTab = Color3.fromRGB(94, 61, 25),
+		ToggleKnob = Color3.fromRGB(255, 238, 181),
+		SliderThumb = Color3.fromRGB(255, 206, 76),
+	},
+	["Electric Blue & Slate (Modern Tech)"] = {
+		Background = Color3.fromRGB(12, 18, 26),
+		Sidebar = Color3.fromRGB(18, 27, 38),
+		Header = Color3.fromRGB(15, 23, 33),
+		Card = Color3.fromRGB(26, 38, 52),
+		Surface = Color3.fromRGB(37, 53, 70),
+		SurfaceHover = Color3.fromRGB(49, 70, 91),
+		Accent = Color3.fromRGB(48, 151, 255),
+		AccentDark = Color3.fromRGB(28, 91, 163),
+		Text = Color3.fromRGB(235, 245, 255),
+		SubText = Color3.fromRGB(155, 178, 201),
+		Border = Color3.fromRGB(57, 79, 101),
+		ActiveTab = Color3.fromRGB(44, 69, 95),
+		ToggleKnob = Color3.fromRGB(230, 246, 255),
+		SliderThumb = Color3.fromRGB(123, 207, 255),
+	},
+	["Ocean Blue & Sand (Lifestyle)"] = {
+		Background = Color3.fromRGB(12, 27, 38),
+		Sidebar = Color3.fromRGB(18, 39, 53),
+		Header = Color3.fromRGB(15, 33, 46),
+		Card = Color3.fromRGB(26, 51, 65),
+		Surface = Color3.fromRGB(40, 68, 80),
+		SurfaceHover = Color3.fromRGB(54, 86, 96),
+		Accent = Color3.fromRGB(121, 199, 183),
+		AccentDark = Color3.fromRGB(57, 126, 126),
+		Text = Color3.fromRGB(246, 239, 218),
+		SubText = Color3.fromRGB(174, 193, 188),
+		Border = Color3.fromRGB(68, 96, 101),
+		ActiveTab = Color3.fromRGB(54, 87, 94),
+		ToggleKnob = Color3.fromRGB(247, 235, 205),
+		SliderThumb = Color3.fromRGB(224, 199, 144),
+	},
 }
+Wolf.Theme = table.clone(Wolf.Themes.Default)
+
+local ThemeColorKeys = {
+	"Background",
+	"Sidebar",
+	"Header",
+	"Card",
+	"Surface",
+	"SurfaceHover",
+	"Accent",
+	"AccentDark",
+	"Text",
+	"SubText",
+	"Border",
+	"ActiveTab",
+	"ToggleKnob",
+	"SliderThumb",
+}
+
+local function CancelThemeTweens(Library)
+	local ActiveTweens = {}
+	for _, Properties in pairs(Library._ThemeTweens or {}) do
+		for _, ActiveTween in pairs(Properties) do
+			table.insert(ActiveTweens, ActiveTween)
+		end
+	end
+	Library._ThemeTweens = {}
+	for _, ActiveTween in ipairs(ActiveTweens) do
+		ActiveTween:Cancel()
+	end
+end
+
+function Wolf:SetTheme(ThemeName)
+	local DefaultTheme = self.Themes.Default
+	local RequestedTheme
+	if typeof(ThemeName) == "table" then
+		RequestedTheme = ThemeName
+	elseif typeof(ThemeName) == "string" then
+		RequestedTheme = self.Themes[ThemeName]
+	end
+	RequestedTheme = typeof(RequestedTheme) == "table" and RequestedTheme or DefaultTheme
+
+	local NextTheme = {}
+	for _, Key in ipairs(ThemeColorKeys) do
+		local Value = RequestedTheme[Key]
+		NextTheme[Key] = typeof(Value) == "Color3" and Value or DefaultTheme[Key]
+	end
+
+	CancelThemeTweens(self)
+
+	local function TransitionColor(Object, Property, TargetColor)
+		local ObjectTweens = self._ThemeTweens[Object]
+		if ObjectTweens and ObjectTweens[Property] then
+			ObjectTweens[Property]:Cancel()
+		end
+		local NewTween = TweenService:Create(
+			Object,
+			TweenInfo.new(0.25, Enum.EasingStyle.Quint, Enum.EasingDirection.Out),
+			{ [Property] = TargetColor }
+		)
+		ObjectTweens = ObjectTweens or {}
+		self._ThemeTweens[Object] = ObjectTweens
+		ObjectTweens[Property] = NewTween
+		NewTween.Completed:Connect(function(PlaybackState)
+			if PlaybackState == Enum.PlaybackState.Completed then
+				local CurrentTweens = self._ThemeTweens[Object]
+				if CurrentTweens and CurrentTweens[Property] == NewTween then
+					CurrentTweens[Property] = nil
+					if not next(CurrentTweens) then
+						self._ThemeTweens[Object] = nil
+					end
+				end
+			end
+			NewTween:Destroy()
+		end)
+		NewTween:Play()
+	end
+
+	local CurrentTheme = typeof(self.Theme) == "table" and self.Theme or DefaultTheme
+	local ColorMap = {}
+	for _, Key in ipairs(ThemeColorKeys) do
+		local CurrentColor = CurrentTheme[Key]
+		ColorMap[typeof(CurrentColor) == "Color3" and CurrentColor or DefaultTheme[Key]] = NextTheme[Key]
+	end
+
+	local Roots = { self.Gui, self.ShortcutGui, self.PopupGui }
+	for _, Root in ipairs(Roots) do
+		if Root then
+			local Instances = { Root }
+			for _, Descendant in ipairs(Root:GetDescendants()) do
+				table.insert(Instances, Descendant)
+			end
+			for _, Object in ipairs(Instances) do
+				local Properties =
+					{ "BackgroundColor3", "TextColor3", "PlaceholderColor3", "ImageColor3", "ScrollBarImageColor3" }
+				for _, Property in ipairs(Properties) do
+					local Success, CurrentColor = pcall(function()
+						return Object[Property]
+					end)
+					local TargetColor = Success and ColorMap[CurrentColor]
+					if TargetColor then
+						TransitionColor(Object, Property, TargetColor)
+					end
+				end
+
+				local StrokeObject = Object:FindFirstChildOfClass("UIStroke")
+				if StrokeObject and ColorMap[StrokeObject.Color] then
+					TransitionColor(StrokeObject, "Color", ColorMap[StrokeObject.Color])
+				end
+				if Object:IsA("UIGradient") then
+					local Keypoints = {}
+					for _, Keypoint in ipairs(Object.Color.Keypoints) do
+						table.insert(
+							Keypoints,
+							ColorSequenceKeypoint.new(Keypoint.Time, ColorMap[Keypoint.Value] or Keypoint.Value)
+						)
+					end
+					Object.Color = ColorSequence.new(Keypoints)
+				end
+			end
+		end
+	end
+
+	self.Theme = NextTheme
+	self.CurrentTheme = typeof(ThemeName) == "string" and self.Themes[ThemeName] and ThemeName or "Custom"
+	return self.CurrentTheme
+end
 
 ---------------------------------------------------------------------
 -- UTILITY HELPERS
@@ -307,6 +567,9 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	CancelThemeTweens(self)
+	self.Theme = table.clone(self.Themes.Default)
+	self.CurrentTheme = "Default"
 	self.Tabs = {}
 	self.Elements = {}
 	self.ActiveTab = nil
@@ -1159,6 +1422,7 @@ function Wolf:CreateWindow(Config)
 end
 
 function Wolf:Destroy()
+	CancelThemeTweens(self)
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
 		self._RenderConnection = nil
@@ -1299,7 +1563,7 @@ function Wolf:AddTab(Config)
 		end
 		for _, ExistingTab in ipairs(self.Tabs) do
 			ExistingTab.Page.Visible = ExistingTab == Tab
-			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and Color3.new(1, 1, 1) or self.Theme.Card
+			ExistingTab.Button.BackgroundColor3 = ExistingTab == Tab and self.Theme.ActiveTab or self.Theme.Card
 			ExistingTab.Button.BackgroundTransparency = ExistingTab == Tab and 0 or 1
 			ExistingTab.Icon.ImageColor3 = ExistingTab.IconColor or self.Theme.Text
 		end
@@ -1363,7 +1627,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	Knob.AnchorPoint = Vector2.new(0, 0.5)
 	Knob.Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
 	Knob.Size = UDim2.fromOffset(14, 14)
-	Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	Knob.BackgroundColor3 = self.Theme.ToggleKnob
 	Knob.Parent = Indicator
 	Corner(Knob, 4)
 
@@ -1719,7 +1983,7 @@ function Wolf:AddToggle(Config)
 	Knob.AnchorPoint = Vector2.new(0, 0.5)
 	Knob.Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0)
 	Knob.Size = UDim2.fromOffset(14, 14)
-	Knob.BackgroundColor3 = Color3.fromRGB(240, 240, 240)
+	Knob.BackgroundColor3 = self.Theme.ToggleKnob
 	Knob.Parent = Indicator
 	Corner(Knob, 4)
 
@@ -1845,10 +2109,19 @@ function Wolf:AddSlider(Config)
 
 	local Fill = Instance.new("Frame")
 	local Range = math.max(Max - Min, 1)
-	Fill.Size = UDim2.new(math.clamp((Default - Min) / Range, 0, 1), 0, 1, 0)
+	Fill.Size = UDim2.fromScale(math.clamp((Default - Min) / Range, 0, 1), 1)
 	Fill.BackgroundColor3 = self.Theme.Accent
 	Fill.Parent = Track
 	Corner(Fill, 2)
+
+	local Thumb = Instance.new("Frame")
+	Thumb.AnchorPoint = Vector2.new(0.5, 0.5)
+	Thumb.Position = UDim2.fromScale(math.clamp((Default - Min) / Range, 0, 1), 0.5)
+	Thumb.Size = UDim2.fromOffset(12, 12)
+	Thumb.BackgroundColor3 = self.Theme.SliderThumb
+	Thumb.ZIndex = 2
+	Thumb.Parent = Track
+	Corner(Thumb, 6)
 
 	local UserDragging = false
 	local CurrentTween = nil
@@ -1857,15 +2130,17 @@ function Wolf:AddSlider(Config)
 		local Pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
 		local Value = math.floor(Min + (Max - Min) * Pos)
 
-		if CurrentTween then 
-			CurrentTween:Cancel() 
+		if CurrentTween then
+			CurrentTween:Cancel()
 		end
 
-		CurrentTween = TweenService:Create(Fill, TweenInfo.new(DragSlowness, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Size = UDim2.new(Pos, 0, 1, 0)
-		})
+		CurrentTween =
+			TweenService:Create(Fill, TweenInfo.new(DragSlowness, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Size = UDim2.fromScale(Pos, 1),
+			})
 		CurrentTween:Play()
-		
+		Thumb.Position = UDim2.fromScale(Pos, 0.5)
+
 		ValueLabel.Text = tostring(Value)
 		Callback(Value)
 	end
