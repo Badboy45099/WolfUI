@@ -2,14 +2,6 @@
 --// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
--- Hidden UI
-
-local rawmetatable = getrawmetatable(game)
-local oldIndex = rawmetatable.__index
-local oldFindFirstChild = game.FindFirstChild
-
-setreadonly(rawmetatable, false)
-
 local PROTECTED_NAMES = {
 	["WolfUI"] = true,
 	["WolfUIPopups"] = true,
@@ -17,29 +9,40 @@ local PROTECTED_NAMES = {
 	["WolfUIShortcuts"] = true,
 }
 
-rawmetatable.__index = newcclosure(function(self, key)
-	if not checkcaller() then
-		if PROTECTED_NAMES[key] then
-			return nil
-		end
-	end
-	return oldIndex(self, key)
+local oldIndex
+pcall(function()
+	oldIndex = hookmetamethod(
+		game,
+		"__index",
+		newcclosure(function(self, key)
+			if not checkcaller() then
+				if PROTECTED_NAMES[key] then
+					return nil
+				end
+			end
+			return oldIndex(self, key)
+		end)
+	)
 end)
 
-rawmetatable.__namecall = newcclosure(function(self, ...)
-	local method = getnamecallmethod()
-	local args = { ... }
+local oldNamecall
+pcall(function()
+	oldNamecall = hookmetamethod(
+		game,
+		"__namecall",
+		newcclosure(function(self, ...)
+			local method = getnamecallmethod()
+			local args = { ... }
 
-	if not checkcaller() then
-		if (method == "FindFirstChild" or method == "findFirstChild") and PROTECTED_NAMES[args[1]] then
-			return nil
-		end
-	end
-
-	return oldnamecall(self, ...)
+			if not checkcaller() then
+				if (method == "FindFirstChild" or method == "findFirstChild") and PROTECTED_NAMES[args[1]] then
+					return nil
+				end
+			end
+			return oldNamecall(self, ...)
+		end)
+	)
 end)
-
-setreadonly(rawmetatable, true)
 
 ---------------------------------------------------------------------
 
