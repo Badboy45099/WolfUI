@@ -343,6 +343,12 @@ local function HasPreservedThemeColor(Object)
 end
 
 function Wolf:SetTheme(ThemeName)
+	local RefreshLiquidGlass = self._LiquidGlassEnabled == true
+	if RefreshLiquidGlass then
+		self:SetLiquidGlass(false)
+	end
+	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
+	local LiquidGlassThemeRefreshToken = self._LiquidGlassThemeRefreshToken
 	local DefaultTheme = self.Themes.Default
 	local RequestedTheme
 	if typeof(ThemeName) == "table" then
@@ -462,11 +468,25 @@ function Wolf:SetTheme(ThemeName)
 
 	self.Theme = NextTheme
 	self.CurrentTheme = typeof(ThemeName) == "string" and self.Themes[ThemeName] and ThemeName or "Custom"
+	if RefreshLiquidGlass then
+		task.delay(0.3, function()
+			if
+				self._LiquidGlassThemeRefreshToken == LiquidGlassThemeRefreshToken
+				and self.Gui
+				and not self._LiquidGlassEnabled
+			then
+				self:SetLiquidGlass(true)
+			end
+		end)
+	end
 	return self.CurrentTheme
 end
 
 function Wolf:SetLiquidGlass(Enabled)
 	Enabled = Enabled == true
+	if not Enabled then
+		self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
+	end
 	if Enabled == self._LiquidGlassEnabled then
 		return Enabled
 	end
@@ -495,15 +515,6 @@ function Wolf:SetLiquidGlass(Enabled)
 		end
 		table.clear(self._LiquidGlassGradients or {})
 
-		for _, CornerTween in ipairs(self._LiquidGlassCornerTweens or {}) do
-			CornerTween:Cancel()
-			CornerTween:Destroy()
-		end
-		table.clear(self._LiquidGlassCornerTweens or {})
-		if self._LiquidGlassCorner then
-			self._LiquidGlassCorner:Destroy()
-			self._LiquidGlassCorner = nil
-		end
 		if self._LiquidGlassOutline then
 			self._LiquidGlassOutline:Destroy()
 			self._LiquidGlassOutline = nil
@@ -640,51 +651,6 @@ function Wolf:SetLiquidGlass(Enabled)
 		})
 		OutlineGradient:SetAttribute("WolfPreserveThemeColor", true)
 		OutlineGradient.Parent = Outline
-
-		local CornerGlint = Instance.new("Frame")
-		CornerGlint.Name = "WolfLiquidGlassCorner"
-		CornerGlint.Position = UDim2.fromOffset(8, 6)
-		CornerGlint.Size = UDim2.fromOffset(34, 34)
-		CornerGlint.BackgroundTransparency = 1
-		CornerGlint.Active = false
-		CornerGlint.ZIndex = 5
-		CornerGlint.Parent = self.MainFrame
-		self._LiquidGlassCorner = CornerGlint
-
-		local Glow = CreateIcon(
-			CornerGlint,
-			"zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(38, 38),
-			Color3.fromRGB(76, 202, 255),
-			6
-		)
-		Glow.AnchorPoint = Vector2.new(0.5, 0.5)
-		Glow.ImageTransparency = 0.58
-
-		local Bolt = CreateIcon(
-			CornerGlint,
-			"zap",
-			UDim2.fromScale(0.5, 0.5),
-			UDim2.fromOffset(24, 24),
-			Color3.fromRGB(236, 252, 255),
-			7
-		)
-		Bolt.AnchorPoint = Vector2.new(0.5, 0.5)
-		Bolt.ImageTransparency = 0.08
-
-		local PulseInfo = TweenInfo.new(0.65, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true)
-		local GlowTween = TweenService:Create(Glow, PulseInfo, {
-			ImageTransparency = 0.92,
-			Size = UDim2.fromOffset(29, 29),
-		})
-		local BoltTween = TweenService:Create(Bolt, PulseInfo, {
-			ImageTransparency = 0.38,
-			Rotation = 12,
-		})
-		self._LiquidGlassCornerTweens = { GlowTween, BoltTween }
-		GlowTween:Play()
-		BoltTween:Play()
 	end
 	self._LiquidGlassEnabled = true
 	return true
@@ -866,6 +832,7 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
 	if self._LiquidGlassEnabled then
 		self:SetLiquidGlass(false)
 	end
@@ -1731,6 +1698,7 @@ function Wolf:CreateWindow(Config)
 end
 
 function Wolf:Destroy()
+	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
 	self:SetLiquidGlass(false)
 	CancelThemeTweens(self)
 	if self._RenderConnection then
