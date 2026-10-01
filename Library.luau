@@ -2,6 +2,47 @@
 --// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
+-- Hidden UI
+
+local rawmetatable = getrawmetatable(game)
+local oldIndex = rawmetatable.__index
+local oldFindFirstChild = game.FindFirstChild
+
+setreadonly(rawmetatable, false)
+
+local PROTECTED_NAMES = {
+	["WolfUI"] = true,
+	["WolfUIPopups"] = true,
+	["WolfUIToggle"] = true,
+	["WolfUIShortcuts"] = true,
+}
+
+rawmetatable.__index = newcclosure(function(self, key)
+	if not checkcaller() then
+		if PROTECTED_NAMES[key] then
+			return nil
+		end
+	end
+	return oldIndex(self, key)
+end)
+
+rawmetatable.__namecall = newcclosure(function(self, ...)
+	local method = getnamecallmethod()
+	local args = { ... }
+
+	if not checkcaller() then
+		if (method == "FindFirstChild" or method == "findFirstChild") and PROTECTED_NAMES[args[1]] then
+			return nil
+		end
+	end
+
+	return oldnamecall(self, ...)
+end)
+
+setreadonly(rawmetatable, true)
+
+---------------------------------------------------------------------
+
 local Wolf = {
 	Tabs = {},
 	ActiveTab = nil,
@@ -3976,13 +4017,16 @@ function Wolf:AddDropdown(Config)
 	local OptionsFrame = Instance.new("ScrollingFrame")
 	OptionsFrame.Name = "DropdownSelectionFrame"
 	OptionsFrame.Size = UDim2.fromOffset(220, 140)
-	OptionsFrame.CanvasSize = UDim2.new()
+	OptionsFrame.CanvasSize = UDim2.fromOffset(220, 0)
 	OptionsFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	OptionsFrame.ScrollingDirection = Enum.ScrollingDirection.XY
+	OptionsFrame.ElasticBehavior = Enum.ElasticBehavior.Never
 	OptionsFrame.BackgroundColor3 = self.Theme.Surface
 	OptionsFrame.BackgroundTransparency = 0.18
 	OptionsFrame.BorderSizePixel = 0
-	OptionsFrame.ScrollBarThickness = 3
+	OptionsFrame.ScrollBarThickness = UserInputService.TouchEnabled and 6 or 3
 	OptionsFrame.ScrollBarImageColor3 = self.Theme.Accent
+	OptionsFrame.Active = true
 	OptionsFrame.Visible = false
 	OptionsFrame.ZIndex = 50
 	OptionsFrame.Parent = Library.PopupGui or Library.Gui
@@ -4002,6 +4046,7 @@ function Wolf:AddDropdown(Config)
 	end
 
 	local OptionIcons = {}
+	local OptionsContentWidth = 220
 	local function UpdateValue(Value)
 		Selected = Value
 		ValueLabel.Text = Value == nil and "Select..." or tostring(Value)
@@ -4019,8 +4064,10 @@ function Wolf:AddDropdown(Config)
 
 	for _, Option in ipairs(Options) do
 		local OptionTitle, OptionValue = OptionData(Option)
+		local OptionWidth = math.max(220, string.len(OptionTitle) * 8 + 56)
+		OptionsContentWidth = math.max(OptionsContentWidth, OptionWidth)
 		local OptionButton = Instance.new("TextButton")
-		OptionButton.Size = UDim2.new(1, 0, 0, 28)
+		OptionButton.Size = UDim2.fromOffset(OptionWidth, 28)
 		OptionButton.BackgroundColor3 = self.Theme.Surface
 		OptionButton.Text = ""
 		OptionButton.TextColor3 = self.Theme.Text
@@ -4063,6 +4110,7 @@ function Wolf:AddDropdown(Config)
 		end)
 	end
 
+	OptionsFrame.CanvasSize = UDim2.fromOffset(OptionsContentWidth, 0)
 	ValueLabel.Text = Selected == nil and "Select..." or tostring(Selected)
 	DropdownButton.MouseButton1Click:Connect(function()
 		local WasVisible = OptionsFrame.Visible
@@ -4071,6 +4119,7 @@ function Wolf:AddDropdown(Config)
 		end
 		OptionsFrame.Visible = not WasVisible
 		if OptionsFrame.Visible then
+			OptionsFrame.CanvasPosition = Vector2.zero
 			table.insert(Library.OpenDropdowns, { Frame = OptionsFrame, Chevron = Chevron, Anchor = SelectionFrame })
 			Library._UpdateDropdownPositions()
 		end
