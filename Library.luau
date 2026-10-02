@@ -1277,7 +1277,18 @@ function Wolf:CreateWindow(Config)
 	local BirdIconName = "bone"
 	local BirdGlow =
 		CreateIcon(BirdButton, BirdIconName, UDim2.fromOffset(1, 1), UDim2.fromOffset(22, 22), self.Theme.Accent, 2)
-	BirdGlow.ImageTransparency = self._BirdModeEnabled and 0.72 or 1
+	BirdGlow:SetAttribute("WolfThemeRole_ImageColor3", "Accent")
+	BirdGlow.ImageTransparency = self._BirdModeEnabled and 0.2 or 1
+	local BirdOuterGlow = CreateIcon(
+		BirdButton,
+		BirdIconName,
+		UDim2.fromOffset(-2, -2),
+		UDim2.fromOffset(28, 28),
+		self.Theme.Accent,
+		1
+	)
+	BirdOuterGlow:SetAttribute("WolfThemeRole_ImageColor3", "Accent")
+	BirdOuterGlow.ImageTransparency = self._BirdModeEnabled and 0.55 or 1
 	local BirdIcon = CreateIcon(
 		BirdButton,
 		BirdIconName,
@@ -1288,7 +1299,7 @@ function Wolf:CreateWindow(Config)
 	)
 	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", self._BirdModeEnabled and "Accent" or "SubText")
 	local BirdStroke = Stroke(BirdButton, self.Theme.Accent, 1)
-	BirdStroke.Thickness = 1.5
+	BirdStroke.Thickness = 2.5
 	BirdStroke:SetAttribute("WolfThemeRole_Color", "Accent")
 	BirdStroke.Transparency = self._BirdModeEnabled and 0.05 or 1
 	local BirdTooltip = Instance.new("TextLabel")
@@ -1318,7 +1329,8 @@ function Wolf:CreateWindow(Config)
 		local IconRole = Enabled and "Accent" or "SubText"
 		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
 		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
-		Tween(BirdGlow, { ImageTransparency = Enabled and 0.72 or 1 })
+		Tween(BirdGlow, { ImageTransparency = Enabled and 0.2 or 1 })
+		Tween(BirdOuterGlow, { ImageTransparency = Enabled and 0.55 or 1 })
 		BirdStroke.Transparency = Enabled and 0.05 or 1
 	end)
 	self.BirdButton = BirdButton
