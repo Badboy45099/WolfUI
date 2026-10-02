@@ -20,21 +20,10 @@ WolfComponent.__index = WolfComponent
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
-local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-
-local BirdRuntimeEnvironment = {}
-pcall(function()
-	BirdRuntimeEnvironment = getgenv()
-end)
-local BirdRuntime = BirdRuntimeEnvironment.WolfUIBirdRuntime
-if typeof(BirdRuntime) ~= "table" then
-	BirdRuntime = {}
-	BirdRuntimeEnvironment.WolfUIBirdRuntime = BirdRuntime
-end
+local ConfigStore = {}
 
 ---------------------------------------------------------------------
 -- ICON MODULE (Lucide + Spritesheet Cropping)
@@ -43,9 +32,8 @@ end
 local Lucide
 do
 	local Success, Module = pcall(function()
-		local Source =
-			game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
-		return loadstring(Source)()
+		local IconModule = script:FindFirstChild("Lucide")
+		return IconModule and require(IconModule) or nil
 	end)
 	Lucide = Success and Module or nil
 end
@@ -692,47 +680,33 @@ end
 
 function Wolf:SetBirdMode(Enabled)
 	Enabled = Enabled == true
-	local WasEnabled = BirdRuntime.Enabled == true
-	if BirdRuntime.IdledConnection then
-		BirdRuntime.IdledConnection:Disconnect()
-		BirdRuntime.IdledConnection = nil
-	end
-	self._BirdIdleConnection = nil
+	local WasEnabled = self._BirdModeEnabled == true
 
 	if Enabled then
 		if not WasEnabled then
 			pcall(function()
-				BirdRuntime.UserGameSettings = UserSettings():GetService("UserGameSettings")
-				BirdRuntime.OriginalQualityLevel = BirdRuntime.UserGameSettings.SavedQualityLevel
+				self._BirdUserGameSettings = UserSettings():GetService("UserGameSettings")
+				self._BirdOriginalQualityLevel = self._BirdUserGameSettings.SavedQualityLevel
 			end)
 		end
 		pcall(function()
-			if BirdRuntime.UserGameSettings then
-				BirdRuntime.UserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
+			if self._BirdUserGameSettings then
+				self._BirdUserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
 			end
 		end)
-		BirdRuntime.IdledConnection = LocalPlayer.Idled:Connect(function()
-			pcall(function()
-				local VirtualUser = game:GetService("VirtualUser")
-				VirtualUser:CaptureController()
-				VirtualUser:ClickButton2(Vector2.zero)
-			end)
-		end)
-		self._BirdIdleConnection = BirdRuntime.IdledConnection
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
 	elseif WasEnabled then
 		pcall(function()
-			if BirdRuntime.UserGameSettings and BirdRuntime.OriginalQualityLevel then
-				BirdRuntime.UserGameSettings.SavedQualityLevel = BirdRuntime.OriginalQualityLevel
+			if self._BirdUserGameSettings and self._BirdOriginalQualityLevel then
+				self._BirdUserGameSettings.SavedQualityLevel = self._BirdOriginalQualityLevel
 			end
 		end)
-		BirdRuntime.UserGameSettings = nil
-		BirdRuntime.OriginalQualityLevel = nil
+		self._BirdUserGameSettings = nil
+		self._BirdOriginalQualityLevel = nil
 	end
 
-	BirdRuntime.Enabled = Enabled
 	self._BirdModeEnabled = Enabled
 	return Enabled
 end
@@ -786,52 +760,25 @@ local function CancelActiveTweens()
 	end
 end
 
-local function GetConfigPath(Library)
+local function GetConfigStoreKey(Library)
 	local PlaceId = tostring(game.PlaceId)
 	local Profile = tostring(Library.ConfigProfile or "Default"):gsub("[^%w_-]", "_")
-	return "WolfUI/" .. PlaceId .. "/" .. Profile .. ".json"
+	return PlaceId .. "/" .. Profile
 end
 
 local function EnsureConfigLoaded(Library)
 	if Library._ConfigData then
 		return Library._ConfigData
 	end
-	Library._ConfigData = {}
-	if typeof(readfile) == "function" then
-		local Success, Encoded = pcall(readfile, GetConfigPath(Library))
-		if Success and typeof(Encoded) == "string" then
-			local Decoded, Data = pcall(function()
-				return HttpService:JSONDecode(Encoded)
-			end)
-			if Decoded and typeof(Data) == "table" then
-				Library._ConfigData = Data
-			end
-		end
-	end
+	local StoredData = ConfigStore[GetConfigStoreKey(Library)]
+	Library._ConfigData = typeof(StoredData) == "table" and table.clone(StoredData) or {}
 	return Library._ConfigData
 end
 
 local function WriteConfigData(Library)
 	local Data = EnsureConfigLoaded(Library)
-	if typeof(writefile) ~= "function" then
-		return false
-	end
-	local Path = GetConfigPath(Library)
-	local Folder = Path:match("^(.*)/[^/]+$")
-	if typeof(makefolder) == "function" and Folder then
-		local Current = ""
-		for Part in Folder:gmatch("[^/]+") do
-			Current = Current == "" and Part or (Current .. "/" .. Part)
-			pcall(makefolder, Current)
-		end
-	end
-	local Success, Encoded = pcall(function()
-		return HttpService:JSONEncode(Data)
-	end)
-	if not Success then
-		return false
-	end
-	return pcall(writefile, Path, Encoded)
+	ConfigStore[GetConfigStoreKey(Library)] = table.clone(Data)
+	return true
 end
 
 local function ConfigKey(Config)
@@ -1089,7 +1036,7 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
-	self._BirdModeEnabled = BirdRuntime.Enabled == true
+	self:SetBirdMode(false)
 	DisconnectConnections(self)
 	CancelActiveTweens()
 	self._Keybinds = {}
@@ -1123,14 +1070,7 @@ function Wolf:CreateWindow(Config)
 		self._RenderConnection = nil
 	end
 
-	local ParentContainer = CoreGui
-	pcall(function()
-		if not RunService:IsStudio() then
-			ParentContainer = (gethui and gethui()) or CoreGui
-		else
-			ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
-		end
-	end)
+	local ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
 
 	if ParentContainer:FindFirstChild("WolfUI") then
 		ParentContainer.WolfUI:Destroy()
@@ -1267,41 +1207,19 @@ function Wolf:CreateWindow(Config)
 	local BirdButton = Instance.new("ImageButton")
 	BirdButton.Name = "BirdModeButton"
 	BirdButton.AnchorPoint = Vector2.new(1, 0)
-	BirdButton.Position = UDim2.new(1, -38, 0, 78)
+	BirdButton.Position = UDim2.new(1, -62, 0, 78)
 	BirdButton.Size = UDim2.fromOffset(24, 24)
 	BirdButton.BackgroundTransparency = 1
 	BirdButton.AutoButtonColor = false
 	BirdButton.Image = ""
 	BirdButton.Parent = ProfileCard
 	Corner(BirdButton, 5)
-	local BirdIconName = "bone"
-	local BirdGlow =
-		CreateIcon(BirdButton, BirdIconName, UDim2.fromOffset(1, 1), UDim2.fromOffset(22, 22), self.Theme.Accent, 2)
-	BirdGlow:SetAttribute("WolfThemeRole_ImageColor3", "Accent")
-	BirdGlow.ImageTransparency = self._BirdModeEnabled and 0.2 or 1
-	local BirdOuterGlow = CreateIcon(
-		BirdButton,
-		BirdIconName,
-		UDim2.fromOffset(-2, -2),
-		UDim2.fromOffset(28, 28),
-		self.Theme.Accent,
-		1
-	)
-	BirdOuterGlow:SetAttribute("WolfThemeRole_ImageColor3", "Accent")
-	BirdOuterGlow.ImageTransparency = self._BirdModeEnabled and 0.55 or 1
-	local BirdIcon = CreateIcon(
-		BirdButton,
-		BirdIconName,
-		UDim2.fromOffset(4, 4),
-		UDim2.fromOffset(16, 16),
-		self._BirdModeEnabled and self.Theme.Accent or self.Theme.SubText,
-		3
-	)
-	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", self._BirdModeEnabled and "Accent" or "SubText")
+	local BirdIcon =
+		CreateIcon(BirdButton, "bird", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.SubText, 3)
+	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
 	local BirdStroke = Stroke(BirdButton, self.Theme.Accent, 1)
-	BirdStroke.Thickness = 2.5
+	BirdStroke.Thickness = 1.5
 	BirdStroke:SetAttribute("WolfThemeRole_Color", "Accent")
-	BirdStroke.Transparency = self._BirdModeEnabled and 0.05 or 1
 	local BirdTooltip = Instance.new("TextLabel")
 	BirdTooltip.Name = "BirdModeTooltip"
 	BirdTooltip.AnchorPoint = Vector2.new(1, 0)
@@ -1329,8 +1247,6 @@ function Wolf:CreateWindow(Config)
 		local IconRole = Enabled and "Accent" or "SubText"
 		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
 		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
-		Tween(BirdGlow, { ImageTransparency = Enabled and 0.2 or 1 })
-		Tween(BirdOuterGlow, { ImageTransparency = Enabled and 0.55 or 1 })
 		BirdStroke.Transparency = Enabled and 0.05 or 1
 	end)
 	self.BirdButton = BirdButton
