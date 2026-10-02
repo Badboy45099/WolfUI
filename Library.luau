@@ -22,6 +22,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -317,8 +318,15 @@ local function CancelThemeTweens(Library)
 		end
 	end
 	Library._ThemeTweens = {}
+	for _, Connection in pairs(Library._ThemeTweenConnections or {}) do
+		Connection:Disconnect()
+	end
+	Library._ThemeTweenConnections = {}
 	for _, ActiveTween in ipairs(ActiveTweens) do
-		ActiveTween:Cancel()
+		pcall(function()
+			ActiveTween:Cancel()
+			ActiveTween:Destroy()
+		end)
 	end
 end
 
@@ -369,7 +377,14 @@ function Wolf:SetTheme(ThemeName)
 	local function TransitionColor(Object, Property, TargetColor)
 		local ObjectTweens = self._ThemeTweens[Object]
 		if ObjectTweens and ObjectTweens[Property] then
-			ObjectTweens[Property]:Cancel()
+			local PreviousTween = ObjectTweens[Property]
+			local PreviousConnection = self._ThemeTweenConnections and self._ThemeTweenConnections[PreviousTween]
+			if PreviousConnection then
+				PreviousConnection:Disconnect()
+				self._ThemeTweenConnections[PreviousTween] = nil
+			end
+			PreviousTween:Cancel()
+			PreviousTween:Destroy()
 		end
 		local Success, NewTween = pcall(function()
 			return TweenService:Create(
@@ -387,7 +402,13 @@ function Wolf:SetTheme(ThemeName)
 		ObjectTweens = ObjectTweens or {}
 		self._ThemeTweens[Object] = ObjectTweens
 		ObjectTweens[Property] = NewTween
-		NewTween.Completed:Connect(function(PlaybackState)
+		self._ThemeTweenConnections = self._ThemeTweenConnections or {}
+		local CompletionConnection
+		CompletionConnection = NewTween.Completed:Connect(function(PlaybackState)
+			CompletionConnection:Disconnect()
+			if self._ThemeTweenConnections then
+				self._ThemeTweenConnections[NewTween] = nil
+			end
 			if PlaybackState == Enum.PlaybackState.Completed then
 				local CurrentTweens = self._ThemeTweens[Object]
 				if CurrentTweens and CurrentTweens[Property] == NewTween then
@@ -399,10 +420,13 @@ function Wolf:SetTheme(ThemeName)
 			end
 			NewTween:Destroy()
 		end)
+		self._ThemeTweenConnections[NewTween] = CompletionConnection
 		local Played = pcall(function()
 			NewTween:Play()
 		end)
 		if not Played then
+			CompletionConnection:Disconnect()
+			self._ThemeTweenConnections[NewTween] = nil
 			ObjectTweens[Property] = nil
 			if not next(ObjectTweens) then
 				self._ThemeTweens[Object] = nil
@@ -661,10 +685,199 @@ end
 ---------------------------------------------------------------------
 
 local FastTween = TweenInfo.new(0.18, Enum.EasingStyle.Quint, Enum.EasingDirection.Out)
+local ActiveTweens = setmetatable({}, { __mode = "k" })
+
+local function TrackConnection(Library, Connection, Owner)
+	Library._Connections = Library._Connections or {}
+	table.insert(Library._Connections, Connection)
+	if Owner then
+		local OwnerConnection
+		OwnerConnection = Owner.Destroying:Connect(function()
+			Connection:Disconnect()
+			OwnerConnection:Disconnect()
+			for Index = #Library._Connections, 1, -1 do
+				if Library._Connections[Index] == Connection or Library._Connections[Index] == OwnerConnection then
+					table.remove(Library._Connections, Index)
+				end
+			end
+		end)
+		table.insert(Library._Connections, OwnerConnection)
+	end
+	return Connection
+end
+
+local function DisconnectConnections(Library)
+	local Connections = Library._Connections or {}
+	Library._Connections = {}
+	for _, Connection in ipairs(Connections) do
+		pcall(function()
+			Connection:Disconnect()
+		end)
+	end
+end
+
+local function SetShortcutRenderActive(Library, Enabled)
+	Library._ShortcutRenderUpdaters = Library._ShortcutRenderUpdaters or {}
+	Library._ShortcutRenderConnections = Library._ShortcutRenderConnections or {}
+	Library._ShortcutConnections = Library._ShortcutConnections or {}
+	if Enabled then
+		if #Library._ShortcutRenderConnections > 0 then
+			return
+		end
+		for _, Update in ipairs(Library._ShortcutRenderUpdaters) do
+			local Connection = RunService.RenderStepped:Connect(Update)
+			table.insert(Library._ShortcutRenderConnections, Connection)
+			table.insert(Library._ShortcutConnections, Connection)
+		end
+		return
+	end
+	for _, Connection in ipairs(Library._ShortcutRenderConnections) do
+		Connection:Disconnect()
+		for Index = #Library._ShortcutConnections, 1, -1 do
+			if Library._ShortcutConnections[Index] == Connection then
+				table.remove(Library._ShortcutConnections, Index)
+			end
+		end
+	end
+	table.clear(Library._ShortcutRenderConnections)
+end
+
+local function CancelActiveTweens()
+	for Object, ActiveRecord in pairs(ActiveTweens) do
+		ActiveTweens[Object] = nil
+		if ActiveRecord.Connection then
+			ActiveRecord.Connection:Disconnect()
+		end
+		pcall(function()
+			ActiveRecord.Tween:Cancel()
+			ActiveRecord.Tween:Destroy()
+		end)
+	end
+end
+
+local function GetConfigPath(Library)
+	local PlaceId = tostring(game.PlaceId)
+	local Profile = tostring(Library.ConfigProfile or "Default"):gsub("[^%w_-]", "_")
+	return "WolfUI/" .. PlaceId .. "/" .. Profile .. ".json"
+end
+
+local function EnsureConfigLoaded(Library)
+	if Library._ConfigData then
+		return Library._ConfigData
+	end
+	Library._ConfigData = {}
+	if typeof(readfile) == "function" then
+		local Success, Encoded = pcall(readfile, GetConfigPath(Library))
+		if Success and typeof(Encoded) == "string" then
+			local Decoded, Data = pcall(function()
+				return HttpService:JSONDecode(Encoded)
+			end)
+			if Decoded and typeof(Data) == "table" then
+				Library._ConfigData = Data
+			end
+		end
+	end
+	return Library._ConfigData
+end
+
+local function WriteConfigData(Library)
+	local Data = EnsureConfigLoaded(Library)
+	if typeof(writefile) ~= "function" then
+		return false
+	end
+	local Path = GetConfigPath(Library)
+	local Folder = Path:match("^(.*)/[^/]+$")
+	if typeof(makefolder) == "function" and Folder then
+		local Current = ""
+		for Part in Folder:gmatch("[^/]+") do
+			Current = Current == "" and Part or (Current .. "/" .. Part)
+			pcall(makefolder, Current)
+		end
+	end
+	local Success, Encoded = pcall(function()
+		return HttpService:JSONEncode(Data)
+	end)
+	if not Success then
+		return false
+	end
+	return pcall(writefile, Path, Encoded)
+end
+
+local function ConfigKey(Config)
+	local Key = Config.ConfigKey or Config.Key or Config.Title or "Element"
+	return tostring(Key):lower():gsub("[^%w_-]", "_")
+end
+
+local function GetSavedValue(Library, Config, Default)
+	if Config.Saved ~= true then
+		return Default
+	end
+	local Value = EnsureConfigLoaded(Library)[ConfigKey(Config)]
+	return Value == nil and Default or Value
+end
+
+local function SaveConfigValue(Library, Config, Value)
+	if Config.Saved ~= true then
+		return false
+	end
+	local Data = EnsureConfigLoaded(Library)
+	Data[ConfigKey(Config)] = Value
+	return WriteConfigData(Library)
+end
+
+local function RegisterKeybind(Library, KeyCode, Callback, Owner)
+	if typeof(KeyCode) ~= "EnumItem" or KeyCode.EnumType ~= Enum.KeyCode then
+		return nil
+	end
+	Library._Keybinds = Library._Keybinds or {}
+	local Entry = { KeyCode = KeyCode, Callback = Callback, Owner = Owner }
+	table.insert(Library._Keybinds, Entry)
+	return Entry
+end
+
+local function UnregisterKeybind(Library, Entry)
+	if not Entry then
+		return
+	end
+	for Index = #(Library._Keybinds or {}), 1, -1 do
+		if Library._Keybinds[Index] == Entry then
+			table.remove(Library._Keybinds, Index)
+		end
+	end
+end
+
+local function RemoveOpenDropdown(Library, Frame)
+	for Index = #(Library.OpenDropdowns or {}), 1, -1 do
+		if Library.OpenDropdowns[Index].Frame == Frame then
+			table.remove(Library.OpenDropdowns, Index)
+		end
+	end
+end
 
 local function Tween(Object, Properties, Time)
 	local Info = Time and TweenInfo.new(Time, Enum.EasingStyle.Quint, Enum.EasingDirection.Out) or FastTween
-	TweenService:Create(Object, Info, Properties):Play()
+	local PreviousRecord = ActiveTweens[Object]
+	if PreviousRecord then
+		if PreviousRecord.Connection then
+			PreviousRecord.Connection:Disconnect()
+		end
+		PreviousRecord.Tween:Cancel()
+		PreviousRecord.Tween:Destroy()
+	end
+	local NewTween = TweenService:Create(Object, Info, Properties)
+	local ActiveRecord = { Tween = NewTween }
+	ActiveTweens[Object] = ActiveRecord
+	local CompletionConnection
+	CompletionConnection = NewTween.Completed:Connect(function()
+		CompletionConnection:Disconnect()
+		if ActiveTweens[Object] == ActiveRecord then
+			ActiveTweens[Object] = nil
+		end
+		NewTween:Destroy()
+	end)
+	ActiveRecord.Connection = CompletionConnection
+	NewTween:Play()
+	return NewTween
 end
 
 local function Corner(Object, Radius)
@@ -826,12 +1039,30 @@ local function ElementParent(Tab, Config)
 	return Tab.Page
 end
 
+function Wolf:GetConfig()
+	return table.clone(EnsureConfigLoaded(self))
+end
+
+function Wolf:SaveConfig()
+	return WriteConfigData(self)
+end
+
+function Wolf:ReloadConfig()
+	self._ConfigData = nil
+	return table.clone(EnsureConfigLoaded(self))
+end
+
 ---------------------------------------------------------------------
 -- WINDOW CREATION
 ---------------------------------------------------------------------
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	DisconnectConnections(self)
+	CancelActiveTweens()
+	self._Keybinds = {}
+	self.ConfigProfile = Config.ConfigProfile or Config.Profile or "Default"
+	self._ConfigData = nil
 	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
 	if self._LiquidGlassEnabled then
 		self:SetLiquidGlass(false)
@@ -847,16 +1078,14 @@ function Wolf:CreateWindow(Config)
 	self.ShortcutButtons = {}
 	self.ShortcutChevrons = {}
 	self.ShortcutTriggers = {}
+	self._ShortcutRenderUpdaters = {}
+	self._ShortcutRenderConnections = {}
 	self.ShortcutSideCounts = { S1 = 0, S2 = 0 }
 	self._ShortcutConnections = self._ShortcutConnections or {}
 	for _, Connection in ipairs(self._ShortcutConnections) do
 		Connection:Disconnect()
 	end
 	table.clear(self._ShortcutConnections)
-	if self._FPSConnection then
-		self._FPSConnection:Disconnect()
-		self._FPSConnection = nil
-	end
 	self.OpenDropdowns = {}
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
@@ -995,7 +1224,7 @@ function Wolf:CreateWindow(Config)
 	Username.Parent = ProfileCard
 
 	local DeviceIcon = Instance.new("ImageButton")
-	DeviceIcon.Position = UDim2.new(1, -40, 0, 80)
+	DeviceIcon.Position = UDim2.new(1, -68, 0, 80)
 	DeviceIcon.Size = UDim2.fromOffset(24, 24)
 	DeviceIcon.BackgroundTransparency = 1
 	DeviceIcon.AutoButtonColor = false
@@ -1023,38 +1252,19 @@ function Wolf:CreateWindow(Config)
 	ProfileDivider.BorderSizePixel = 0
 	ProfileDivider.Parent = ProfileCard
 
-	local FPSBadge = Instance.new("Frame")
-	FPSBadge.Name = "FPSBadge"
-	FPSBadge.Position = UDim2.fromOffset(66, 78)
-	FPSBadge.Size = UDim2.fromOffset(76, 22)
-	FPSBadge.BackgroundColor3 = self.Theme.Surface
-	FPSBadge.BorderSizePixel = 0
-	FPSBadge.Parent = ProfileCard
-	Corner(FPSBadge, 5)
-
-	CreateIcon(FPSBadge, "gauge", UDim2.fromOffset(6, 5), UDim2.fromOffset(12, 12), Color3.fromRGB(95, 205, 125), 3)
-
-	local FPSLabel = Instance.new("TextLabel")
-	FPSLabel.BackgroundTransparency = 1
-	FPSLabel.Position = UDim2.fromOffset(22, 0)
-	FPSLabel.Size = UDim2.new(1, -26, 1, 0)
-	FPSLabel.FontFace = self.Fonts.Interface
-	FPSLabel.Text = "-- FPS"
-	FPSLabel.TextColor3 = self.Theme.Text
-	FPSLabel.TextSize = 10
-	FPSLabel.TextXAlignment = Enum.TextXAlignment.Left
-	FPSLabel.Parent = FPSBadge
-
-	local FrameCount = 0
-	local Elapsed = 0
-	self._FPSConnection = RunService.RenderStepped:Connect(function(DeltaTime)
-		FrameCount = FrameCount + 1
-		Elapsed = Elapsed + DeltaTime
-		if Elapsed >= 0.5 then
-			FPSLabel.Text = tostring(math.floor(FrameCount / Elapsed + 0.5)) .. " FPS"
-			FrameCount = 0
-			Elapsed = 0
-		end
+	local PowerButton = Instance.new("ImageButton")
+	PowerButton.Name = "PowerButton"
+	PowerButton.AnchorPoint = Vector2.new(1, 0)
+	PowerButton.Position = UDim2.new(1, -36, 0, 78)
+	PowerButton.Size = UDim2.fromOffset(24, 24)
+	PowerButton.BackgroundColor3 = self.Theme.Surface
+	PowerButton.AutoButtonColor = false
+	PowerButton.Image = ""
+	PowerButton.Parent = ProfileCard
+	Corner(PowerButton, 5)
+	CreateIcon(PowerButton, "power", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.Accent, 3)
+	PowerButton.MouseButton1Click:Connect(function()
+		self:Destroy()
 	end)
 
 	-- Tab Container
@@ -1083,6 +1293,7 @@ function Wolf:CreateWindow(Config)
 	HeaderFrame.Size = UDim2.new(1, -190, 0, 52)
 	HeaderFrame.BackgroundColor3 = self.Theme.Header
 	HeaderFrame.BorderSizePixel = 0
+	HeaderFrame.ClipsDescendants = true
 	HeaderFrame.ZIndex = 2
 	HeaderFrame.Parent = MainFrame
 
@@ -1104,6 +1315,8 @@ function Wolf:CreateWindow(Config)
 	HeaderTitle.TextSize = 32
 	HeaderTitle.TextColor3 = self.Theme.Accent
 	HeaderTitle.TextXAlignment = Enum.TextXAlignment.Left
+	HeaderTitle.TextTruncate = Enum.TextTruncate.AtEnd
+	HeaderTitle.ClipsDescendants = true
 	HeaderTitle.Parent = HeaderFrame
 
 	local ControlsHolder = Instance.new("Frame")
@@ -1313,6 +1526,10 @@ function Wolf:CreateWindow(Config)
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
 		self._UIVisible = Visible
+		SetShortcutRenderActive(self, Visible)
+		if not Visible and self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
 		if self.ShortcutGui then
 			self.ShortcutGui.Enabled = true
 		end
@@ -1343,6 +1560,9 @@ function Wolf:CreateWindow(Config)
 			task.delay(0.26, function()
 				if not uiVisible then
 					MainFrame.Visible = false
+					for _, Update in ipairs(self._ShortcutRenderUpdaters or {}) do
+						Update()
+					end
 				end
 			end)
 		end
@@ -1360,43 +1580,71 @@ function Wolf:CreateWindow(Config)
 		end
 	end)
 
-	UserInputService.InputChanged:Connect(function(input)
-		if
-			ToggleDragging
-			and (
-				input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			local Delta = input.Position - ToggleStartInputPosition
-			ToggleMoved = ToggleMoved or Delta.Magnitude > 6
-			if ToggleMoved then
-				ToggleButton.Position = UDim2.new(
-					ToggleStartButtonPosition.X.Scale,
-					ToggleStartButtonPosition.X.Offset + Delta.X,
-					ToggleStartButtonPosition.Y.Scale,
-					ToggleStartButtonPosition.Y.Offset + Delta.Y
+	TrackConnection(
+		self,
+		UserInputService.InputChanged:Connect(function(input)
+			if
+				ToggleDragging
+				and (
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
 				)
+			then
+				local Delta = input.Position - ToggleStartInputPosition
+				ToggleMoved = ToggleMoved or Delta.Magnitude > 6
+				if ToggleMoved then
+					ToggleButton.Position = UDim2.new(
+						ToggleStartButtonPosition.X.Scale,
+						ToggleStartButtonPosition.X.Offset + Delta.X,
+						ToggleStartButtonPosition.Y.Scale,
+						ToggleStartButtonPosition.Y.Offset + Delta.Y
+					)
+				end
 			end
-		end
-	end)
+		end)
+	)
 
-	UserInputService.InputEnded:Connect(function(input)
-		if
-			ToggleDragging
-			and (
-				input.UserInputType == Enum.UserInputType.MouseButton1
-				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			ToggleDragging = false
-			if not ToggleMoved then
-				SetUIVisible(not uiVisible)
+	TrackConnection(
+		self,
+		UserInputService.InputEnded:Connect(function(input)
+			if
+				ToggleDragging
+				and (
+					input.UserInputType == Enum.UserInputType.MouseButton1
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				ToggleDragging = false
+				if not ToggleMoved then
+					SetUIVisible(not uiVisible)
+				end
 			end
-		end
-	end)
+		end)
+	)
 	self.SetVisible = SetUIVisible
 	self.ToggleButton = ToggleButton
+	local MainKeyBind = Config.ToggleKeyBind or Config.KeyBind
+	if typeof(MainKeyBind) == "EnumItem" and MainKeyBind.EnumType == Enum.KeyCode then
+		RegisterKeybind(self, MainKeyBind, function()
+			SetUIVisible(not uiVisible)
+		end, ToggleButton)
+	end
+	TrackConnection(
+		self,
+		UserInputService.InputBegan:Connect(function(Input, GameProcessed)
+			if GameProcessed or Input.UserInputType ~= Enum.UserInputType.Keyboard then
+				return
+			end
+			for Index = #(self._Keybinds or {}), 1, -1 do
+				local Entry = self._Keybinds[Index]
+				if Entry.Owner and not Entry.Owner.Parent then
+					table.remove(self._Keybinds, Index)
+				elseif Entry.KeyCode == Input.KeyCode then
+					Entry.Callback()
+				end
+			end
+		end)
+	)
 	MainFrame.Size = UDim2.fromOffset(0, 0)
 	MainFrame.BackgroundTransparency = 1
 	task.defer(function()
@@ -1417,11 +1665,41 @@ function Wolf:CreateWindow(Config)
 	local MaxSize = Vector2.new(1000, 700)
 
 	local SidebarWidth = IsMobile and 110 or 190
-	local SidebarMinWidth = 110
-	local SidebarMaxWidth = 300
-	local SidebarRatio = SidebarWidth / (IsMobile and 380 or 720)
+	local SidebarMinWidth = 100
+	local SidebarMaxWidth = 260
+	local SidebarRatio = SidebarWidth / DeviceWindowSize.X.Offset
+	local CompactHeaderWidth = 450
+	local CompactLockWidth = 42
+	local ExpandedLockWidth = 68
+	local CompactSearchWidth = 30
+	local ExpandedSearchWidth = 130
 
-	local function UpdateSidebarLayout()
+	local function UpdateHeaderLayout()
+		local HeaderWidth = HeaderFrame.AbsoluteSize.X
+		local IsCompact = HeaderWidth < CompactHeaderWidth
+		local SearchWidth = IsCompact and CompactSearchWidth or ExpandedSearchWidth
+		local LockWidth = IsCompact and CompactLockWidth or ExpandedLockWidth
+		SearchContainer.Size = UDim2.fromOffset(SearchWidth, 30)
+		ControlsHolder.Size = UDim2.fromOffset(SearchWidth + LockWidth + ControlsLayout.Padding.Offset, 34)
+		SearchBox.Visible = not IsCompact
+		SearchIcon.Position = UDim2.new(0, IsCompact and 8 or 8, 0.5, 0)
+		LockButton.Size = UDim2.fromOffset(LockWidth, 30)
+		LockText.Visible = not IsCompact
+		LockIcon.Position = UDim2.fromOffset(IsCompact and 14 or 7, 8)
+		local AvailableTitleWidth = math.max(0, HeaderWidth - SearchWidth - LockWidth - DragIcon.AbsoluteSize.X - 68)
+		HeaderTitle.Size = UDim2.new(0, math.min(240, AvailableTitleWidth), 0, 52)
+	end
+
+	local function UpdateSidebarLayout(ScaleWithWindow)
+		local ActualMainWidth = MainFrame.AbsoluteSize.X
+		if ScaleWithWindow and ActualMainWidth >= MinSize.X then
+			SidebarWidth = SidebarRatio * ActualMainWidth
+		end
+		local MainWidth = math.max(ActualMainWidth, MinSize.X)
+		local MaxSidebarWidth =
+			math.max(SidebarMinWidth, math.min(SidebarMaxWidth, MainWidth - MinSize.X + SidebarMinWidth))
+		SidebarWidth = math.clamp(SidebarWidth, SidebarMinWidth, MaxSidebarWidth)
+		SidebarRatio = SidebarWidth / math.max(MainWidth, 1)
 		Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 		SidebarResizeHandle.Position = UDim2.new(0, SidebarWidth - 4, 0, 0)
 		HeaderFrame.Position = UDim2.new(0, SidebarWidth, 0, 0)
@@ -1430,9 +1708,23 @@ function Wolf:CreateWindow(Config)
 		ContentArea.Size = UDim2.new(1, -SidebarWidth, 1, -76)
 		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
+		UpdateHeaderLayout()
 	end
 	UpdateSidebarLayout()
 	FitWindowToDevice()
+	TrackConnection(
+		self,
+		MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			UpdateSidebarLayout(true)
+		end)
+	)
+
+	local function StopDropdownRender()
+		if self._RenderConnection then
+			self._RenderConnection:Disconnect()
+			self._RenderConnection = nil
+		end
+	end
 
 	local function CloseDropdowns()
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
@@ -1442,6 +1734,7 @@ function Wolf:CreateWindow(Config)
 			end
 		end
 		table.clear(self.OpenDropdowns)
+		StopDropdownRender()
 	end
 	self._CloseDropdowns = CloseDropdowns
 
@@ -1457,25 +1750,32 @@ function Wolf:CreateWindow(Config)
 			and Point.Y <= Position.Y + Size.Y
 	end
 
-	UserInputService.InputBegan:Connect(function(Input)
-		if
-			Input.UserInputType ~= Enum.UserInputType.MouseButton1
-			and Input.UserInputType ~= Enum.UserInputType.Touch
-		then
-			return
-		end
-		local Point = Vector2.new(Input.Position.X, Input.Position.Y)
-		for _, Dropdown in ipairs(self.OpenDropdowns) do
-			if IsPointInside(Dropdown.Frame, Point) or IsPointInside(Dropdown.Anchor, Point) then
+	TrackConnection(
+		self,
+		UserInputService.InputBegan:Connect(function(Input)
+			if
+				Input.UserInputType ~= Enum.UserInputType.MouseButton1
+				and Input.UserInputType ~= Enum.UserInputType.Touch
+			then
 				return
 			end
-		end
-		if #self.OpenDropdowns > 0 then
-			CloseDropdowns()
-		end
-	end)
+			local Point = Vector2.new(Input.Position.X, Input.Position.Y)
+			for _, Dropdown in ipairs(self.OpenDropdowns) do
+				if IsPointInside(Dropdown.Frame, Point) or IsPointInside(Dropdown.Anchor, Point) then
+					return
+				end
+			end
+			if #self.OpenDropdowns > 0 then
+				CloseDropdowns()
+			end
+		end)
+	)
 
 	local function UpdateDropdownPositions()
+		if #self.OpenDropdowns == 0 then
+			StopDropdownRender()
+			return
+		end
 		for _, Dropdown in ipairs(self.OpenDropdowns) do
 			local Anchor = Dropdown.Anchor
 			if
@@ -1514,8 +1814,13 @@ function Wolf:CreateWindow(Config)
 			end
 		end
 	end
-	self._UpdateDropdownPositions = UpdateDropdownPositions
-	self._RenderConnection = RunService.RenderStepped:Connect(UpdateDropdownPositions)
+	local function RefreshDropdownPositions()
+		if #self.OpenDropdowns > 0 and not self._RenderConnection then
+			self._RenderConnection = RunService.RenderStepped:Connect(UpdateDropdownPositions)
+		end
+		UpdateDropdownPositions()
+	end
+	self._UpdateDropdownPositions = RefreshDropdownPositions
 
 	local sidebarResizing = false
 	local sidebarResizeStartX
@@ -1549,51 +1854,57 @@ function Wolf:CreateWindow(Config)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			resizing = false
-			sidebarResizing = false
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if
-			sidebarResizing
-			and (
-				input.UserInputType == Enum.UserInputType.MouseMovement
+	TrackConnection(
+		self,
+		UserInputService.InputEnded:Connect(function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			SidebarWidth = math.clamp(
-				sidebarResizeStartWidth + (input.Position.X - sidebarResizeStartX),
-				SidebarMinWidth,
-				SidebarMaxWidth
-			)
-			SidebarRatio = SidebarWidth / MainFrame.AbsoluteSize.X
-			UpdateSidebarLayout()
-		end
+			then
+				resizing = false
+				sidebarResizing = false
+			end
+		end)
+	)
 
-		if
-			resizing
-			and (
-				input.UserInputType == Enum.UserInputType.MouseMovement
-				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			local Delta = input.Position - resizeStartPos
+	TrackConnection(
+		self,
+		UserInputService.InputChanged:Connect(function(input)
+			if
+				sidebarResizing
+				and (
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				SidebarWidth = math.clamp(
+					sidebarResizeStartWidth + (input.Position.X - sidebarResizeStartX),
+					SidebarMinWidth,
+					SidebarMaxWidth
+				)
+				SidebarRatio = SidebarWidth / MainFrame.AbsoluteSize.X
+				UpdateSidebarLayout()
+			end
 
-			-- Calculate new pixel sizes within constraints
-			local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
-			local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
+			if
+				resizing
+				and (
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				local Delta = input.Position - resizeStartPos
 
-			MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
-			TargetWindowSize = MainFrame.Size
-			UpdateSidebarLayout()
-		end
-	end)
+				-- Calculate new pixel sizes within constraints
+				local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
+				local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
+
+				MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
+				TargetWindowSize = MainFrame.Size
+				UpdateSidebarLayout()
+			end
+		end)
+	)
 
 	---------------------------------------------------------
 	-- DRAGGING MECHANISM
@@ -1615,28 +1926,38 @@ function Wolf:CreateWindow(Config)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			dragging = false
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if
-			dragging
-			and (
-				input.UserInputType == Enum.UserInputType.MouseMovement
+	TrackConnection(
+		self,
+		UserInputService.InputEnded:Connect(function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			local Delta = input.Position - dragStart
-			MainFrame.Position =
-				UDim2.new(startPos.X.Scale, startPos.X.Offset + Delta.X, startPos.Y.Scale, startPos.Y.Offset + Delta.Y)
-		end
-	end)
+			then
+				dragging = false
+			end
+		end)
+	)
+
+	TrackConnection(
+		self,
+		UserInputService.InputChanged:Connect(function(input)
+			if
+				dragging
+				and (
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				local Delta = input.Position - dragStart
+				MainFrame.Position = UDim2.new(
+					startPos.X.Scale,
+					startPos.X.Offset + Delta.X,
+					startPos.Y.Scale,
+					startPos.Y.Offset + Delta.Y
+				)
+			end
+		end)
+	)
 
 	-- Lock Handler
 	LockButton.MouseButton1Click:Connect(function()
@@ -1700,19 +2021,22 @@ end
 function Wolf:Destroy()
 	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
 	self:SetLiquidGlass(false)
+	DisconnectConnections(self)
+	CancelActiveTweens()
 	CancelThemeTweens(self)
 	if self._RenderConnection then
 		self._RenderConnection:Disconnect()
 		self._RenderConnection = nil
 	end
-	if self._FPSConnection then
-		self._FPSConnection:Disconnect()
-		self._FPSConnection = nil
-	end
 	for _, Connection in ipairs(self._ShortcutConnections or {}) do
 		Connection:Disconnect()
 	end
 	table.clear(self._ShortcutConnections or {})
+	table.clear(self.ShortcutButtons or {})
+	table.clear(self.ShortcutChevrons or {})
+	table.clear(self.ShortcutTriggers or {})
+	table.clear(self._ShortcutRenderUpdaters or {})
+	table.clear(self._ShortcutRenderConnections or {})
 	if self.Gui then
 		self.Gui:Destroy()
 		self.Gui = nil
@@ -1733,6 +2057,15 @@ function Wolf:Destroy()
 	end
 	self.ToggleGui = nil
 	self.ToggleButton = nil
+	self.MainFrame = nil
+	self.ContentArea = nil
+	self.TabContainer = nil
+	self.SetVisible = nil
+	self._CloseDropdowns = nil
+	self._UpdateDropdownPositions = nil
+	self._Keybinds = {}
+	self._ConfigData = nil
+	table.clear(self.OpenDropdowns)
 	table.clear(self.Tabs)
 	table.clear(self.Elements)
 	self.ShortcutHolder = nil
@@ -2158,15 +2491,24 @@ end
 -- Button Component
 function Wolf:AddButton(Config)
 	Config = typeof(Config) == "table" and Config or { Title = Config }
+	local Library = self.Library or self
 	local Title = Config.Title or "Button"
 	local IconName = Config.Icon or Config.icon
 	local Callback = Config.Callback or function() end
+	local IsToggleButton = Config.ToggleBtn == true or Config.Toggleable == true
+	local ButtonState = GetSavedValue(Library, Config, false) == true
 
 	local ButtonFrame = Instance.new("Frame")
 	ButtonFrame.Size = UDim2.new(1, 0, 0, 36)
 	ButtonFrame.BackgroundColor3 = self.Theme.Card
 	ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 	ButtonFrame.Parent = ElementParent(self, Config)
+	ButtonFrame:SetAttribute("Saved", Config.Saved == true)
+	ButtonFrame:SetAttribute("WolfElementState", ButtonState and "on" or "off")
+	if IsToggleButton and ButtonState then
+		ButtonFrame.BackgroundColor3 = self.Theme.Accent
+		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Accent")
+	end
 	AttachMetadata(ButtonFrame, "button", Title, "Clickable action button.")
 	AddVisibleDescription(ButtonFrame, Config)
 	Corner(ButtonFrame, 6)
@@ -2204,14 +2546,34 @@ function Wolf:AddButton(Config)
 		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Card })
 	end)
-	TextBtn.MouseButton1Click:Connect(function()
+	local function ActivateButton()
+		if IsToggleButton then
+			ButtonState = not ButtonState
+			ButtonFrame:SetAttribute("WolfElementState", ButtonState and "on" or "off")
+			ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", ButtonState and "Accent" or "Card")
+			Tween(ButtonFrame, { BackgroundColor3 = ButtonState and self.Theme.Accent or self.Theme.Card })
+			SaveConfigValue(Library, Config, ButtonState)
+		end
 		ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "Accent")
 		Tween(ButtonFrame, { BackgroundColor3 = self.Theme.Accent }, 0.08)
 		task.delay(0.08, function()
-			ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", "SurfaceHover")
-			Tween(ButtonFrame, { BackgroundColor3 = self.Theme.SurfaceHover })
+			if ButtonFrame.Parent then
+				local IsActive = IsToggleButton and ButtonState
+				local Role = IsActive and "Accent" or "SurfaceHover"
+				ButtonFrame:SetAttribute("WolfThemeRole_BackgroundColor3", Role)
+				Tween(ButtonFrame, { BackgroundColor3 = IsActive and self.Theme.Accent or self.Theme.SurfaceHover })
+			end
 		end)
-		Callback()
+		if IsToggleButton then
+			Callback(ButtonState)
+		else
+			Callback()
+		end
+	end
+	TextBtn.MouseButton1Click:Connect(ActivateButton)
+	local KeybindEntry = RegisterKeybind(Library, Config.KeyBind, ActivateButton, ButtonFrame)
+	ButtonFrame.Destroying:Connect(function()
+		UnregisterKeybind(Library, KeybindEntry)
 	end)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ButtonFrame })
@@ -2221,10 +2583,12 @@ end
 -- Toggle Component
 function Wolf:AddToggle(Config)
 	Config = typeof(Config) == "table" and Config or { Title = Config }
+	local Library = self.Library or self
 	local Title = Config.Title or "Toggle"
 	local IconName = Config.Icon or Config.icon
-	local Default = Config.Default or false
+	local Default = GetSavedValue(Library, Config, Config.Default == true) == true
 	local Callback = Config.Callback or function() end
+	local BackgroundConfig = typeof(Config.Background) == "table" and Config.Background or {}
 
 	local State = Default
 
@@ -2232,6 +2596,7 @@ function Wolf:AddToggle(Config)
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
+	ToggleFrame:SetAttribute("Saved", Config.Saved == true)
 	AttachMetadata(
 		ToggleFrame,
 		"toggle",
@@ -2274,6 +2639,16 @@ function Wolf:AddToggle(Config)
 	Indicator.BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface
 	Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
 	Indicator.Parent = ToggleFrame
+	local InitialToggleColor = State and (Config.ActiveColor or BackgroundConfig.ActiveColor)
+		or (Config.InactiveColor or BackgroundConfig.InactiveColor)
+	if typeof(InitialToggleColor) == "Color3" then
+		Indicator.BackgroundColor3 = InitialToggleColor
+	end
+	local InitialTransparency = State and (Config.ActiveTransparency or BackgroundConfig.ActiveTransparency)
+		or (Config.InactiveTransparency or BackgroundConfig.InactiveTransparency)
+	if typeof(InitialTransparency) == "number" then
+		Indicator.BackgroundTransparency = math.clamp(InitialTransparency, 0, 1)
+	end
 	Corner(Indicator, 5)
 
 	local Knob = Instance.new("Frame")
@@ -2298,9 +2673,22 @@ function Wolf:AddToggle(Config)
 	local function Update()
 		ToggleObj.Value = State
 		ToggleFrame:SetAttribute("WolfElementState", State and "on" or "off")
+		local ActiveColor = typeof(Config.ActiveColor or BackgroundConfig.ActiveColor) == "Color3"
+				and (Config.ActiveColor or BackgroundConfig.ActiveColor)
+			or self.Theme.Accent
+		local InactiveColor = typeof(Config.InactiveColor or BackgroundConfig.InactiveColor) == "Color3"
+				and (Config.InactiveColor or BackgroundConfig.InactiveColor)
+			or self.Theme.Surface
+		local BackgroundColor = State and ActiveColor or InactiveColor
 		Indicator:SetAttribute("WolfThemeRole_BackgroundColor3", State and "Accent" or "Surface")
-		Tween(Indicator, { BackgroundColor3 = State and self.Theme.Accent or self.Theme.Surface })
+		local RequestedTransparency = State and (Config.ActiveTransparency or BackgroundConfig.ActiveTransparency)
+			or (Config.InactiveTransparency or BackgroundConfig.InactiveTransparency)
+		Indicator.BackgroundTransparency = typeof(RequestedTransparency) == "number"
+				and math.clamp(RequestedTransparency, 0, 1)
+			or 0
+		Tween(Indicator, { BackgroundColor3 = BackgroundColor })
 		Tween(Knob, { Position = State and UDim2.new(1, -16, 0.5, 0) or UDim2.new(0, 2, 0.5, 0) })
+		SaveConfigValue(Library, Config, State)
 		Callback(State)
 		ToggleObj.OnChanged:Fire(State)
 	end
@@ -2319,9 +2707,11 @@ function Wolf:AddToggle(Config)
 	end
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ToggleFrame })
+	local KeybindEntry
 	local ToggleResult = setmetatable({
 		Frame = ToggleFrame,
 		Title = Title,
+		Saved = Config.Saved == true,
 		Toggle = function()
 			State = not State
 			Update()
@@ -2330,10 +2720,11 @@ function Wolf:AddToggle(Config)
 			Self:Toggle()
 		end,
 		SetValue = function(_, Val)
-			State = Val
+			State = Val == true
 			Update()
 		end,
 		Destroy = function()
+			UnregisterKeybind(Library, KeybindEntry)
 			ToggleObj.OnChanged:Destroy()
 			ToggleFrame:Destroy()
 		end,
@@ -2342,16 +2733,23 @@ function Wolf:AddToggle(Config)
 			Label.Size = Hooked and UDim2.new(1, -94, 1, 0) or UDim2.new(1, -60, 1, 0)
 		end,
 	}, WolfComponent)
+	KeybindEntry = RegisterKeybind(Library, Config.KeyBind, function()
+		State = not State
+		Update()
+	end, ToggleFrame)
 	return ToggleResult
 end
 
 -- Slider Component
 function Wolf:AddSlider(Config)
+	Config = typeof(Config) == "table" and Config or { Title = Config }
+	local Library = self.Library or self
 	local Title = Config.Title or "Slider"
 	local IconName = Config.Icon or Config.icon
 	local Min = Config.Min or 0
 	local Max = Config.Max or 100
-	local Default = Config.Default or Min
+	local SavedDefault = GetSavedValue(Library, Config, Config.Default or Min)
+	local Default = typeof(SavedDefault) == "number" and math.clamp(SavedDefault, Min, Max) or Min
 	local Callback = Config.Callback or function() end
 	local DragSlowness = 0.30 -- adjust for dragging slow
 
@@ -2359,6 +2757,7 @@ function Wolf:AddSlider(Config)
 	SliderFrame.Size = UDim2.new(1, 0, 0, 50)
 	SliderFrame.BackgroundColor3 = self.Theme.Card
 	SliderFrame.Parent = ElementParent(self, Config)
+	SliderFrame:SetAttribute("Saved", Config.Saved == true)
 	AttachMetadata(SliderFrame, "slider", Title, "Numeric range control with a current value.", tostring(Default))
 	AddVisibleDescription(SliderFrame, Config)
 	Corner(SliderFrame, 4)
@@ -2422,24 +2821,16 @@ function Wolf:AddSlider(Config)
 	Corner(Thumb, 3)
 
 	local UserDragging = false
-	local CurrentTween = nil
 
 	local function Update(input)
 		local Pos = math.clamp((input.Position.X - Track.AbsolutePosition.X) / Track.AbsoluteSize.X, 0, 1)
 		local Value = math.floor(Min + (Max - Min) * Pos)
 
-		if CurrentTween then
-			CurrentTween:Cancel()
-		end
-
-		CurrentTween =
-			TweenService:Create(Fill, TweenInfo.new(DragSlowness, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Size = UDim2.fromScale(Pos, 1),
-			})
-		CurrentTween:Play()
+		Tween(Fill, { Size = UDim2.fromScale(Pos, 1) }, DragSlowness)
 		Thumb.Position = UDim2.fromScale(Pos, 0.5)
 
 		ValueLabel.Text = tostring(Value)
+		SaveConfigValue(Library, Config, Value)
 		Callback(Value)
 	end
 
@@ -2453,26 +2844,34 @@ function Wolf:AddSlider(Config)
 		end
 	end)
 
-	UserInputService.InputEnded:Connect(function(input)
-		if
-			input.UserInputType == Enum.UserInputType.MouseButton1
-			or input.UserInputType == Enum.UserInputType.Touch
-		then
-			UserDragging = false
-		end
-	end)
-
-	UserInputService.InputChanged:Connect(function(input)
-		if
-			UserDragging
-			and (
-				input.UserInputType == Enum.UserInputType.MouseMovement
+	TrackConnection(
+		Library,
+		UserInputService.InputEnded:Connect(function(input)
+			if
+				input.UserInputType == Enum.UserInputType.MouseButton1
 				or input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			Update(input)
-		end
-	end)
+			then
+				UserDragging = false
+			end
+		end),
+		SliderFrame
+	)
+
+	TrackConnection(
+		Library,
+		UserInputService.InputChanged:Connect(function(input)
+			if
+				UserDragging
+				and (
+					input.UserInputType == Enum.UserInputType.MouseMovement
+					or input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				Update(input)
+			end
+		end),
+		SliderFrame
+	)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = SliderFrame })
 	return SliderFrame
@@ -2830,6 +3229,7 @@ function Wolf:AddRGBColorPickerLegacy(Config)
 		end,
 		Value = AppliedColor,
 		Destroy = function()
+			RemoveOpenDropdown(Library, Popup)
 			PickerFrame:Destroy()
 			Popup:Destroy()
 		end,
@@ -2843,14 +3243,28 @@ function Wolf:AddColorPicker(Config)
 	local IconName = Config.Icon or Config.icon or "pipette"
 	local Default = typeof(Config.Default) == "Color3" and Config.Default or Color3.fromRGB(255, 0, 0)
 	local Callback = Config.Callback or function() end
+	local SavedColor = GetSavedValue(Library, Config, nil)
+	local SavedAlpha
+	if
+		typeof(SavedColor) == "table"
+		and typeof(SavedColor.R) == "number"
+		and typeof(SavedColor.G) == "number"
+		and typeof(SavedColor.B) == "number"
+	then
+		Default =
+			Color3.new(math.clamp(SavedColor.R, 0, 1), math.clamp(SavedColor.G, 0, 1), math.clamp(SavedColor.B, 0, 1))
+		SavedAlpha = SavedColor.A
+	end
 	local H, S, V = Default:ToHSV()
-	local A = Config.Alpha == nil and 1 or math.clamp(Config.Alpha, 0, 1)
+	local A = typeof(SavedAlpha) == "number" and math.clamp(SavedAlpha, 0, 1)
+		or (Config.Alpha == nil and 1 or math.clamp(Config.Alpha, 0, 1))
 
 	local PickerFrame = Instance.new("Frame")
 	PickerFrame.Name = "ColorPicker"
 	PickerFrame.Size = UDim2.new(1, 0, 0, 36)
 	PickerFrame.BackgroundColor3 = self.Theme.Card
 	PickerFrame.Parent = ElementParent(self, Config)
+	PickerFrame:SetAttribute("Saved", Config.Saved == true)
 	AttachMetadata(
 		PickerFrame,
 		"color-picker",
@@ -3169,25 +3583,33 @@ function Wolf:AddColorPicker(Config)
 		A = math.clamp((Input.Position.X - AlphaBar.AbsolutePosition.X) / AlphaBar.AbsoluteSize.X, 0, 1)
 		UpdateUI(false)
 	end)
-	UserInputService.InputChanged:Connect(function(Input)
-		if
-			ActiveSlider
-			and (
-				Input.UserInputType == Enum.UserInputType.MouseMovement
+	TrackConnection(
+		Library,
+		UserInputService.InputChanged:Connect(function(Input)
+			if
+				ActiveSlider
+				and (
+					Input.UserInputType == Enum.UserInputType.MouseMovement
+					or Input.UserInputType == Enum.UserInputType.Touch
+				)
+			then
+				ActiveSlider(Input)
+			end
+		end),
+		PickerFrame
+	)
+	TrackConnection(
+		Library,
+		UserInputService.InputEnded:Connect(function(Input)
+			if
+				Input.UserInputType == Enum.UserInputType.MouseButton1
 				or Input.UserInputType == Enum.UserInputType.Touch
-			)
-		then
-			ActiveSlider(Input)
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(Input)
-		if
-			Input.UserInputType == Enum.UserInputType.MouseButton1
-			or Input.UserInputType == Enum.UserInputType.Touch
-		then
-			ActiveSlider = nil
-		end
-	end)
+			then
+				ActiveSlider = nil
+			end
+		end),
+		PickerFrame
+	)
 
 	HexInput.FocusLost:Connect(function()
 		local Success, Parsed = pcall(Color3.fromHex, HexInput.Text:gsub("#", ""))
@@ -3221,6 +3643,7 @@ function Wolf:AddColorPicker(Config)
 	PipetteButton.MouseButton1Click:Connect(function()
 		AppliedColor = CurrentColor
 		ColorPickerButton.BackgroundColor3 = CurrentColor
+		SaveConfigValue(Library, Config, { R = CurrentColor.R, G = CurrentColor.G, B = CurrentColor.B, A = A })
 		Callback(CurrentColor, A)
 		Popup.Visible = false
 		table.clear(Library.OpenDropdowns)
@@ -3241,13 +3664,16 @@ function Wolf:AddColorPicker(Config)
 				end
 				UpdateUI(false)
 				ColorPickerButton.BackgroundColor3 = AppliedColor
+				SaveConfigValue(Library, Config, { R = AppliedColor.R, G = AppliedColor.G, B = AppliedColor.B, A = A })
 			end
 		end,
 		Value = AppliedColor,
+		Saved = Config.Saved == true,
 		GetValue = function()
 			return AppliedColor, A
 		end,
 		Destroy = function()
+			RemoveOpenDropdown(Library, Popup)
 			PickerFrame:Destroy()
 			Popup:Destroy()
 		end,
@@ -3646,7 +4072,8 @@ function Wolf:AddShortcut(Config)
 		end
 	end
 	UpdateTriggerPosition()
-	table.insert(self._ShortcutConnections, RunService.RenderStepped:Connect(UpdateTriggerPosition))
+	table.insert(self._ShortcutRenderUpdaters, UpdateTriggerPosition)
+	SetShortcutRenderActive(self, self._UIVisible ~= false)
 	table.insert(
 		self._ShortcutConnections,
 		self.ContentArea:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateTriggerPosition)
@@ -3863,7 +4290,7 @@ function Wolf:AddDropdown(Config)
 	local IconName = Config.Icon or Config.icon
 	local Options = Config.Options or Config.Values or {}
 	local Callback = Config.Callback or function() end
-	local Selected = Config.Default
+	local Selected = GetSavedValue(Library, Config, Config.Default)
 
 	local DropdownFrame = Instance.new("Frame")
 	DropdownFrame.Name = "Dropdown"
@@ -3871,6 +4298,7 @@ function Wolf:AddDropdown(Config)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
+	DropdownFrame:SetAttribute("Saved", Config.Saved == true)
 	AttachMetadata(DropdownFrame, "dropdown", Title, "Single selection list.", "closed")
 	AddVisibleDescription(DropdownFrame, Config)
 	Corner(DropdownFrame, 6)
@@ -4008,6 +4436,7 @@ function Wolf:AddDropdown(Config)
 	local OptionsContentWidth = 220
 	local function UpdateValue(Value)
 		Selected = Value
+		SaveConfigValue(Library, Config, Value)
 		ValueLabel.Text = Value == nil and "Select..." or tostring(Value)
 		task.defer(function()
 			if ValueScroller.Parent then
@@ -4094,10 +4523,12 @@ function Wolf:AddDropdown(Config)
 			UpdateValue(Value)
 		end,
 		Value = Selected,
+		Saved = Config.Saved == true,
 		GetValue = function()
 			return Selected
 		end,
 		Destroy = function()
+			RemoveOpenDropdown(Library, OptionsFrame)
 			DropdownFrame:Destroy()
 			OptionsFrame:Destroy()
 		end,
@@ -4135,9 +4566,16 @@ function Wolf:AddMultiDropdown(Config)
 	local IconName = Config.Icon or Config.icon
 	local Options = Config.Options or Config.Values or {}
 	local Callback = Config.Callback or function() end
+	local InitialValues = GetSavedValue(Library, Config, Config.Default or {})
 	local Selected = {}
-	for _, Value in ipairs(Config.Default or {}) do
-		Selected[Value] = true
+	if typeof(InitialValues) == "table" then
+		for Key, Value in pairs(InitialValues) do
+			if typeof(Key) == "number" then
+				Selected[Value] = true
+			elseif Value == true then
+				Selected[Key] = true
+			end
+		end
 	end
 
 	local DropdownFrame = Instance.new("Frame")
@@ -4146,6 +4584,7 @@ function Wolf:AddMultiDropdown(Config)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
+	DropdownFrame:SetAttribute("Saved", Config.Saved == true)
 	AttachMetadata(DropdownFrame, "multi-dropdown", Title, "Multiple selection list.", "closed")
 	AddVisibleDescription(DropdownFrame, Config)
 	Corner(DropdownFrame, 6)
@@ -4307,6 +4746,13 @@ function Wolf:AddMultiDropdown(Config)
 		OptionButton.MouseButton1Click:Connect(function()
 			Selected[OptionValue] = not Selected[OptionValue]
 			UpdateValueLabel()
+			local SelectedValues = {}
+			for Value, IsSelected in pairs(Selected) do
+				if IsSelected then
+					table.insert(SelectedValues, Value)
+				end
+			end
+			SaveConfigValue(Library, Config, SelectedValues)
 			Callback(Selected)
 		end)
 	end
@@ -4336,13 +4782,16 @@ function Wolf:AddMultiDropdown(Config)
 				Selected[Value] = true
 			end
 			UpdateValueLabel()
+			SaveConfigValue(Library, Config, Values or {})
 			Callback(Selected)
 		end,
 		Value = Selected,
+		Saved = Config.Saved == true,
 		GetValue = function()
 			return Selected
 		end,
 		Destroy = function()
+			RemoveOpenDropdown(Library, OptionsFrame)
 			DropdownFrame:Destroy()
 			OptionsFrame:Destroy()
 		end,
