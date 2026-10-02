@@ -1,5 +1,5 @@
 --//====================================================================--
---// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
+--// Wolf UI Library V1.6 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
 local Wolf = {
@@ -680,6 +680,39 @@ function Wolf:SetLiquidGlass(Enabled)
 	return true
 end
 
+function Wolf:SetBirdMode(Enabled)
+	Enabled = Enabled == true
+	local WasEnabled = self._BirdModeEnabled == true
+	self._BirdModeEnabled = Enabled
+
+	if self._BirdIdleConnection then
+		self._BirdIdleConnection:Disconnect()
+		self._BirdIdleConnection = nil
+	end
+
+	if Enabled then
+		self._BirdIdleConnection = LocalPlayer.Idled:Connect(function()
+			pcall(function()
+				local VirtualUser = game:GetService("VirtualUser")
+				VirtualUser:CaptureController()
+				VirtualUser:ClickButton2(Vector2.zero)
+			end)
+		end)
+		pcall(function()
+			RunService:Set3dRenderingEnabled(false)
+		end)
+		if self._CloseDropdowns then
+			self._CloseDropdowns()
+		end
+	elseif WasEnabled then
+		pcall(function()
+			RunService:Set3dRenderingEnabled(true)
+		end)
+	end
+
+	return Enabled
+end
+
 ---------------------------------------------------------------------
 -- UTILITY HELPERS
 ---------------------------------------------------------------------
@@ -1032,6 +1065,7 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
+	self:SetBirdMode(false)
 	DisconnectConnections(self)
 	CancelActiveTweens()
 	self._Keybinds = {}
@@ -1205,6 +1239,54 @@ function Wolf:CreateWindow(Config)
 	ApplyIcon(DeviceIcon, UserInputService.TouchEnabled and "smartphone" or "monitor")
 	DeviceIcon.ImageColor3 = self.Theme.Accent
 	DeviceIcon.Parent = ProfileCard
+
+	local BirdButton = Instance.new("ImageButton")
+	BirdButton.Name = "BirdModeButton"
+	BirdButton.AnchorPoint = Vector2.new(1, 0)
+	BirdButton.Position = UDim2.new(1, -38, 0, 78)
+	BirdButton.Size = UDim2.fromOffset(24, 24)
+	BirdButton.BackgroundColor3 = self.Theme.Surface
+	BirdButton.AutoButtonColor = false
+	BirdButton.Image = ""
+	BirdButton.Parent = ProfileCard
+	Corner(BirdButton, 5)
+	local BirdIcon =
+		CreateIcon(BirdButton, "bird", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.SubText, 3)
+	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
+	BirdButton:SetAttribute("WolfThemeRole_BackgroundColor3", "Surface")
+	Stroke(BirdButton, self.Theme.Border)
+	local BirdTooltip = Instance.new("TextLabel")
+	BirdTooltip.Name = "BirdModeTooltip"
+	BirdTooltip.AnchorPoint = Vector2.new(1, 0)
+	BirdTooltip.Position = UDim2.new(1, -8, 0, 54)
+	BirdTooltip.Size = UDim2.fromOffset(126, 22)
+	BirdTooltip.BackgroundColor3 = self.Theme.Card
+	BirdTooltip.Text = "Low-power AFK mode"
+	BirdTooltip.TextColor3 = self.Theme.Text
+	BirdTooltip.FontFace = self.Fonts.Interface
+	BirdTooltip.TextSize = 11
+	BirdTooltip.Visible = false
+	BirdTooltip.ZIndex = 10
+	BirdTooltip.Parent = ProfileCard
+	Corner(BirdTooltip, 4)
+	Stroke(BirdTooltip, self.Theme.Border)
+	BirdButton.MouseEnter:Connect(function()
+		BirdTooltip.Visible = true
+	end)
+	BirdButton.MouseLeave:Connect(function()
+		BirdTooltip.Visible = false
+	end)
+	BirdButton.MouseButton1Click:Connect(function()
+		local Enabled = not self._BirdModeEnabled
+		self:SetBirdMode(Enabled)
+		local BackgroundRole = Enabled and "AccentDark" or "Surface"
+		local IconRole = Enabled and "Accent" or "SubText"
+		BirdButton:SetAttribute("WolfThemeRole_BackgroundColor3", BackgroundRole)
+		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
+		Tween(BirdButton, { BackgroundColor3 = self.Theme[BackgroundRole] })
+		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
+	end)
+	self.BirdButton = BirdButton
 
 	local DeviceLabel = Instance.new("TextLabel")
 	DeviceLabel.BackgroundTransparency = 1
@@ -2011,6 +2093,7 @@ end
 
 function Wolf:Destroy()
 	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
+	self:SetBirdMode(false)
 	self:SetLiquidGlass(false)
 	DisconnectConnections(self)
 	CancelActiveTweens()
@@ -2046,6 +2129,7 @@ function Wolf:Destroy()
 	end
 	self.ToggleGui = nil
 	self.ToggleButton = nil
+	self.BirdButton = nil
 	self.MainFrame = nil
 	self.ContentArea = nil
 	self.TabContainer = nil
@@ -3358,17 +3442,26 @@ function Wolf:AddColorPicker(Config)
 	end
 
 	local SatValBox = NewBar("SaturationValue", 110)
-	SatValBox:SetAttribute("WolfPreserveThemeColor", true)
-	SatValBox.BackgroundColor3 = Color3.new(1, 1, 1)
+	SatValBox.BackgroundTransparency = 1
+	local SaturationSurface = Instance.new("Frame")
+	SaturationSurface.Name = "SaturationSurface"
+	SaturationSurface.Size = UDim2.fromScale(1, 1)
+	SaturationSurface.BackgroundColor3 = Color3.new(1, 1, 1)
+	SaturationSurface.BorderSizePixel = 0
+	SaturationSurface.ClipsDescendants = true
+	SaturationSurface.ZIndex = 51
+	SaturationSurface:SetAttribute("WolfPreserveThemeColor", true)
+	SaturationSurface.Parent = SatValBox
+	Corner(SaturationSurface, 6)
 	local SatGradient = Instance.new("UIGradient")
-	SatGradient.Parent = SatValBox
+	SatGradient.Parent = SaturationSurface
 	local ValOverlay = Instance.new("Frame")
 	ValOverlay.Size = UDim2.fromScale(1, 1)
 	ValOverlay.BackgroundColor3 = Color3.new(0, 0, 0)
 	ValOverlay.BorderSizePixel = 0
 	ValOverlay.ClipsDescendants = true
 	ValOverlay.ZIndex = 52
-	ValOverlay.Parent = SatValBox
+	ValOverlay.Parent = SaturationSurface
 	Corner(ValOverlay, 6)
 	local ValGradient = Instance.new("UIGradient")
 	ValGradient.Rotation = 90
@@ -3384,7 +3477,7 @@ function Wolf:AddColorPicker(Config)
 	SVCursor.BackgroundTransparency = 1
 	SVCursor.BorderSizePixel = 0
 	SVCursor.ZIndex = 55
-	SVCursor.Parent = ValOverlay
+	SVCursor.Parent = SatValBox
 	Corner(SVCursor, 4)
 	Stroke(SVCursor, Color3.new(1, 1, 1), 0)
 
