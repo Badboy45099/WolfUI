@@ -1,5 +1,5 @@
 --//====================================================================--
---// Wolf UI Library V1.5 (Fluent-Inspired Modular UI Framework)
+--// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
 local Wolf = {
@@ -1257,6 +1257,7 @@ function Wolf:CreateWindow(Config)
 
 	local TabLayout = Instance.new("UIListLayout")
 	TabLayout.Padding = UDim.new(0, 4)
+	TabLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	TabLayout.Parent = TabContainer
 
 	-- Header Frame
@@ -2100,6 +2101,7 @@ function Wolf:AddTab(Config)
 	local TabButton = Instance.new("TextButton")
 	TabButton.Name = TabTitle .. "Tab"
 	TabButton.Size = UDim2.new(1, 0, 0, 34)
+	TabButton.LayoutOrder = #self.Tabs + 1
 	TabButton.BackgroundColor3 = self.Theme.Card
 	TabButton:SetAttribute("WolfThemeRole_BackgroundColor3", "Card")
 	TabButton.BackgroundTransparency = 1
@@ -2917,15 +2919,18 @@ function Wolf:AddTextbox(Config)
 	end
 
 	local Box = Instance.new("TextBox")
+	Box.Name = "Box"
 	Box.AnchorPoint = Vector2.new(1, 0.5)
 	Box.Position = UDim2.new(1, -10, 0.5, 0)
 	Box.Size = UDim2.new(0.45, 0, 0, 24)
+	Box.ClipsDescendants = true
 	Box.BackgroundColor3 = self.Theme.Surface
 	Box.TextColor3 = self.Theme.Text
 	Box.PlaceholderColor3 = self.Theme.SubText
 	Box.PlaceholderText = Placeholder
 	Box.FontFace = self.Fonts.Small
 	Box.TextSize = 11
+	Box.TextXAlignment = Enum.TextXAlignment.Left
 	Box.Text = ""
 	Box.Parent = InputFrame
 	Corner(Box, 4)
@@ -3929,6 +3934,16 @@ function Wolf:AddShortcut(Config)
 			or ActionElement.Frame:FindFirstChild("DropdownSelection", true)
 			or ActionElement.Frame:FindFirstChild("ColorPickerButton", true)
 		if Control and Control:IsA("GuiObject") then
+			local ReservedWidth = 32
+			if (Control.Name == "Box" or Control.Name == "DropdownSelection") and Control.Parent.AbsoluteSize.X > 0 then
+				local Size = Control.Size
+				Control.Size = UDim2.new(
+					math.max(0, Size.X.Scale - ReservedWidth / Control.Parent.AbsoluteSize.X),
+					Size.X.Offset,
+					Size.Y.Scale,
+					Size.Y.Offset
+				)
+			end
 			Control.AnchorPoint = Vector2.new(1, Control.AnchorPoint.Y)
 			Control.Position = UDim2.new(1, -42 - TriggerSlot * 32, Control.Position.Y.Scale, Control.Position.Y.Offset)
 		end
