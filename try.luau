@@ -37,6 +37,13 @@ do
 		return IconModule and require(IconModule) or nil
 	end)
 	Lucide = Success and Module or nil
+	if not Lucide and typeof(loadstring) == "function" then
+		local RemoteSuccess, RemoteModule = pcall(function()
+			local Source = game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
+			return loadstring(Source)()
+		end)
+		Lucide = RemoteSuccess and RemoteModule or nil
+	end
 end
 
 local function IsValidCustomIcon(Icon)
