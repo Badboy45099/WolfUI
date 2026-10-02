@@ -1089,7 +1089,7 @@ end
 
 function Wolf:CreateWindow(Config)
 	Config = Config or {}
-	self:SetBirdMode(false)
+	self._BirdModeEnabled = BirdRuntime.Enabled == true
 	DisconnectConnections(self)
 	CancelActiveTweens()
 	self._Keybinds = {}
@@ -1267,19 +1267,30 @@ function Wolf:CreateWindow(Config)
 	local BirdButton = Instance.new("ImageButton")
 	BirdButton.Name = "BirdModeButton"
 	BirdButton.AnchorPoint = Vector2.new(1, 0)
-	BirdButton.Position = UDim2.new(1, -62, 0, 78)
+	BirdButton.Position = UDim2.new(1, -38, 0, 78)
 	BirdButton.Size = UDim2.fromOffset(24, 24)
 	BirdButton.BackgroundTransparency = 1
 	BirdButton.AutoButtonColor = false
 	BirdButton.Image = ""
 	BirdButton.Parent = ProfileCard
 	Corner(BirdButton, 5)
-	local BirdIcon =
-		CreateIcon(BirdButton, "bird", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.SubText, 3)
-	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
+	local BirdIconName = "bone"
+	local BirdGlow =
+		CreateIcon(BirdButton, BirdIconName, UDim2.fromOffset(1, 1), UDim2.fromOffset(22, 22), self.Theme.Accent, 2)
+	BirdGlow.ImageTransparency = self._BirdModeEnabled and 0.72 or 1
+	local BirdIcon = CreateIcon(
+		BirdButton,
+		BirdIconName,
+		UDim2.fromOffset(4, 4),
+		UDim2.fromOffset(16, 16),
+		self._BirdModeEnabled and self.Theme.Accent or self.Theme.SubText,
+		3
+	)
+	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", self._BirdModeEnabled and "Accent" or "SubText")
 	local BirdStroke = Stroke(BirdButton, self.Theme.Accent, 1)
 	BirdStroke.Thickness = 1.5
 	BirdStroke:SetAttribute("WolfThemeRole_Color", "Accent")
+	BirdStroke.Transparency = self._BirdModeEnabled and 0.05 or 1
 	local BirdTooltip = Instance.new("TextLabel")
 	BirdTooltip.Name = "BirdModeTooltip"
 	BirdTooltip.AnchorPoint = Vector2.new(1, 0)
@@ -1307,6 +1318,7 @@ function Wolf:CreateWindow(Config)
 		local IconRole = Enabled and "Accent" or "SubText"
 		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
 		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
+		Tween(BirdGlow, { ImageTransparency = Enabled and 0.72 or 1 })
 		BirdStroke.Transparency = Enabled and 0.05 or 1
 	end)
 	self.BirdButton = BirdButton
