@@ -721,11 +721,8 @@ local function SetShortcutRenderActive(Library, Enabled)
 	Library._ShortcutRenderConnections = Library._ShortcutRenderConnections or {}
 	Library._ShortcutConnections = Library._ShortcutConnections or {}
 	if Enabled then
-		if #Library._ShortcutRenderConnections > 0 then
-			return
-		end
-		for _, Update in ipairs(Library._ShortcutRenderUpdaters) do
-			local Connection = RunService.RenderStepped:Connect(Update)
+		for Index = #Library._ShortcutRenderConnections + 1, #Library._ShortcutRenderUpdaters do
+			local Connection = RunService.RenderStepped:Connect(Library._ShortcutRenderUpdaters[Index])
 			table.insert(Library._ShortcutRenderConnections, Connection)
 			table.insert(Library._ShortcutConnections, Connection)
 		end
@@ -1061,6 +1058,7 @@ function Wolf:CreateWindow(Config)
 	DisconnectConnections(self)
 	CancelActiveTweens()
 	self._Keybinds = {}
+	self._ShortcutActions = setmetatable({}, { __mode = "k" })
 	self.ConfigProfile = Config.ConfigProfile or Config.Profile or "Default"
 	self._ConfigData = nil
 	self._LiquidGlassThemeRefreshToken = (self._LiquidGlassThemeRefreshToken or 0) + 1
@@ -1368,15 +1366,31 @@ function Wolf:CreateWindow(Config)
 	SearchBox.ClipsDescendants = true
 	SearchBox.Parent = SearchContainer
 
-	local SearchIcon = Instance.new("ImageLabel")
+	local SearchIcon = Instance.new("ImageButton")
 	SearchIcon.Name = "SearchIcon"
 	SearchIcon.BackgroundTransparency = 1
 	SearchIcon.Size = UDim2.fromOffset(14, 14)
 	SearchIcon.Position = UDim2.new(0, 8, 0.5, 0)
 	SearchIcon.AnchorPoint = Vector2.new(0, 0.5)
 	SearchIcon.ImageColor3 = self.Theme.SubText
+	SearchIcon.AutoButtonColor = false
+	SearchIcon.ZIndex = 3
 	SearchIcon.Parent = SearchContainer
 	ApplyIcon(SearchIcon, "search")
+	local SearchExpanded = false
+	SearchContainer.Size = UDim2.fromOffset(30, 30)
+	SearchBox.Visible = false
+	SearchBox.ZIndex = 2
+	SearchIcon.MouseButton1Click:Connect(function()
+		SearchExpanded = not SearchExpanded
+		SearchContainer.Size = UDim2.fromOffset(SearchExpanded and 130 or 30, 30)
+		SearchBox.Visible = SearchExpanded
+		if SearchExpanded then
+			SearchBox:CaptureFocus()
+		else
+			SearchBox:ReleaseFocus()
+		end
+	end)
 
 	-- Lock Button
 	local LockButton = Instance.new("TextButton")
@@ -1667,39 +1681,9 @@ function Wolf:CreateWindow(Config)
 	local SidebarWidth = IsMobile and 110 or 190
 	local SidebarMinWidth = 100
 	local SidebarMaxWidth = 260
-	local SidebarRatio = SidebarWidth / DeviceWindowSize.X.Offset
-	local CompactHeaderWidth = 450
-	local CompactLockWidth = 42
-	local ExpandedLockWidth = 68
-	local CompactSearchWidth = 30
-	local ExpandedSearchWidth = 130
 
-	local function UpdateHeaderLayout()
-		local HeaderWidth = HeaderFrame.AbsoluteSize.X
-		local IsCompact = HeaderWidth < CompactHeaderWidth
-		local SearchWidth = IsCompact and CompactSearchWidth or ExpandedSearchWidth
-		local LockWidth = IsCompact and CompactLockWidth or ExpandedLockWidth
-		SearchContainer.Size = UDim2.fromOffset(SearchWidth, 30)
-		ControlsHolder.Size = UDim2.fromOffset(SearchWidth + LockWidth + ControlsLayout.Padding.Offset, 34)
-		SearchBox.Visible = not IsCompact
-		SearchIcon.Position = UDim2.new(0, IsCompact and 8 or 8, 0.5, 0)
-		LockButton.Size = UDim2.fromOffset(LockWidth, 30)
-		LockText.Visible = not IsCompact
-		LockIcon.Position = UDim2.fromOffset(IsCompact and 14 or 7, 8)
-		local AvailableTitleWidth = math.max(0, HeaderWidth - SearchWidth - LockWidth - DragIcon.AbsoluteSize.X - 68)
-		HeaderTitle.Size = UDim2.new(0, math.min(240, AvailableTitleWidth), 0, 52)
-	end
-
-	local function UpdateSidebarLayout(ScaleWithWindow)
-		local ActualMainWidth = MainFrame.AbsoluteSize.X
-		if ScaleWithWindow and ActualMainWidth >= MinSize.X then
-			SidebarWidth = SidebarRatio * ActualMainWidth
-		end
-		local MainWidth = math.max(ActualMainWidth, MinSize.X)
-		local MaxSidebarWidth =
-			math.max(SidebarMinWidth, math.min(SidebarMaxWidth, MainWidth - MinSize.X + SidebarMinWidth))
-		SidebarWidth = math.clamp(SidebarWidth, SidebarMinWidth, MaxSidebarWidth)
-		SidebarRatio = SidebarWidth / math.max(MainWidth, 1)
+	local function UpdateSidebarLayout()
+		SidebarWidth = math.clamp(SidebarWidth, SidebarMinWidth, SidebarMaxWidth)
 		Sidebar.Size = UDim2.new(0, SidebarWidth, 1, 0)
 		SidebarResizeHandle.Position = UDim2.new(0, SidebarWidth - 4, 0, 0)
 		HeaderFrame.Position = UDim2.new(0, SidebarWidth, 0, 0)
@@ -1708,16 +1692,9 @@ function Wolf:CreateWindow(Config)
 		ContentArea.Size = UDim2.new(1, -SidebarWidth, 1, -76)
 		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
-		UpdateHeaderLayout()
 	end
 	UpdateSidebarLayout()
 	FitWindowToDevice()
-	TrackConnection(
-		self,
-		MainFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-			UpdateSidebarLayout(true)
-		end)
-	)
 
 	local function StopDropdownRender()
 		if self._RenderConnection then
@@ -1882,7 +1859,6 @@ function Wolf:CreateWindow(Config)
 					SidebarMinWidth,
 					SidebarMaxWidth
 				)
-				SidebarRatio = SidebarWidth / MainFrame.AbsoluteSize.X
 				UpdateSidebarLayout()
 			end
 
@@ -2064,6 +2040,7 @@ function Wolf:Destroy()
 	self._CloseDropdowns = nil
 	self._UpdateDropdownPositions = nil
 	self._Keybinds = {}
+	self._ShortcutActions = setmetatable({}, { __mode = "k" })
 	self._ConfigData = nil
 	table.clear(self.OpenDropdowns)
 	table.clear(self.Tabs)
@@ -2571,9 +2548,14 @@ function Wolf:AddButton(Config)
 		end
 	end
 	TextBtn.MouseButton1Click:Connect(ActivateButton)
+	Library._ShortcutActions = Library._ShortcutActions or setmetatable({}, { __mode = "k" })
+	Library._ShortcutActions[ButtonFrame] = ActivateButton
 	local KeybindEntry = RegisterKeybind(Library, Config.KeyBind, ActivateButton, ButtonFrame)
 	ButtonFrame.Destroying:Connect(function()
 		UnregisterKeybind(Library, KeybindEntry)
+		if Library._ShortcutActions then
+			Library._ShortcutActions[ButtonFrame] = nil
+		end
 	end)
 
 	table.insert(self.Library.Elements, { Text = Title, Frame = ButtonFrame })
@@ -4165,17 +4147,19 @@ function Wolf:AddShortcut(Config)
 	)
 
 	local function ActivateShortcut()
-		if ActionElement and ActionElement.Activate then
+		if typeof(ActionElement) == "table" and type(ActionElement.Activate) == "function" then
 			ActionElement:Activate()
-		elseif ActionElement and ActionElement.Toggle then
+		elseif typeof(ActionElement) == "table" and type(ActionElement.Toggle) == "function" then
 			ActionElement:Toggle()
 		elseif ActionElement and ActionElement.Frame then
-			local ActionButton = ActionElement.Frame:FindFirstChildWhichIsA("GuiButton", true)
+			local ActionCallback = self._ShortcutActions and self._ShortcutActions[ActionElement.Frame]
 			local ActionTextBox = ActionElement.Frame:FindFirstChildWhichIsA("TextBox", true)
-			if ActionButton then
-				ActionButton:Activate()
+			if ActionCallback then
+				ActionCallback()
 			elseif ActionTextBox then
 				ActionTextBox:CaptureFocus()
+			elseif Callback then
+				Callback(ActionElement)
 			end
 		elseif HookSource and HookSource:IsA("TextBox") then
 			HookSource:CaptureFocus()
