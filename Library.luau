@@ -21,9 +21,19 @@ local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
-local ConfigStore = {}
+
+local BirdRuntimeEnvironment = {}
+pcall(function()
+	BirdRuntimeEnvironment = getgenv()
+end)
+local BirdRuntime = BirdRuntimeEnvironment.WolfUIBirdRuntime
+if typeof(BirdRuntime) ~= "table" then
+	BirdRuntime = {}
+	BirdRuntimeEnvironment.WolfUIBirdRuntime = BirdRuntime
+end
 
 ---------------------------------------------------------------------
 -- ICON MODULE (Lucide + Spritesheet Cropping)
@@ -32,8 +42,9 @@ local ConfigStore = {}
 local Lucide
 do
 	local Success, Module = pcall(function()
-		local IconModule = script:FindFirstChild("Lucide")
-		return IconModule and require(IconModule) or nil
+		local Source =
+			game:HttpGet("https://raw.githubusercontent.com/SOUSHI45099/Assets/refs/heads/main/LucideRoblox.lua")
+		return loadstring(Source)()
 	end)
 	Lucide = Success and Module or nil
 end
@@ -680,33 +691,47 @@ end
 
 function Wolf:SetBirdMode(Enabled)
 	Enabled = Enabled == true
-	local WasEnabled = self._BirdModeEnabled == true
+	local WasEnabled = BirdRuntime.Enabled == true
+	if BirdRuntime.IdledConnection then
+		BirdRuntime.IdledConnection:Disconnect()
+		BirdRuntime.IdledConnection = nil
+	end
+	self._BirdIdleConnection = nil
 
 	if Enabled then
 		if not WasEnabled then
 			pcall(function()
-				self._BirdUserGameSettings = UserSettings():GetService("UserGameSettings")
-				self._BirdOriginalQualityLevel = self._BirdUserGameSettings.SavedQualityLevel
+				BirdRuntime.UserGameSettings = UserSettings():GetService("UserGameSettings")
+				BirdRuntime.OriginalQualityLevel = BirdRuntime.UserGameSettings.SavedQualityLevel
 			end)
 		end
 		pcall(function()
-			if self._BirdUserGameSettings then
-				self._BirdUserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
+			if BirdRuntime.UserGameSettings then
+				BirdRuntime.UserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
 			end
 		end)
+		BirdRuntime.IdledConnection = LocalPlayer.Idled:Connect(function()
+			pcall(function()
+				local VirtualUser = game:GetService("VirtualUser")
+				VirtualUser:CaptureController()
+				VirtualUser:ClickButton2(Vector2.zero)
+			end)
+		end)
+		self._BirdIdleConnection = BirdRuntime.IdledConnection
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
 	elseif WasEnabled then
 		pcall(function()
-			if self._BirdUserGameSettings and self._BirdOriginalQualityLevel then
-				self._BirdUserGameSettings.SavedQualityLevel = self._BirdOriginalQualityLevel
+			if BirdRuntime.UserGameSettings and BirdRuntime.OriginalQualityLevel then
+				BirdRuntime.UserGameSettings.SavedQualityLevel = BirdRuntime.OriginalQualityLevel
 			end
 		end)
-		self._BirdUserGameSettings = nil
-		self._BirdOriginalQualityLevel = nil
+		BirdRuntime.UserGameSettings = nil
+		BirdRuntime.OriginalQualityLevel = nil
 	end
 
+	BirdRuntime.Enabled = Enabled
 	self._BirdModeEnabled = Enabled
 	return Enabled
 end
@@ -760,25 +785,52 @@ local function CancelActiveTweens()
 	end
 end
 
-local function GetConfigStoreKey(Library)
+local function GetConfigPath(Library)
 	local PlaceId = tostring(game.PlaceId)
 	local Profile = tostring(Library.ConfigProfile or "Default"):gsub("[^%w_-]", "_")
-	return PlaceId .. "/" .. Profile
+	return "WolfUI/" .. PlaceId .. "/" .. Profile .. ".json"
 end
 
 local function EnsureConfigLoaded(Library)
 	if Library._ConfigData then
 		return Library._ConfigData
 	end
-	local StoredData = ConfigStore[GetConfigStoreKey(Library)]
-	Library._ConfigData = typeof(StoredData) == "table" and table.clone(StoredData) or {}
+	Library._ConfigData = {}
+	if typeof(readfile) == "function" then
+		local Success, Encoded = pcall(readfile, GetConfigPath(Library))
+		if Success and typeof(Encoded) == "string" then
+			local Decoded, Data = pcall(function()
+				return HttpService:JSONDecode(Encoded)
+			end)
+			if Decoded and typeof(Data) == "table" then
+				Library._ConfigData = Data
+			end
+		end
+	end
 	return Library._ConfigData
 end
 
 local function WriteConfigData(Library)
 	local Data = EnsureConfigLoaded(Library)
-	ConfigStore[GetConfigStoreKey(Library)] = table.clone(Data)
-	return true
+	if typeof(writefile) ~= "function" then
+		return false
+	end
+	local Path = GetConfigPath(Library)
+	local Folder = Path:match("^(.*)/[^/]+$")
+	if typeof(makefolder) == "function" and Folder then
+		local Current = ""
+		for Part in Folder:gmatch("[^/]+") do
+			Current = Current == "" and Part or (Current .. "/" .. Part)
+			pcall(makefolder, Current)
+		end
+	end
+	local Success, Encoded = pcall(function()
+		return HttpService:JSONEncode(Data)
+	end)
+	if not Success then
+		return false
+	end
+	return pcall(writefile, Path, Encoded)
 end
 
 local function ConfigKey(Config)
