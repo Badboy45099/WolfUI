@@ -1,5 +1,5 @@
 --//====================================================================--
---// Wolf UI Library V1.6 (Fluent-Inspired Modular UI Framework)
+--// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
 local Wolf = {
@@ -25,6 +25,16 @@ local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
+
+local BirdRuntimeEnvironment = {}
+pcall(function()
+	BirdRuntimeEnvironment = getgenv()
+end)
+local BirdRuntime = BirdRuntimeEnvironment.WolfUIBirdRuntime
+if typeof(BirdRuntime) ~= "table" then
+	BirdRuntime = {}
+	BirdRuntimeEnvironment.WolfUIBirdRuntime = BirdRuntime
+end
 
 ---------------------------------------------------------------------
 -- ICON MODULE (Lucide + Spritesheet Cropping)
@@ -682,34 +692,48 @@ end
 
 function Wolf:SetBirdMode(Enabled)
 	Enabled = Enabled == true
-	local WasEnabled = self._BirdModeEnabled == true
-	self._BirdModeEnabled = Enabled
-
-	if self._BirdIdleConnection then
-		self._BirdIdleConnection:Disconnect()
-		self._BirdIdleConnection = nil
+	local WasEnabled = BirdRuntime.Enabled == true
+	if BirdRuntime.IdledConnection then
+		BirdRuntime.IdledConnection:Disconnect()
+		BirdRuntime.IdledConnection = nil
 	end
+	self._BirdIdleConnection = nil
 
 	if Enabled then
-		self._BirdIdleConnection = LocalPlayer.Idled:Connect(function()
+		if not WasEnabled then
+			pcall(function()
+				BirdRuntime.UserGameSettings = UserSettings():GetService("UserGameSettings")
+				BirdRuntime.OriginalQualityLevel = BirdRuntime.UserGameSettings.SavedQualityLevel
+			end)
+		end
+		pcall(function()
+			if BirdRuntime.UserGameSettings then
+				BirdRuntime.UserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
+			end
+		end)
+		BirdRuntime.IdledConnection = LocalPlayer.Idled:Connect(function()
 			pcall(function()
 				local VirtualUser = game:GetService("VirtualUser")
 				VirtualUser:CaptureController()
 				VirtualUser:ClickButton2(Vector2.zero)
 			end)
 		end)
-		pcall(function()
-			RunService:Set3dRenderingEnabled(false)
-		end)
+		self._BirdIdleConnection = BirdRuntime.IdledConnection
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
 	elseif WasEnabled then
 		pcall(function()
-			RunService:Set3dRenderingEnabled(true)
+			if BirdRuntime.UserGameSettings and BirdRuntime.OriginalQualityLevel then
+				BirdRuntime.UserGameSettings.SavedQualityLevel = BirdRuntime.OriginalQualityLevel
+			end
 		end)
+		BirdRuntime.UserGameSettings = nil
+		BirdRuntime.OriginalQualityLevel = nil
 	end
 
+	BirdRuntime.Enabled = Enabled
+	self._BirdModeEnabled = Enabled
 	return Enabled
 end
 
@@ -1231,7 +1255,7 @@ function Wolf:CreateWindow(Config)
 	Username.Parent = ProfileCard
 
 	local DeviceIcon = Instance.new("ImageButton")
-	DeviceIcon.Position = UDim2.new(1, -68, 0, 80)
+	DeviceIcon.Position = UDim2.new(1, -92, 0, 78)
 	DeviceIcon.Size = UDim2.fromOffset(24, 24)
 	DeviceIcon.BackgroundTransparency = 1
 	DeviceIcon.AutoButtonColor = false
@@ -1243,9 +1267,9 @@ function Wolf:CreateWindow(Config)
 	local BirdButton = Instance.new("ImageButton")
 	BirdButton.Name = "BirdModeButton"
 	BirdButton.AnchorPoint = Vector2.new(1, 0)
-	BirdButton.Position = UDim2.new(1, -38, 0, 78)
+	BirdButton.Position = UDim2.new(1, -62, 0, 78)
 	BirdButton.Size = UDim2.fromOffset(24, 24)
-	BirdButton.BackgroundColor3 = self.Theme.Surface
+	BirdButton.BackgroundTransparency = 1
 	BirdButton.AutoButtonColor = false
 	BirdButton.Image = ""
 	BirdButton.Parent = ProfileCard
@@ -1253,8 +1277,9 @@ function Wolf:CreateWindow(Config)
 	local BirdIcon =
 		CreateIcon(BirdButton, "bird", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.SubText, 3)
 	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
-	BirdButton:SetAttribute("WolfThemeRole_BackgroundColor3", "Surface")
-	Stroke(BirdButton, self.Theme.Border)
+	local BirdStroke = Stroke(BirdButton, self.Theme.Accent, 1)
+	BirdStroke.Thickness = 1.5
+	BirdStroke:SetAttribute("WolfThemeRole_Color", "Accent")
 	local BirdTooltip = Instance.new("TextLabel")
 	BirdTooltip.Name = "BirdModeTooltip"
 	BirdTooltip.AnchorPoint = Vector2.new(1, 0)
@@ -1279,12 +1304,10 @@ function Wolf:CreateWindow(Config)
 	BirdButton.MouseButton1Click:Connect(function()
 		local Enabled = not self._BirdModeEnabled
 		self:SetBirdMode(Enabled)
-		local BackgroundRole = Enabled and "AccentDark" or "Surface"
 		local IconRole = Enabled and "Accent" or "SubText"
-		BirdButton:SetAttribute("WolfThemeRole_BackgroundColor3", BackgroundRole)
 		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
-		Tween(BirdButton, { BackgroundColor3 = self.Theme[BackgroundRole] })
 		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
+		BirdStroke.Transparency = Enabled and 0.05 or 1
 	end)
 	self.BirdButton = BirdButton
 
@@ -1312,7 +1335,7 @@ function Wolf:CreateWindow(Config)
 	PowerButton.AnchorPoint = Vector2.new(1, 0)
 	PowerButton.Position = UDim2.new(1, -8, 0, 78)
 	PowerButton.Size = UDim2.fromOffset(24, 24)
-	PowerButton.BackgroundColor3 = self.Theme.Surface
+	PowerButton.BackgroundTransparency = 1
 	PowerButton.AutoButtonColor = false
 	PowerButton.Image = ""
 	PowerButton.Parent = ProfileCard
@@ -1387,6 +1410,7 @@ function Wolf:CreateWindow(Config)
 	ControlsLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
 	ControlsLayout.VerticalAlignment = Enum.VerticalAlignment.Center
 	ControlsLayout.Padding = UDim.new(0, 8)
+	ControlsLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	ControlsLayout.Parent = ControlsHolder
 
 	-- Drag Icon
@@ -1780,6 +1804,7 @@ function Wolf:CreateWindow(Config)
 		ContentArea.Size = UDim2.new(1, -SidebarWidth, 1, -76)
 		Footnote.Position = UDim2.new(0, SidebarWidth, 1, -24)
 		Footnote.Size = UDim2.new(1, -SidebarWidth, 0, 24)
+		DeviceLabel.Visible = not IsMobile and SidebarWidth >= 150
 	end
 	UpdateSidebarLayout()
 	FitWindowToDevice()
@@ -3400,8 +3425,7 @@ function Wolf:AddColorPicker(Config)
 	local Popup = Instance.new("Frame")
 	Popup.Name = "ColorPickerPopup"
 	Popup.Size = UDim2.fromOffset(260, 220)
-	Popup.BackgroundColor3 = self.Theme.Background
-	Popup.BackgroundTransparency = 0
+	Popup.BackgroundTransparency = 1
 	Popup.BorderSizePixel = 0
 	Popup.Visible = false
 	Popup.ZIndex = 150
@@ -3416,11 +3440,11 @@ function Wolf:AddColorPicker(Config)
 	MainContainer.BackgroundTransparency = 0
 	MainContainer.BorderSizePixel = 0
 	MainContainer.Active = true
-	MainContainer.ClipsDescendants = false
+	MainContainer.ClipsDescendants = true
 	MainContainer.ZIndex = 150
 	MainContainer.Parent = Popup
 	Corner(MainContainer, 12)
-	Stroke(MainContainer, self.Theme.Text, 0.85)
+	Stroke(MainContainer, self.Theme.Border, 0.25)
 	Padding(MainContainer, 8, 8, 8, 8)
 
 	local Layout = Instance.new("UIListLayout")
