@@ -1,5 +1,5 @@
 --//====================================================================--
---// Wolf UI Library V1 (Fluent-Inspired Modular UI Framework)
+--// Wolf UI Library V1.5 (Fluent-Inspired Modular UI Framework)
 --//====================================================================--
 
 local Wolf = {
@@ -2196,6 +2196,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Name = "ToggleFrame"
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
+	ToggleFrame.ClipsDescendants = true
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(
@@ -2218,6 +2219,7 @@ function Wolf:AddToggleLegacy(Idx, Config)
 	Label.TextColor3 = self.Theme.Text
 	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
 	Label.Parent = ToggleFrame
 
 	local Indicator = Instance.new("Frame")
@@ -2588,6 +2590,7 @@ function Wolf:AddToggle(Config)
 
 	local ToggleFrame = Instance.new("Frame")
 	ToggleFrame.Size = UDim2.new(1, 0, 0, 36)
+	ToggleFrame.ClipsDescendants = true
 	ToggleFrame.BackgroundColor3 = self.Theme.Card
 	ToggleFrame.Parent = ElementParent(self, Config)
 	ToggleFrame:SetAttribute("Saved", Config.Saved == true)
@@ -2612,6 +2615,7 @@ function Wolf:AddToggle(Config)
 	Label.TextColor3 = self.Theme.Text
 	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
 	Label.Parent = ToggleFrame
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
@@ -2880,6 +2884,7 @@ function Wolf:AddTextbox(Config)
 
 	local InputFrame = Instance.new("Frame")
 	InputFrame.Size = UDim2.new(1, 0, 0, 36)
+	InputFrame.ClipsDescendants = true
 	InputFrame.BackgroundColor3 = self.Theme.Card
 	InputFrame.Parent = ElementParent(self, Config)
 	AttachMetadata(InputFrame, "textbox", Title, "Text input control.", "empty")
@@ -2896,6 +2901,7 @@ function Wolf:AddTextbox(Config)
 	Label.TextColor3 = self.Theme.Text
 	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
 	Label.Parent = InputFrame
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
@@ -4312,6 +4318,7 @@ function Wolf:AddDropdown(Config)
 	DropdownFrame.Name = "Dropdown"
 	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DropdownFrame.ClipsDescendants = true
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
 	DropdownFrame:SetAttribute("Saved", Config.Saved == true)
@@ -4341,6 +4348,7 @@ function Wolf:AddDropdown(Config)
 	Label.TextColor3 = self.Theme.Text
 	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
 	Label.Parent = DropdownButton
 
 	local ValueLabel = Instance.new("TextLabel")
@@ -4385,6 +4393,7 @@ function Wolf:AddDropdown(Config)
 	SelectionFrame.BackgroundColor3 = self.Theme.Surface
 	SelectionFrame.BackgroundTransparency = 0.15
 	SelectionFrame.BorderSizePixel = 0
+	SelectionFrame.ClipsDescendants = true
 	SelectionFrame.ZIndex = 2
 	SelectionFrame.Parent = DropdownButton
 	Corner(SelectionFrame, 4)
@@ -4472,6 +4481,7 @@ function Wolf:AddDropdown(Config)
 		OptionsContentWidth = math.max(OptionsContentWidth, OptionWidth)
 		local OptionButton = Instance.new("TextButton")
 		OptionButton.Size = UDim2.fromOffset(OptionWidth, 28)
+		OptionButton.ClipsDescendants = true
 		OptionButton.BackgroundColor3 = self.Theme.Surface
 		OptionButton.Text = ""
 		OptionButton.TextColor3 = self.Theme.Text
@@ -4495,6 +4505,7 @@ function Wolf:AddDropdown(Config)
 		OptionText.TextColor3 = self.Theme.Text
 		OptionText.TextSize = 11
 		OptionText.TextXAlignment = Enum.TextXAlignment.Left
+		OptionText.TextTruncate = Enum.TextTruncate.AtEnd
 		OptionText.ZIndex = 52
 		OptionText.Parent = OptionButton
 		OptionButton.MouseButton1Click:Connect(function()
@@ -4598,6 +4609,7 @@ function Wolf:AddMultiDropdown(Config)
 	DropdownFrame.Name = "MultiDropdown"
 	DropdownFrame.Size = UDim2.new(1, 0, 0, 0)
 	DropdownFrame.AutomaticSize = Enum.AutomaticSize.Y
+	DropdownFrame.ClipsDescendants = true
 	DropdownFrame.BackgroundColor3 = self.Theme.Card
 	DropdownFrame.Parent = ElementParent(self, Config)
 	DropdownFrame:SetAttribute("Saved", Config.Saved == true)
@@ -4627,6 +4639,7 @@ function Wolf:AddMultiDropdown(Config)
 	Label.TextColor3 = self.Theme.Text
 	Label.TextSize = 13
 	Label.TextXAlignment = Enum.TextXAlignment.Left
+	Label.TextTruncate = Enum.TextTruncate.AtEnd
 	Label.Parent = DropdownButton
 	if IconName then
 		Label.Position = UDim2.fromOffset(36, 0)
@@ -4671,6 +4684,7 @@ function Wolf:AddMultiDropdown(Config)
 	SelectionFrame.BackgroundColor3 = self.Theme.Surface
 	SelectionFrame.BackgroundTransparency = 0.15
 	SelectionFrame.BorderSizePixel = 0
+	SelectionFrame.ClipsDescendants = true
 	SelectionFrame.ZIndex = 2
 	SelectionFrame.Parent = DropdownButton
 	Corner(SelectionFrame, 4)
@@ -4729,6 +4743,7 @@ function Wolf:AddMultiDropdown(Config)
 		local OptionTitle, OptionValue = OptionData(Option)
 		local OptionButton = Instance.new("TextButton")
 		OptionButton.Size = UDim2.new(1, 0, 0, 28)
+		OptionButton.ClipsDescendants = true
 		OptionButton.BackgroundColor3 = self.Theme.Surface
 		OptionButton.Text = ""
 		OptionButton.TextColor3 = self.Theme.Text
@@ -4757,6 +4772,7 @@ function Wolf:AddMultiDropdown(Config)
 		OptionText.TextColor3 = self.Theme.Text
 		OptionText.TextSize = 11
 		OptionText.TextXAlignment = Enum.TextXAlignment.Left
+		OptionText.TextTruncate = Enum.TextTruncate.AtEnd
 		OptionText.ZIndex = 52
 		OptionText.Parent = OptionButton
 		OptionButton.MouseButton1Click:Connect(function()
