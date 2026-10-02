@@ -716,29 +716,6 @@ local function DisconnectConnections(Library)
 	end
 end
 
-local function SetShortcutRenderActive(Library, Enabled)
-	Library._ShortcutRenderUpdaters = Library._ShortcutRenderUpdaters or {}
-	Library._ShortcutRenderConnections = Library._ShortcutRenderConnections or {}
-	Library._ShortcutConnections = Library._ShortcutConnections or {}
-	if Enabled then
-		for Index = #Library._ShortcutRenderConnections + 1, #Library._ShortcutRenderUpdaters do
-			local Connection = RunService.RenderStepped:Connect(Library._ShortcutRenderUpdaters[Index])
-			table.insert(Library._ShortcutRenderConnections, Connection)
-			table.insert(Library._ShortcutConnections, Connection)
-		end
-		return
-	end
-	for _, Connection in ipairs(Library._ShortcutRenderConnections) do
-		Connection:Disconnect()
-		for Index = #Library._ShortcutConnections, 1, -1 do
-			if Library._ShortcutConnections[Index] == Connection then
-				table.remove(Library._ShortcutConnections, Index)
-			end
-		end
-	end
-	table.clear(Library._ShortcutRenderConnections)
-end
-
 local function CancelActiveTweens()
 	for Object, ActiveRecord in pairs(ActiveTweens) do
 		ActiveTweens[Object] = nil
@@ -1076,8 +1053,6 @@ function Wolf:CreateWindow(Config)
 	self.ShortcutButtons = {}
 	self.ShortcutChevrons = {}
 	self.ShortcutTriggers = {}
-	self._ShortcutRenderUpdaters = {}
-	self._ShortcutRenderConnections = {}
 	self.ShortcutSideCounts = { S1 = 0, S2 = 0 }
 	self._ShortcutConnections = self._ShortcutConnections or {}
 	for _, Connection in ipairs(self._ShortcutConnections) do
@@ -1253,7 +1228,7 @@ function Wolf:CreateWindow(Config)
 	local PowerButton = Instance.new("ImageButton")
 	PowerButton.Name = "PowerButton"
 	PowerButton.AnchorPoint = Vector2.new(1, 0)
-	PowerButton.Position = UDim2.new(1, -36, 0, 78)
+	PowerButton.Position = UDim2.new(1, -8, 0, 78)
 	PowerButton.Size = UDim2.fromOffset(24, 24)
 	PowerButton.BackgroundColor3 = self.Theme.Surface
 	PowerButton.AutoButtonColor = false
@@ -1377,15 +1352,22 @@ function Wolf:CreateWindow(Config)
 	SearchIcon.ZIndex = 3
 	SearchIcon.Parent = SearchContainer
 	ApplyIcon(SearchIcon, "search")
-	local SearchExpanded = false
-	SearchContainer.Size = UDim2.fromOffset(30, 30)
-	SearchBox.Visible = false
+	local SearchOverride = nil
+	local HeaderHasResized = false
+	local UpdateHeaderLayout
+	SearchContainer.Size = UDim2.fromOffset(130, 30)
+	SearchBox.Visible = true
 	SearchBox.ZIndex = 2
 	SearchIcon.MouseButton1Click:Connect(function()
-		SearchExpanded = not SearchExpanded
-		SearchContainer.Size = UDim2.fromOffset(SearchExpanded and 130 or 30, 30)
-		SearchBox.Visible = SearchExpanded
-		if SearchExpanded then
+		if SearchBox.Visible then
+			SearchOverride = false
+		else
+			SearchOverride = true
+		end
+		if UpdateHeaderLayout then
+			UpdateHeaderLayout()
+		end
+		if SearchBox.Visible then
 			SearchBox:CaptureFocus()
 		else
 			SearchBox:ReleaseFocus()
@@ -1540,7 +1522,6 @@ function Wolf:CreateWindow(Config)
 	local function SetUIVisible(Visible)
 		uiVisible = Visible
 		self._UIVisible = Visible
-		SetShortcutRenderActive(self, Visible)
 		if not Visible and self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
@@ -1574,9 +1555,6 @@ function Wolf:CreateWindow(Config)
 			task.delay(0.26, function()
 				if not uiVisible then
 					MainFrame.Visible = false
-					for _, Update in ipairs(self._ShortcutRenderUpdaters or {}) do
-						Update()
-					end
 				end
 			end)
 		end
@@ -1681,6 +1659,33 @@ function Wolf:CreateWindow(Config)
 	local SidebarWidth = IsMobile and 110 or 190
 	local SidebarMinWidth = 100
 	local SidebarMaxWidth = 260
+	local CompactLockWidth = 42
+	local ExpandedLockWidth = 68
+	local SearchIconWidth = 30
+	local FullSearchWidth = 130
+
+	UpdateHeaderLayout = function()
+		local HeaderWidth = HeaderFrame.AbsoluteSize.X
+		local WidthScale = HeaderHasResized and math.clamp((HeaderWidth - 250) / 280, 0, 1) or 1
+		local LockWidth = CompactLockWidth + (ExpandedLockWidth - CompactLockWidth) * WidthScale
+		local SearchWidth = SearchIconWidth + (FullSearchWidth - SearchIconWidth) * WidthScale
+		if SearchOverride == true then
+			SearchWidth = FullSearchWidth
+		elseif SearchOverride == false then
+			SearchWidth = SearchIconWidth
+		end
+		local AvailableSearchWidth =
+			math.max(SearchIconWidth, HeaderWidth - LockWidth - ControlsLayout.Padding.Offset - 44 - 20 - 12)
+		SearchWidth = math.min(SearchWidth, AvailableSearchWidth)
+		SearchContainer.Size = UDim2.fromOffset(SearchWidth, 30)
+		ControlsHolder.Size = UDim2.fromOffset(SearchWidth + LockWidth + ControlsLayout.Padding.Offset, 34)
+		SearchBox.Visible = SearchWidth > SearchIconWidth + 12
+		LockButton.Size = UDim2.fromOffset(LockWidth, 30)
+		LockText.Visible = LockWidth > CompactLockWidth + 8
+		LockIcon.Position = UDim2.fromOffset(LockText.Visible and 7 or 14, 8)
+		local AvailableTitleWidth = math.max(0, HeaderWidth - SearchWidth - LockWidth - DragIcon.AbsoluteSize.X - 68)
+		HeaderTitle.Size = UDim2.fromOffset(math.min(240, AvailableTitleWidth), 52)
+	end
 
 	local function UpdateSidebarLayout()
 		SidebarWidth = math.clamp(SidebarWidth, SidebarMinWidth, SidebarMaxWidth)
@@ -1695,6 +1700,14 @@ function Wolf:CreateWindow(Config)
 	end
 	UpdateSidebarLayout()
 	FitWindowToDevice()
+	UpdateHeaderLayout()
+	TrackConnection(
+		self,
+		HeaderFrame:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+			HeaderHasResized = HeaderHasResized or resizing
+			UpdateHeaderLayout()
+		end)
+	)
 
 	local function StopDropdownRender()
 		if self._RenderConnection then
@@ -1872,7 +1885,8 @@ function Wolf:CreateWindow(Config)
 				local Delta = input.Position - resizeStartPos
 
 				-- Calculate new pixel sizes within constraints
-				local NewWidth = math.clamp(startSize.X + Delta.X, MinSize.X, MaxSize.X)
+				local MinWindowWidth = math.max(MinSize.X, SidebarWidth + 180)
+				local NewWidth = math.clamp(startSize.X + Delta.X, MinWindowWidth, MaxSize.X)
 				local NewHeight = math.clamp(startSize.Y + Delta.Y, MinSize.Y, MaxSize.Y)
 
 				MainFrame.Size = UDim2.fromOffset(NewWidth, NewHeight)
@@ -2011,8 +2025,6 @@ function Wolf:Destroy()
 	table.clear(self.ShortcutButtons or {})
 	table.clear(self.ShortcutChevrons or {})
 	table.clear(self.ShortcutTriggers or {})
-	table.clear(self._ShortcutRenderUpdaters or {})
-	table.clear(self._ShortcutRenderConnections or {})
 	if self.Gui then
 		self.Gui:Destroy()
 		self.Gui = nil
@@ -4053,12 +4065,30 @@ function Wolf:AddShortcut(Config)
 			HookClone.Visible = false
 		end
 	end
+	local function TrackShortcutSignal(Signal)
+		table.insert(self._ShortcutConnections, Signal:Connect(UpdateTriggerPosition))
+	end
+	TrackShortcutSignal(self.MainFrame:GetPropertyChangedSignal("AbsoluteSize"))
+	TrackShortcutSignal(self.MainFrame:GetPropertyChangedSignal("Visible"))
+	TrackShortcutSignal(self.ContentArea:GetPropertyChangedSignal("CanvasPosition"))
+	TrackShortcutSignal(ActionElement.Frame:GetPropertyChangedSignal("AbsolutePosition"))
+	TrackShortcutSignal(ActionElement.Frame:GetPropertyChangedSignal("AbsoluteSize"))
+	TrackShortcutSignal(Button:GetPropertyChangedSignal("AbsolutePosition"))
+	if ChevronButton then
+		TrackShortcutSignal(ChevronButton:GetPropertyChangedSignal("AbsolutePosition"))
+		TrackShortcutSignal(ChevronButton:GetPropertyChangedSignal("Visible"))
+	end
+	local VisibilityAncestor = ActionElement.Frame
+	while VisibilityAncestor and VisibilityAncestor ~= self.Gui do
+		if VisibilityAncestor:IsA("GuiObject") then
+			TrackShortcutSignal(VisibilityAncestor:GetPropertyChangedSignal("Visible"))
+		end
+		VisibilityAncestor = VisibilityAncestor.Parent
+	end
 	UpdateTriggerPosition()
-	table.insert(self._ShortcutRenderUpdaters, UpdateTriggerPosition)
-	SetShortcutRenderActive(self, self._UIVisible ~= false)
 	table.insert(
 		self._ShortcutConnections,
-		self.ContentArea:GetPropertyChangedSignal("CanvasPosition"):Connect(UpdateTriggerPosition)
+		self.ContentArea:GetPropertyChangedSignal("AbsoluteSize"):Connect(UpdateTriggerPosition)
 	)
 
 	local Dragging = false
@@ -4203,6 +4233,7 @@ function Wolf:AddShortcut(Config)
 			table.clear(self.OpenDropdowns)
 		end
 		ApplyIcon(Chevron, HookExpanded and "chevron-left" or "chevron-right")
+		UpdateTriggerPosition()
 	end
 	if HookClone then
 		local SelectionButton = Instance.new("TextButton")
@@ -4251,6 +4282,7 @@ function Wolf:AddShortcut(Config)
 		if ChevronButton then
 			ChevronButton.Visible = ShowShortcut
 		end
+		UpdateTriggerPosition()
 		if not ShowShortcut then
 			HookExpanded = false
 			if ChevronButton then
