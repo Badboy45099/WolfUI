@@ -20,20 +20,13 @@ WolfComponent.__index = WolfComponent
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local CoreGui = game:GetService("CoreGui")
 local RunService = game:GetService("RunService")
 local HttpService = game:GetService("HttpService")
 
 local LocalPlayer = Players.LocalPlayer
 
-local BirdRuntimeEnvironment = {}
-pcall(function()
-	BirdRuntimeEnvironment = getgenv()
-end)
-local BirdRuntime = BirdRuntimeEnvironment.WolfUIBirdRuntime
-if typeof(BirdRuntime) ~= "table" then
-	BirdRuntime = {}
-	BirdRuntimeEnvironment.WolfUIBirdRuntime = BirdRuntime
-end
+local ConfigStore = {}
 
 ---------------------------------------------------------------------
 -- ICON MODULE (Lucide + Spritesheet Cropping)
@@ -692,46 +685,34 @@ end
 function Wolf:SetBirdMode(Enabled)
 	Enabled = Enabled == true
 	local WasEnabled = BirdRuntime.Enabled == true
-	if BirdRuntime.IdledConnection then
-		BirdRuntime.IdledConnection:Disconnect()
-		BirdRuntime.IdledConnection = nil
-	end
-	self._BirdIdleConnection = nil
+	local WasEnabled = self._BirdModeEnabled == true
 
 	if Enabled then
 		if not WasEnabled then
 			pcall(function()
-				BirdRuntime.UserGameSettings = UserSettings():GetService("UserGameSettings")
-				BirdRuntime.OriginalQualityLevel = BirdRuntime.UserGameSettings.SavedQualityLevel
+				self._BirdUserGameSettings = UserSettings():GetService("UserGameSettings")
+				self._BirdOriginalQualityLevel = self._BirdUserGameSettings.SavedQualityLevel
 			end)
 		end
 		pcall(function()
-			if BirdRuntime.UserGameSettings then
-				BirdRuntime.UserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
+			if self._BirdUserGameSettings then
+				self._BirdUserGameSettings.SavedQualityLevel = Enum.SavedQualitySetting.QualityLevel1
 			end
 		end)
-		BirdRuntime.IdledConnection = LocalPlayer.Idled:Connect(function()
-			pcall(function()
-				local VirtualUser = game:GetService("VirtualUser")
-				VirtualUser:CaptureController()
-				VirtualUser:ClickButton2(Vector2.zero)
-			end)
-		end)
-		self._BirdIdleConnection = BirdRuntime.IdledConnection
+		
 		if self._CloseDropdowns then
 			self._CloseDropdowns()
 		end
 	elseif WasEnabled then
 		pcall(function()
-			if BirdRuntime.UserGameSettings and BirdRuntime.OriginalQualityLevel then
-				BirdRuntime.UserGameSettings.SavedQualityLevel = BirdRuntime.OriginalQualityLevel
+			if self._BirdUserGameSettings and self._BirdOriginalQualityLevel then
+				self._BirdUserGameSettings.SavedQualityLevel = self._BirdOriginalQualityLevel
 			end
 		end)
-		BirdRuntime.UserGameSettings = nil
-		BirdRuntime.OriginalQualityLevel = nil
+		self._BirdUserGameSettings = nil
+		self._BirdOriginalQualityLevel = nil
 	end
 
-	BirdRuntime.Enabled = Enabled
 	self._BirdModeEnabled = Enabled
 	return Enabled
 end
@@ -1122,7 +1103,14 @@ function Wolf:CreateWindow(Config)
 		self._RenderConnection = nil
 	end
 
-	local ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
+	local ParentContainer = CoreGui
+	pcall(function()
+		if not RunService:IsStudio() then
+			ParentContainer = (gethui and gethui()) or CoreGui
+		else
+			ParentContainer = LocalPlayer:WaitForChild("PlayerGui")
+		end
+	end)
 
 	if ParentContainer:FindFirstChild("WolfUI") then
 		ParentContainer.WolfUI:Destroy()
@@ -1259,19 +1247,30 @@ function Wolf:CreateWindow(Config)
 	local BirdButton = Instance.new("ImageButton")
 	BirdButton.Name = "BirdModeButton"
 	BirdButton.AnchorPoint = Vector2.new(1, 0)
-	BirdButton.Position = UDim2.new(1, -62, 0, 78)
+	BirdButton.Position = UDim2.new(1, -38, 0, 78)
 	BirdButton.Size = UDim2.fromOffset(24, 24)
 	BirdButton.BackgroundTransparency = 1
 	BirdButton.AutoButtonColor = false
 	BirdButton.Image = ""
 	BirdButton.Parent = ProfileCard
 	Corner(BirdButton, 5)
-	local BirdIcon =
-		CreateIcon(BirdButton, "bird", UDim2.fromOffset(4, 4), UDim2.fromOffset(16, 16), self.Theme.SubText, 3)
-	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", "SubText")
+	local BirdIconName = "bone"
+	local BirdGlow =
+		CreateIcon(BirdButton, BirdIconName, UDim2.fromOffset(1, 1), UDim2.fromOffset(22, 22), self.Theme.Accent, 2)
+	BirdGlow.ImageTransparency = self._BirdModeEnabled and 0.72 or 1
+	local BirdIcon = CreateIcon(
+		BirdButton,
+		BirdIconName,
+		UDim2.fromOffset(4, 4),
+		UDim2.fromOffset(16, 16),
+		self._BirdModeEnabled and self.Theme.Accent or self.Theme.SubText,
+		3
+	)
+	BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", self._BirdModeEnabled and "Accent" or "SubText")
 	local BirdStroke = Stroke(BirdButton, self.Theme.Accent, 1)
 	BirdStroke.Thickness = 1.5
 	BirdStroke:SetAttribute("WolfThemeRole_Color", "Accent")
+	BirdStroke.Transparency = self._BirdModeEnabled and 0.05 or 1
 	local BirdTooltip = Instance.new("TextLabel")
 	BirdTooltip.Name = "BirdModeTooltip"
 	BirdTooltip.AnchorPoint = Vector2.new(1, 0)
@@ -1298,7 +1297,6 @@ function Wolf:CreateWindow(Config)
 		self:SetBirdMode(Enabled)
 		local IconRole = Enabled and "Accent" or "SubText"
 		BirdIcon:SetAttribute("WolfThemeRole_ImageColor3", IconRole)
-		Tween(BirdIcon, { ImageColor3 = self.Theme[IconRole] })
 		BirdStroke.Transparency = Enabled and 0.05 or 1
 	end)
 	self.BirdButton = BirdButton
